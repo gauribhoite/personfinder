@@ -41,34 +41,27 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-recaptcha.client.captcha">
-<span id="recaptcha-client-captcha-module"></span><h2>recaptcha.client.captcha module<a class="headerlink" href="#module-recaptcha.client.captcha" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="recaptcha.client.captcha.RecaptchaResponse">
-<em class="property">class </em><code class="descclassname">recaptcha.client.captcha.</code><code class="descname">RecaptchaResponse</code><span class="sig-paren">(</span><em>is_valid</em>, <em>error_code=None</em><span class="sig-paren">)</span><a class="headerlink" href="#recaptcha.client.captcha.RecaptchaResponse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
-</dd></dl>
-
-<dl class="function">
-<dt id="recaptcha.client.captcha.get_display_html">
-<code class="descclassname">recaptcha.client.captcha.</code><code class="descname">get_display_html</code><span class="sig-paren">(</span><em>site_key</em>, <em>use_ssl=False</em>, <em>error=None</em>, <em>lang='en'</em><span class="sig-paren">)</span><a class="headerlink" href="#recaptcha.client.captcha.get_display_html" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets the HTML to display for reCAPTCHA</p>
-<p>site_key &#8211; The public api key
-use_ssl &#8211; Should the request be sent over ssl?
-error &#8211; An error message to display (from RecaptchaResponse.error_code)</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="recaptcha.client.captcha.submit">
-<code class="descclassname">recaptcha.client.captcha.</code><code class="descname">submit</code><span class="sig-paren">(</span><em>recaptcha_response</em><span class="sig-paren">)</span><a class="headerlink" href="#recaptcha.client.captcha.submit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submits a reCAPTCHA request for verification. Returns RecaptchaResponse
-for the request</p>
-<p>recaptcha_response &#8211; The value of recaptcha_response</p>
-</dd></dl>
-
+<div class="section" id="recaptcha-client-captcha-module">
+<h2>recaptcha.client.captcha module<a class="headerlink" href="#recaptcha-client-captcha-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="recaptcha-client-mailhide-module">
-<h2>recaptcha.client.mailhide module<a class="headerlink" href="#recaptcha-client-mailhide-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-recaptcha.client.mailhide">
+<span id="recaptcha-client-mailhide-module"></span><h2>recaptcha.client.mailhide module<a class="headerlink" href="#module-recaptcha.client.mailhide" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="recaptcha.client.mailhide.ashtml">
+<code class="descclassname">recaptcha.client.mailhide.</code><code class="descname">ashtml</code><span class="sig-paren">(</span><em>email</em>, <em>public_key</em>, <em>private_key</em><span class="sig-paren">)</span><a class="headerlink" href="#recaptcha.client.mailhide.ashtml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps an email address with reCAPTCHA Mailhide and
+returns html that displays the email</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="recaptcha.client.mailhide.asurl">
+<code class="descclassname">recaptcha.client.mailhide.</code><code class="descname">asurl</code><span class="sig-paren">(</span><em>email</em>, <em>public_key</em>, <em>private_key</em><span class="sig-paren">)</span><a class="headerlink" href="#recaptcha.client.mailhide.asurl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps an email address with reCAPTCHA mailhide and
+returns the url. public_key is the public key from reCAPTCHA
+(in the base 64 encoded format). Private key is the AES key, and should
+be 32 hex chars.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="module-recaptcha.client">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-recaptcha.client" title="Permalink to this headline">¶</a></h2>
@@ -85,8 +78,8 @@ for the request</p>
   <ul>
 <li><a class="reference internal" href="#">recaptcha.client package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-recaptcha.client.captcha">recaptcha.client.captcha module</a></li>
-<li><a class="reference internal" href="#recaptcha-client-mailhide-module">recaptcha.client.mailhide module</a></li>
+<li><a class="reference internal" href="#recaptcha-client-captcha-module">recaptcha.client.captcha module</a></li>
+<li><a class="reference internal" href="#module-recaptcha.client.mailhide">recaptcha.client.mailhide module</a></li>
 <li><a class="reference internal" href="#module-recaptcha.client">Module contents</a></li>
 </ul>
 </li>
