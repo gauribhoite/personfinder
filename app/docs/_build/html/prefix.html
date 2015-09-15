@@ -1,0 +1,132 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>prefix module &mdash; doc 1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="doc 1 documentation" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-prefix">
+<span id="prefix-module"></span><h1>prefix module<a class="headerlink" href="#module-prefix" title="Permalink to this headline">¶</a></h1>
+<p>Support for approximate string prefix queries.</p>
+<dl class="function">
+<dt id="prefix.add_prefix_properties">
+<code class="descclassname">prefix.</code><code class="descname">add_prefix_properties</code><span class="sig-paren">(</span><em>model_class</em>, <em>*properties</em><span class="sig-paren">)</span><a class="headerlink" href="#prefix.add_prefix_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds indexable properties to a model class to support prefix queries.
+All properties ending in &#8216;_&#8217; are extra properties.  The &#8216;properties&#8217;
+arguments should be names of existing string properties on the class.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="prefix.filter_prefix">
+<code class="descclassname">prefix.</code><code class="descname">filter_prefix</code><span class="sig-paren">(</span><em>query</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#prefix.filter_prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Approximately filters a query for the given prefix strings.  Each
+keyword argument should specify a desired normalized prefix for a string
+property.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="prefix.get_prefix_matches">
+<code class="descclassname">prefix.</code><code class="descname">get_prefix_matches</code><span class="sig-paren">(</span><em>query</em>, <em>limit</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#prefix.get_prefix_matches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scans the results from a given query, yielding only those which actually
+match the given normalized prefixes.  Each keyword argument should specify
+a desired normalized prefix for a string property.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="prefix.normalize">
+<code class="descclassname">prefix.</code><code class="descname">normalize</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="headerlink" href="#prefix.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize a string to all uppercase and remove accents.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="prefix.update_prefix_properties">
+<code class="descclassname">prefix.</code><code class="descname">update_prefix_properties</code><span class="sig-paren">(</span><em>entity</em><span class="sig-paren">)</span><a class="headerlink" href="#prefix.update_prefix_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds and updates all prefix-related properties on the given entity.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/prefix.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, gb.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/prefix.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
