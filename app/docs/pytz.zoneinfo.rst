@@ -4,8 +4,6 @@ pytz.zoneinfo package
 Subpackages
 -----------
 
-.. toctree::
-
     pytz.zoneinfo.Africa
     pytz.zoneinfo.America
     pytz.zoneinfo.Antarctica
@@ -21,7 +19,7 @@ Subpackages
     pytz.zoneinfo.Indian
     pytz.zoneinfo.Mexico
     pytz.zoneinfo.Pacific
-    pytz.zoneinfo.US
+    zoneinfo.US
 
 Submodules
 ----------

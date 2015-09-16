@@ -25,10 +25,8 @@ gae_path = '/Users/gauri_rb/google_appengine'
 zone_path='/Users/gauri_rb/Documents/google_personfinder/personfinder/app/pytz/zoneinfo'
 sys.path.insert(0, proj_path + '/personfinder/app/')
 sys.path.insert(1, gae_path + '/lib/yaml/lib/')
-sys.path.insert(2, proj_path + '/env/lib/python2.7/site-packages/django')
+sys.path.insert(2, proj_path + '/env/lib/python2.7/')
 sys.path.insert(3, gae_path + '/google/appengine/')
-sys.path.insert(4, zone_path + 'africa')
-sys.path.insert(5, zone_path + 'US')
 
 # -- General configuration ------------------------------------------------
 

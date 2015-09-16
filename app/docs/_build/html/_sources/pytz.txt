@@ -4,8 +4,6 @@ pytz package
 Subpackages
 -----------
 
-.. toctree::
-
     pytz.tests
     pytz.zoneinfo
 
