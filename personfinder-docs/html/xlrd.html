@@ -1,0 +1,1984 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>xlrd package &mdash; doc 1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="doc 1 documentation" href="index.html" />
+    <link rel="prev" title="view module" href="view.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="xlrd-package">
+<h1>xlrd package<a class="headerlink" href="#xlrd-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-xlrd.biffh">
+<span id="xlrd-biffh-module"></span><h2>xlrd.biffh module<a class="headerlink" href="#module-xlrd.biffh" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="xlrd.biffh.BaseObject">
+<em class="property">class </em><code class="descclassname">xlrd.biffh.</code><code class="descname">BaseObject</code><a class="headerlink" href="#xlrd.biffh.BaseObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.biffh.BaseObject.dump">
+<code class="descname">dump</code><span class="sig-paren">(</span><em>f=None</em>, <em>header=None</em>, <em>footer=None</em>, <em>indent=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.BaseObject.dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="xlrd.biffh.XLRDError">
+<em class="property">exception </em><code class="descclassname">xlrd.biffh.</code><code class="descname">XLRDError</code><a class="headerlink" href="#xlrd.biffh.XLRDError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/exceptions.html#exceptions.Exception" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.biff_count_records">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">biff_count_records</code><span class="sig-paren">(</span><em>mem</em>, <em>stream_offset</em>, <em>stream_len</em>, <em>fout=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.biff_count_records" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.biff_dump">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">biff_dump</code><span class="sig-paren">(</span><em>mem</em>, <em>stream_offset</em>, <em>stream_len</em>, <em>base=0</em>, <em>fout=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>unnumbered=False</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.biff_dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.hex_char_dump">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">hex_char_dump</code><span class="sig-paren">(</span><em>strg</em>, <em>ofs</em>, <em>dlen</em>, <em>base=0</em>, <em>fout=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>unnumbered=False</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.hex_char_dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.is_cell_opcode">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">is_cell_opcode</code><span class="sig-paren">(</span><em>c</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.is_cell_opcode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.unpack_cell_range_address_list_update_pos">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">unpack_cell_range_address_list_update_pos</code><span class="sig-paren">(</span><em>output_list</em>, <em>data</em>, <em>pos</em>, <em>biff_version</em>, <em>addr_size=6</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.unpack_cell_range_address_list_update_pos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.unpack_string">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">unpack_string</code><span class="sig-paren">(</span><em>data</em>, <em>pos</em>, <em>encoding</em>, <em>lenlen=1</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.unpack_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.unpack_string_update_pos">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">unpack_string_update_pos</code><span class="sig-paren">(</span><em>data</em>, <em>pos</em>, <em>encoding</em>, <em>lenlen=1</em>, <em>known_len=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.unpack_string_update_pos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.unpack_unicode">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">unpack_unicode</code><span class="sig-paren">(</span><em>data</em>, <em>pos</em>, <em>lenlen=2</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.unpack_unicode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return unicode_strg</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.unpack_unicode_update_pos">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">unpack_unicode_update_pos</code><span class="sig-paren">(</span><em>data</em>, <em>pos</em>, <em>lenlen=2</em>, <em>known_len=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.unpack_unicode_update_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return (unicode_strg, updated value of pos)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.upkbits">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">upkbits</code><span class="sig-paren">(</span><em>tgt_obj</em>, <em>src</em>, <em>manifest</em>, <em>local_setattr=&lt;built-in function setattr&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.upkbits" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.biffh.upkbitsL">
+<code class="descclassname">xlrd.biffh.</code><code class="descname">upkbitsL</code><span class="sig-paren">(</span><em>tgt_obj</em>, <em>src</em>, <em>manifest</em>, <em>local_setattr=&lt;built-in function setattr&gt;</em>, <em>local_int=&lt;type 'int'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.biffh.upkbitsL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-xlrd.book">
+<span id="xlrd-book-module"></span><h2>xlrd.book module<a class="headerlink" href="#module-xlrd.book" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="xlrd.book.Book">
+<em class="property">class </em><code class="descclassname">xlrd.book.</code><code class="descname">Book</code><a class="headerlink" href="#xlrd.book.Book" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.book.Book.biff2_8_load">
+<code class="descname">biff2_8_load</code><span class="sig-paren">(</span><em>filename=None</em>, <em>file_contents=None</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>verbosity=0</em>, <em>use_mmap=1</em>, <em>encoding_override=None</em>, <em>formatting_info=False</em>, <em>on_demand=False</em>, <em>ragged_rows=False</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.biff2_8_load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.biff_version">
+<code class="descname">biff_version</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Book.biff_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.codepage">
+<code class="descname">codepage</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.book.Book.codepage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.colour_map">
+<code class="descname">colour_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.book.Book.colour_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.countries">
+<code class="descname">countries</code><em class="property"> = (0, 0)</em><a class="headerlink" href="#xlrd.book.Book.countries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.datemode">
+<code class="descname">datemode</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Book.datemode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.derive_encoding">
+<code class="descname">derive_encoding</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.derive_encoding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.encoding">
+<code class="descname">encoding</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.book.Book.encoding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.fake_globals_get_sheet">
+<code class="descname">fake_globals_get_sheet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.fake_globals_get_sheet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.font_list">
+<code class="descname">font_list</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.book.Book.font_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.format_list">
+<code class="descname">format_list</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.book.Book.format_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.format_map">
+<code class="descname">format_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.book.Book.format_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.get2bytes">
+<code class="descname">get2bytes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.get2bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.get_record_parts">
+<code class="descname">get_record_parts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.get_record_parts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.get_record_parts_conditional">
+<code class="descname">get_record_parts_conditional</code><span class="sig-paren">(</span><em>reqd_record</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.get_record_parts_conditional" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.get_sheet">
+<code class="descname">get_sheet</code><span class="sig-paren">(</span><em>sh_number</em>, <em>update_pos=True</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.get_sheet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.get_sheets">
+<code class="descname">get_sheets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.get_sheets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.getbof">
+<code class="descname">getbof</code><span class="sig-paren">(</span><em>rqd_stream</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.getbof" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_boundsheet">
+<code class="descname">handle_boundsheet</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_boundsheet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_builtinfmtcount">
+<code class="descname">handle_builtinfmtcount</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_builtinfmtcount" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_codepage">
+<code class="descname">handle_codepage</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_codepage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_country">
+<code class="descname">handle_country</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_country" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_datemode">
+<code class="descname">handle_datemode</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_datemode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_externname">
+<code class="descname">handle_externname</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_externname" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_externsheet">
+<code class="descname">handle_externsheet</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_externsheet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_filepass">
+<code class="descname">handle_filepass</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_filepass" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_name">
+<code class="descname">handle_name</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_obj">
+<code class="descname">handle_obj</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_sheethdr">
+<code class="descname">handle_sheethdr</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_sheethdr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_sheetsoffset">
+<code class="descname">handle_sheetsoffset</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_sheetsoffset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_sst">
+<code class="descname">handle_sst</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_sst" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_supbook">
+<code class="descname">handle_supbook</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_supbook" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.handle_writeaccess">
+<code class="descname">handle_writeaccess</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.handle_writeaccess" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.initialise_format_info">
+<code class="descname">initialise_format_info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.initialise_format_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.load_time_stage_1">
+<code class="descname">load_time_stage_1</code><em class="property"> = -1.0</em><a class="headerlink" href="#xlrd.book.Book.load_time_stage_1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.load_time_stage_2">
+<code class="descname">load_time_stage_2</code><em class="property"> = -1.0</em><a class="headerlink" href="#xlrd.book.Book.load_time_stage_2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.name_and_scope_map">
+<code class="descname">name_and_scope_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.book.Book.name_and_scope_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.name_map">
+<code class="descname">name_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.book.Book.name_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.name_obj_list">
+<code class="descname">name_obj_list</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.book.Book.name_obj_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.names_epilogue">
+<code class="descname">names_epilogue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.names_epilogue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.nsheets">
+<code class="descname">nsheets</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Book.nsheets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.palette_record">
+<code class="descname">palette_record</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.book.Book.palette_record" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.parse_globals">
+<code class="descname">parse_globals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.parse_globals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.read">
+<code class="descname">read</code><span class="sig-paren">(</span><em>pos</em>, <em>length</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.read" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.release_resources">
+<code class="descname">release_resources</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.release_resources" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.sheet_by_index">
+<code class="descname">sheet_by_index</code><span class="sig-paren">(</span><em>sheetx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.sheet_by_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.sheet_by_name">
+<code class="descname">sheet_by_name</code><span class="sig-paren">(</span><em>sheet_name</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.sheet_by_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.sheet_loaded">
+<code class="descname">sheet_loaded</code><span class="sig-paren">(</span><em>sheet_name_or_index</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.sheet_loaded" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.sheet_names">
+<code class="descname">sheet_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.sheet_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.sheets">
+<code class="descname">sheets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.sheets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.style_name_map">
+<code class="descname">style_name_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.book.Book.style_name_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Book.unload_sheet">
+<code class="descname">unload_sheet</code><span class="sig-paren">(</span><em>sheet_name_or_index</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Book.unload_sheet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.user_name">
+<code class="descname">user_name</code><em class="property"> = u''</em><a class="headerlink" href="#xlrd.book.Book.user_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Book.xf_list">
+<code class="descname">xf_list</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.book.Book.xf_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.book.Name">
+<em class="property">class </em><code class="descclassname">xlrd.book.</code><code class="descname">Name</code><a class="headerlink" href="#xlrd.book.Name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.book.Name.area2d">
+<code class="descname">area2d</code><span class="sig-paren">(</span><em>clipped=True</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Name.area2d" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.binary">
+<code class="descname">binary</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.binary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.book">
+<code class="descname">book</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.book.Name.book" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.builtin">
+<code class="descname">builtin</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.builtin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.book.Name.cell">
+<code class="descname">cell</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.Name.cell" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.complex">
+<code class="descname">complex</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.complex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.func">
+<code class="descname">func</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.func" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.funcgroup">
+<code class="descname">funcgroup</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.funcgroup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.hidden">
+<code class="descname">hidden</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.hidden" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.macro">
+<code class="descname">macro</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.macro" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.name">
+<code class="descname">name</code><em class="property"> = u''</em><a class="headerlink" href="#xlrd.book.Name.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.name_index">
+<code class="descname">name_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.name_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.raw_formula">
+<code class="descname">raw_formula</code><em class="property"> = ''</em><a class="headerlink" href="#xlrd.book.Name.raw_formula" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.result">
+<code class="descname">result</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.book.Name.result" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.scope">
+<code class="descname">scope</code><em class="property"> = -1</em><a class="headerlink" href="#xlrd.book.Name.scope" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.book.Name.vbasic">
+<code class="descname">vbasic</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.book.Name.vbasic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.book.colname">
+<code class="descclassname">xlrd.book.</code><code class="descname">colname</code><span class="sig-paren">(</span><em>colx</em>, <em>_A2Z='ABCDEFGHIJKLMNOPQRSTUVWXYZ'</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.colname" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.book.count_records">
+<code class="descclassname">xlrd.book.</code><code class="descname">count_records</code><span class="sig-paren">(</span><em>filename</em>, <em>outfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.count_records" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.book.display_cell_address">
+<code class="descclassname">xlrd.book.</code><code class="descname">display_cell_address</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em>, <em>relrow</em>, <em>relcol</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.display_cell_address" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.book.dump">
+<code class="descclassname">xlrd.book.</code><code class="descname">dump</code><span class="sig-paren">(</span><em>filename</em>, <em>outfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>unnumbered=False</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.book.expand_cell_address">
+<code class="descclassname">xlrd.book.</code><code class="descname">expand_cell_address</code><span class="sig-paren">(</span><em>inrow</em>, <em>incol</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.expand_cell_address" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.book.open_workbook_xls">
+<code class="descclassname">xlrd.book.</code><code class="descname">open_workbook_xls</code><span class="sig-paren">(</span><em>filename=None</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>verbosity=0</em>, <em>use_mmap=1</em>, <em>file_contents=None</em>, <em>encoding_override=None</em>, <em>formatting_info=False</em>, <em>on_demand=False</em>, <em>ragged_rows=False</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.open_workbook_xls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.book.unpack_SST_table">
+<code class="descclassname">xlrd.book.</code><code class="descname">unpack_SST_table</code><span class="sig-paren">(</span><em>datatab</em>, <em>nstrings</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.book.unpack_SST_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of strings</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-xlrd.compdoc">
+<span id="xlrd-compdoc-module"></span><h2>xlrd.compdoc module<a class="headerlink" href="#module-xlrd.compdoc" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="xlrd.compdoc.CompDoc">
+<em class="property">class </em><code class="descclassname">xlrd.compdoc.</code><code class="descname">CompDoc</code><span class="sig-paren">(</span><em>mem</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>DEBUG=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.compdoc.CompDoc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.compdoc.CompDoc.get_named_stream">
+<code class="descname">get_named_stream</code><span class="sig-paren">(</span><em>qname</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.compdoc.CompDoc.get_named_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.compdoc.CompDoc.locate_named_stream">
+<code class="descname">locate_named_stream</code><span class="sig-paren">(</span><em>qname</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.compdoc.CompDoc.locate_named_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="xlrd.compdoc.CompDocError">
+<em class="property">exception </em><code class="descclassname">xlrd.compdoc.</code><code class="descname">CompDocError</code><a class="headerlink" href="#xlrd.compdoc.CompDocError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/exceptions.html#exceptions.Exception" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.compdoc.DirNode">
+<em class="property">class </em><code class="descclassname">xlrd.compdoc.</code><code class="descname">DirNode</code><span class="sig-paren">(</span><em>DID</em>, <em>dent</em>, <em>DEBUG=0</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.compdoc.DirNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.compdoc.DirNode.dump">
+<code class="descname">dump</code><span class="sig-paren">(</span><em>DEBUG=1</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.compdoc.DirNode.dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.compdoc.dump_list">
+<code class="descclassname">xlrd.compdoc.</code><code class="descname">dump_list</code><span class="sig-paren">(</span><em>alist</em>, <em>stride</em>, <em>f=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.compdoc.dump_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.compdoc.x_dump_line">
+<code class="descclassname">xlrd.compdoc.</code><code class="descname">x_dump_line</code><span class="sig-paren">(</span><em>alist</em>, <em>stride</em>, <em>f</em>, <em>dpos</em>, <em>equal=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.compdoc.x_dump_line" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-xlrd.formatting">
+<span id="xlrd-formatting-module"></span><h2>xlrd.formatting module<a class="headerlink" href="#module-xlrd.formatting" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="xlrd.formatting.EqNeAttrs">
+<em class="property">class </em><code class="descclassname">xlrd.formatting.</code><code class="descname">EqNeAttrs</code><a class="headerlink" href="#xlrd.formatting.EqNeAttrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.formatting.Font">
+<em class="property">class </em><code class="descclassname">xlrd.formatting.</code><code class="descname">Font</code><a class="headerlink" href="#xlrd.formatting.Font" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a>, <a class="reference internal" href="#xlrd.formatting.EqNeAttrs" title="xlrd.formatting.EqNeAttrs"><code class="xref py py-class docutils literal"><span class="pre">xlrd.formatting.EqNeAttrs</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.bold">
+<code class="descname">bold</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.bold" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.character_set">
+<code class="descname">character_set</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.character_set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.colour_index">
+<code class="descname">colour_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.escapement">
+<code class="descname">escapement</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.escapement" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.family">
+<code class="descname">family</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.family" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.font_index">
+<code class="descname">font_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.font_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.height">
+<code class="descname">height</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.height" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.italic">
+<code class="descname">italic</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.italic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.name">
+<code class="descname">name</code><em class="property"> = u''</em><a class="headerlink" href="#xlrd.formatting.Font.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.outline">
+<code class="descname">outline</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.outline" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.shadow">
+<code class="descname">shadow</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.shadow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.struck_out">
+<code class="descname">struck_out</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.struck_out" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.underline_type">
+<code class="descname">underline_type</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.underline_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.underlined">
+<code class="descname">underlined</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Font.underlined" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Font.weight">
+<code class="descname">weight</code><em class="property"> = 400</em><a class="headerlink" href="#xlrd.formatting.Font.weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.formatting.Format">
+<em class="property">class </em><code class="descclassname">xlrd.formatting.</code><code class="descname">Format</code><span class="sig-paren">(</span><em>format_key</em>, <em>ty</em>, <em>format_str</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.Format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a>, <a class="reference internal" href="#xlrd.formatting.EqNeAttrs" title="xlrd.formatting.EqNeAttrs"><code class="xref py py-class docutils literal"><span class="pre">xlrd.formatting.EqNeAttrs</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.formatting.Format.format_key">
+<code class="descname">format_key</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Format.format_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Format.format_str">
+<code class="descname">format_str</code><em class="property"> = u''</em><a class="headerlink" href="#xlrd.formatting.Format.format_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.Format.type">
+<code class="descname">type</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.Format.type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.formatting.XF">
+<em class="property">class </em><code class="descclassname">xlrd.formatting.</code><code class="descname">XF</code><a class="headerlink" href="#xlrd.formatting.XF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.alignment">
+<code class="descname">alignment</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.formatting.XF.alignment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.background">
+<code class="descname">background</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.formatting.XF.background" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.border">
+<code class="descname">border</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.formatting.XF.border" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.font_index">
+<code class="descname">font_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XF.font_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.format_key">
+<code class="descname">format_key</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XF.format_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.is_style">
+<code class="descname">is_style</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XF.is_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.parent_style_index">
+<code class="descname">parent_style_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XF.parent_style_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.protection">
+<code class="descname">protection</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.formatting.XF.protection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XF.xf_index">
+<code class="descname">xf_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XF.xf_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.formatting.XFAlignment">
+<em class="property">class </em><code class="descclassname">xlrd.formatting.</code><code class="descname">XFAlignment</code><a class="headerlink" href="#xlrd.formatting.XFAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a>, <a class="reference internal" href="#xlrd.formatting.EqNeAttrs" title="xlrd.formatting.EqNeAttrs"><code class="xref py py-class docutils literal"><span class="pre">xlrd.formatting.EqNeAttrs</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.formatting.XFAlignment.hor_align">
+<code class="descname">hor_align</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFAlignment.hor_align" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFAlignment.indent_level">
+<code class="descname">indent_level</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFAlignment.indent_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFAlignment.rotation">
+<code class="descname">rotation</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFAlignment.rotation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFAlignment.shrink_to_fit">
+<code class="descname">shrink_to_fit</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFAlignment.shrink_to_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFAlignment.text_direction">
+<code class="descname">text_direction</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFAlignment.text_direction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFAlignment.text_wrapped">
+<code class="descname">text_wrapped</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFAlignment.text_wrapped" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFAlignment.vert_align">
+<code class="descname">vert_align</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFAlignment.vert_align" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.formatting.XFBackground">
+<em class="property">class </em><code class="descclassname">xlrd.formatting.</code><code class="descname">XFBackground</code><a class="headerlink" href="#xlrd.formatting.XFBackground" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a>, <a class="reference internal" href="#xlrd.formatting.EqNeAttrs" title="xlrd.formatting.EqNeAttrs"><code class="xref py py-class docutils literal"><span class="pre">xlrd.formatting.EqNeAttrs</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBackground.background_colour_index">
+<code class="descname">background_colour_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBackground.background_colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBackground.fill_pattern">
+<code class="descname">fill_pattern</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBackground.fill_pattern" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBackground.pattern_colour_index">
+<code class="descname">pattern_colour_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBackground.pattern_colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.formatting.XFBorder">
+<em class="property">class </em><code class="descclassname">xlrd.formatting.</code><code class="descname">XFBorder</code><a class="headerlink" href="#xlrd.formatting.XFBorder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a>, <a class="reference internal" href="#xlrd.formatting.EqNeAttrs" title="xlrd.formatting.EqNeAttrs"><code class="xref py py-class docutils literal"><span class="pre">xlrd.formatting.EqNeAttrs</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.bottom_colour_index">
+<code class="descname">bottom_colour_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.bottom_colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.bottom_line_style">
+<code class="descname">bottom_line_style</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.bottom_line_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.diag_colour_index">
+<code class="descname">diag_colour_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.diag_colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.diag_down">
+<code class="descname">diag_down</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.diag_down" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.diag_line_style">
+<code class="descname">diag_line_style</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.diag_line_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.diag_up">
+<code class="descname">diag_up</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.diag_up" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.left_colour_index">
+<code class="descname">left_colour_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.left_colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.left_line_style">
+<code class="descname">left_line_style</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.left_line_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.right_colour_index">
+<code class="descname">right_colour_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.right_colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.right_line_style">
+<code class="descname">right_line_style</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.right_line_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.top_colour_index">
+<code class="descname">top_colour_index</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.top_colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFBorder.top_line_style">
+<code class="descname">top_line_style</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFBorder.top_line_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.formatting.XFProtection">
+<em class="property">class </em><code class="descclassname">xlrd.formatting.</code><code class="descname">XFProtection</code><a class="headerlink" href="#xlrd.formatting.XFProtection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a>, <a class="reference internal" href="#xlrd.formatting.EqNeAttrs" title="xlrd.formatting.EqNeAttrs"><code class="xref py py-class docutils literal"><span class="pre">xlrd.formatting.EqNeAttrs</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.formatting.XFProtection.cell_locked">
+<code class="descname">cell_locked</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFProtection.cell_locked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.formatting.XFProtection.formula_hidden">
+<code class="descname">formula_hidden</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.formatting.XFProtection.formula_hidden" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.check_colour_indexes_in_obj">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">check_colour_indexes_in_obj</code><span class="sig-paren">(</span><em>book</em>, <em>obj</em>, <em>orig_index</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.check_colour_indexes_in_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.fill_in_standard_formats">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">fill_in_standard_formats</code><span class="sig-paren">(</span><em>book</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.fill_in_standard_formats" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.fmt_bracketed_sub">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">fmt_bracketed_sub</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.fmt_bracketed_sub" title="Permalink to this definition">¶</a></dt>
+<dd><p>sub(repl, string[, count = 0]) &#8211;&gt; newstring
+Return the string obtained by replacing the leftmost non-overlapping
+occurrences of pattern in string by the replacement repl.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.handle_efont">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">handle_efont</code><span class="sig-paren">(</span><em>book</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.handle_efont" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.handle_font">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">handle_font</code><span class="sig-paren">(</span><em>book</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.handle_font" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.handle_format">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">handle_format</code><span class="sig-paren">(</span><em>self</em>, <em>data</em>, <em>rectype=1054</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.handle_format" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.handle_palette">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">handle_palette</code><span class="sig-paren">(</span><em>book</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.handle_palette" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.handle_style">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">handle_style</code><span class="sig-paren">(</span><em>book</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.handle_style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.handle_xf">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">handle_xf</code><span class="sig-paren">(</span><em>self</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.handle_xf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.initialise_book">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">initialise_book</code><span class="sig-paren">(</span><em>book</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.initialise_book" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.initialise_colour_map">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">initialise_colour_map</code><span class="sig-paren">(</span><em>book</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.initialise_colour_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.is_date_format_string">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">is_date_format_string</code><span class="sig-paren">(</span><em>book</em>, <em>fmt</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.is_date_format_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.nearest_colour_index">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">nearest_colour_index</code><span class="sig-paren">(</span><em>colour_map</em>, <em>rgb</em>, <em>debug=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.nearest_colour_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.palette_epilogue">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">palette_epilogue</code><span class="sig-paren">(</span><em>book</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.palette_epilogue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formatting.xf_epilogue">
+<code class="descclassname">xlrd.formatting.</code><code class="descname">xf_epilogue</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formatting.xf_epilogue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-xlrd.formula">
+<span id="xlrd-formula-module"></span><h2>xlrd.formula module<a class="headerlink" href="#module-xlrd.formula" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="xlrd.formula.decompile_formula">
+<code class="descclassname">xlrd.formula.</code><code class="descname">decompile_formula</code><span class="sig-paren">(</span><em>bk</em>, <em>fmla</em>, <em>fmlalen</em>, <em>fmlatype=None</em>, <em>browx=None</em>, <em>bcolx=None</em>, <em>blah=0</em>, <em>level=0</em>, <em>r1c1=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formula.decompile_formula" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formula.dump_formula">
+<code class="descclassname">xlrd.formula.</code><code class="descname">dump_formula</code><span class="sig-paren">(</span><em>bk</em>, <em>data</em>, <em>fmlalen</em>, <em>bv</em>, <em>reldelta</em>, <em>blah=0</em>, <em>isname=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formula.dump_formula" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formula.evaluate_name_formula">
+<code class="descclassname">xlrd.formula.</code><code class="descname">evaluate_name_formula</code><span class="sig-paren">(</span><em>bk</em>, <em>nobj</em>, <em>namex</em>, <em>blah=0</em>, <em>level=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formula.evaluate_name_formula" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formula.rangename3d">
+<code class="descclassname">xlrd.formula.</code><code class="descname">rangename3d</code><span class="sig-paren">(</span><em>book</em>, <em>ref3d</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formula.rangename3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ref3D(1, 4, 5, 20, 7, 10) =&gt; &#8216;Sheet2:Sheet3!$H$6:$J$20&#8217;
+(assuming Excel&#8217;s default sheetnames)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formula.rangename3drel">
+<code class="descclassname">xlrd.formula.</code><code class="descname">rangename3drel</code><span class="sig-paren">(</span><em>book</em>, <em>ref3d</em>, <em>browx=None</em>, <em>bcolx=None</em>, <em>r1c1=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formula.rangename3drel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formula.cellname">
+<code class="descclassname">xlrd.formula.</code><code class="descname">cellname</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formula.cellname" title="Permalink to this definition">¶</a></dt>
+<dd><p>(5, 7) =&gt; &#8216;H6&#8217;</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formula.cellnameabs">
+<code class="descclassname">xlrd.formula.</code><code class="descname">cellnameabs</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em>, <em>r1c1=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formula.cellnameabs" title="Permalink to this definition">¶</a></dt>
+<dd><p>(5, 7) =&gt; &#8216;$H$6&#8217; or &#8216;R8C6&#8217;</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.formula.colname">
+<code class="descclassname">xlrd.formula.</code><code class="descname">colname</code><span class="sig-paren">(</span><em>colx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.formula.colname" title="Permalink to this definition">¶</a></dt>
+<dd><p>7 =&gt; &#8216;H&#8217;, 27 =&gt; &#8216;AB&#8217;</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-xlrd.info">
+<span id="xlrd-info-module"></span><h2>xlrd.info module<a class="headerlink" href="#module-xlrd.info" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-xlrd.licences">
+<span id="xlrd-licences-module"></span><h2>xlrd.licences module<a class="headerlink" href="#module-xlrd.licences" title="Permalink to this headline">¶</a></h2>
+<p>Portions copyright © 2005-2009, Stephen John Machin, Lingfo Pty Ltd
+All rights reserved.</p>
+<p>Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:</p>
+<p>1. Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.</p>
+<p>2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.</p>
+<p>3. None of the names of Stephen John Machin, Lingfo Pty Ltd and any
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.</p>
+<p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &#8220;AS IS&#8221;
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.</p>
+</div>
+<div class="section" id="module-xlrd.sheet">
+<span id="xlrd-sheet-module"></span><h2>xlrd.sheet module<a class="headerlink" href="#module-xlrd.sheet" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="xlrd.sheet.Cell">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">Cell</code><span class="sig-paren">(</span><em>ctype</em>, <em>value</em>, <em>xf_index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.sheet.Cell.ctype">
+<code class="descname">ctype</code><a class="headerlink" href="#xlrd.sheet.Cell.ctype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Cell.value">
+<code class="descname">value</code><a class="headerlink" href="#xlrd.sheet.Cell.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Cell.xf_index">
+<code class="descname">xf_index</code><a class="headerlink" href="#xlrd.sheet.Cell.xf_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.sheet.Colinfo">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">Colinfo</code><a class="headerlink" href="#xlrd.sheet.Colinfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.sheet.Colinfo.bit1_flag">
+<code class="descname">bit1_flag</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Colinfo.bit1_flag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Colinfo.collapsed">
+<code class="descname">collapsed</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Colinfo.collapsed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Colinfo.hidden">
+<code class="descname">hidden</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Colinfo.hidden" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Colinfo.outline_level">
+<code class="descname">outline_level</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Colinfo.outline_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Colinfo.width">
+<code class="descname">width</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Colinfo.width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Colinfo.xf_index">
+<code class="descname">xf_index</code><em class="property"> = -1</em><a class="headerlink" href="#xlrd.sheet.Colinfo.xf_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.sheet.Hyperlink">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">Hyperlink</code><a class="headerlink" href="#xlrd.sheet.Hyperlink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.desc">
+<code class="descname">desc</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.desc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.fcolx">
+<code class="descname">fcolx</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.fcolx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.frowx">
+<code class="descname">frowx</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.frowx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.lcolx">
+<code class="descname">lcolx</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.lcolx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.lrowx">
+<code class="descname">lrowx</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.lrowx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.quicktip">
+<code class="descname">quicktip</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.quicktip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.target">
+<code class="descname">target</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.target" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.textmark">
+<code class="descname">textmark</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.textmark" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.type">
+<code class="descname">type</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Hyperlink.url_or_path">
+<code class="descname">url_or_path</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Hyperlink.url_or_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.sheet.MSODrawing">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">MSODrawing</code><a class="headerlink" href="#xlrd.sheet.MSODrawing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.sheet.MSObj">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">MSObj</code><a class="headerlink" href="#xlrd.sheet.MSObj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.sheet.MSTxo">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">MSTxo</code><a class="headerlink" href="#xlrd.sheet.MSTxo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.sheet.Note">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">Note</code><a class="headerlink" href="#xlrd.sheet.Note" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.sheet.Note.author">
+<code class="descname">author</code><em class="property"> = u''</em><a class="headerlink" href="#xlrd.sheet.Note.author" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Note.col_hidden">
+<code class="descname">col_hidden</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Note.col_hidden" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Note.colx">
+<code class="descname">colx</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Note.colx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Note.rich_text_runlist">
+<code class="descname">rich_text_runlist</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Note.rich_text_runlist" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Note.row_hidden">
+<code class="descname">row_hidden</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Note.row_hidden" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Note.rowx">
+<code class="descname">rowx</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Note.rowx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Note.show">
+<code class="descname">show</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Note.show" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Note.text">
+<code class="descname">text</code><em class="property"> = u''</em><a class="headerlink" href="#xlrd.sheet.Note.text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.sheet.Rowinfo">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">Rowinfo</code><a class="headerlink" href="#xlrd.sheet.Rowinfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.additional_space_above">
+<code class="descname">additional_space_above</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.additional_space_above" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.additional_space_below">
+<code class="descname">additional_space_below</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.additional_space_below" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.has_default_height">
+<code class="descname">has_default_height</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.has_default_height" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.has_default_xf_index">
+<code class="descname">has_default_xf_index</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.has_default_xf_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.height">
+<code class="descname">height</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.height" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.height_mismatch">
+<code class="descname">height_mismatch</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.height_mismatch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.hidden">
+<code class="descname">hidden</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.hidden" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.outline_group_starts_ends">
+<code class="descname">outline_group_starts_ends</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.outline_group_starts_ends" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.outline_level">
+<code class="descname">outline_level</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.outline_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Rowinfo.xf_index">
+<code class="descname">xf_index</code><a class="headerlink" href="#xlrd.sheet.Rowinfo.xf_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.sheet.Sheet">
+<em class="property">class </em><code class="descclassname">xlrd.sheet.</code><code class="descname">Sheet</code><span class="sig-paren">(</span><em>book</em>, <em>position</em>, <em>name</em>, <em>number</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.biffh.BaseObject" title="xlrd.biffh.BaseObject"><code class="xref py py-class docutils literal"><span class="pre">xlrd.biffh.BaseObject</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.book">
+<code class="descname">book</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Sheet.book" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.cell">
+<code class="descname">cell</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.cell" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.cell_note_map">
+<code class="descname">cell_note_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.sheet.Sheet.cell_note_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.cell_type">
+<code class="descname">cell_type</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.cell_type" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.cell_value">
+<code class="descname">cell_value</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.cell_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.cell_xf_index">
+<code class="descname">cell_xf_index</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.cell_xf_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.col">
+<code class="descname">col</code><span class="sig-paren">(</span><em>colx</em>, <em>start_rowx=0</em>, <em>end_rowx=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.col" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.col_label_ranges">
+<code class="descname">col_label_ranges</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.sheet.Sheet.col_label_ranges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.col_slice">
+<code class="descname">col_slice</code><span class="sig-paren">(</span><em>colx</em>, <em>start_rowx=0</em>, <em>end_rowx=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.col_slice" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.col_types">
+<code class="descname">col_types</code><span class="sig-paren">(</span><em>colx</em>, <em>start_rowx=0</em>, <em>end_rowx=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.col_types" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.col_values">
+<code class="descname">col_values</code><span class="sig-paren">(</span><em>colx</em>, <em>start_rowx=0</em>, <em>end_rowx=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.col_values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.colinfo_map">
+<code class="descname">colinfo_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.sheet.Sheet.colinfo_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.computed_column_width">
+<code class="descname">computed_column_width</code><span class="sig-paren">(</span><em>colx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.computed_column_width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.default_additional_space_above">
+<code class="descname">default_additional_space_above</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Sheet.default_additional_space_above" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.default_additional_space_below">
+<code class="descname">default_additional_space_below</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Sheet.default_additional_space_below" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.default_row_height">
+<code class="descname">default_row_height</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Sheet.default_row_height" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.default_row_height_mismatch">
+<code class="descname">default_row_height_mismatch</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Sheet.default_row_height_mismatch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.default_row_hidden">
+<code class="descname">default_row_hidden</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Sheet.default_row_hidden" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.defcolwidth">
+<code class="descname">defcolwidth</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Sheet.defcolwidth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.fake_XF_from_BIFF20_cell_attr">
+<code class="descname">fake_XF_from_BIFF20_cell_attr</code><span class="sig-paren">(</span><em>cell_attr</em>, <em>style=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.fake_XF_from_BIFF20_cell_attr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.fixed_BIFF2_xfindex">
+<code class="descname">fixed_BIFF2_xfindex</code><span class="sig-paren">(</span><em>cell_attr</em>, <em>rowx</em>, <em>colx</em>, <em>true_xfx=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.fixed_BIFF2_xfindex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.gcw">
+<code class="descname">gcw</code><em class="property"> = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)</em><a class="headerlink" href="#xlrd.sheet.Sheet.gcw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.handle_feat11">
+<code class="descname">handle_feat11</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.handle_feat11" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.handle_hlink">
+<code class="descname">handle_hlink</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.handle_hlink" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.handle_msodrawingetc">
+<code class="descname">handle_msodrawingetc</code><span class="sig-paren">(</span><em>recid</em>, <em>data_len</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.handle_msodrawingetc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.handle_note">
+<code class="descname">handle_note</code><span class="sig-paren">(</span><em>data</em>, <em>txos</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.handle_note" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.handle_obj">
+<code class="descname">handle_obj</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.handle_obj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.handle_quicktip">
+<code class="descname">handle_quicktip</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.handle_quicktip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.handle_txo">
+<code class="descname">handle_txo</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.handle_txo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.has_pane_record">
+<code class="descname">has_pane_record</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.has_pane_record" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.horizontal_page_breaks">
+<code class="descname">horizontal_page_breaks</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.sheet.Sheet.horizontal_page_breaks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.horz_split_first_visible">
+<code class="descname">horz_split_first_visible</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.horz_split_first_visible" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.horz_split_pos">
+<code class="descname">horz_split_pos</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.horz_split_pos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.hyperlink_list">
+<code class="descname">hyperlink_list</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.sheet.Sheet.hyperlink_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.hyperlink_map">
+<code class="descname">hyperlink_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.sheet.Sheet.hyperlink_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.insert_new_BIFF20_xf">
+<code class="descname">insert_new_BIFF20_xf</code><span class="sig-paren">(</span><em>cell_attr</em>, <em>style=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.insert_new_BIFF20_xf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.merged_cells">
+<code class="descname">merged_cells</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.sheet.Sheet.merged_cells" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.name">
+<code class="descname">name</code><em class="property"> = ''</em><a class="headerlink" href="#xlrd.sheet.Sheet.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.ncols">
+<code class="descname">ncols</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.ncols" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.nrows">
+<code class="descname">nrows</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.nrows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.put_cell_ragged">
+<code class="descname">put_cell_ragged</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em>, <em>ctype</em>, <em>value</em>, <em>xf_index</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.put_cell_ragged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.put_cell_unragged">
+<code class="descname">put_cell_unragged</code><span class="sig-paren">(</span><em>rowx</em>, <em>colx</em>, <em>ctype</em>, <em>value</em>, <em>xf_index</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.put_cell_unragged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.read">
+<code class="descname">read</code><span class="sig-paren">(</span><em>bk</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.read" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.req_fmt_info">
+<code class="descname">req_fmt_info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.req_fmt_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.rich_text_runlist_map">
+<code class="descname">rich_text_runlist_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.sheet.Sheet.rich_text_runlist_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.row">
+<code class="descname">row</code><span class="sig-paren">(</span><em>rowx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.row" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.row_label_ranges">
+<code class="descname">row_label_ranges</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.sheet.Sheet.row_label_ranges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.row_len">
+<code class="descname">row_len</code><span class="sig-paren">(</span><em>rowx</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.row_len" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.row_slice">
+<code class="descname">row_slice</code><span class="sig-paren">(</span><em>rowx</em>, <em>start_colx=0</em>, <em>end_colx=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.row_slice" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.row_types">
+<code class="descname">row_types</code><span class="sig-paren">(</span><em>rowx</em>, <em>start_colx=0</em>, <em>end_colx=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.row_types" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.row_values">
+<code class="descname">row_values</code><span class="sig-paren">(</span><em>rowx</em>, <em>start_colx=0</em>, <em>end_colx=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.row_values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.rowinfo_map">
+<code class="descname">rowinfo_map</code><em class="property"> = {}</em><a class="headerlink" href="#xlrd.sheet.Sheet.rowinfo_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.split_active_pane">
+<code class="descname">split_active_pane</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.split_active_pane" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.standardwidth">
+<code class="descname">standardwidth</code><em class="property"> = None</em><a class="headerlink" href="#xlrd.sheet.Sheet.standardwidth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.string_record_contents">
+<code class="descname">string_record_contents</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.string_record_contents" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.tidy_dimensions">
+<code class="descname">tidy_dimensions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.tidy_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.sheet.Sheet.update_cooked_mag_factors">
+<code class="descname">update_cooked_mag_factors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.Sheet.update_cooked_mag_factors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.vert_split_first_visible">
+<code class="descname">vert_split_first_visible</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.vert_split_first_visible" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.vert_split_pos">
+<code class="descname">vert_split_pos</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.vert_split_pos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.vertical_page_breaks">
+<code class="descname">vertical_page_breaks</code><em class="property"> = []</em><a class="headerlink" href="#xlrd.sheet.Sheet.vertical_page_breaks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.sheet.Sheet.visibility">
+<code class="descname">visibility</code><em class="property"> = 0</em><a class="headerlink" href="#xlrd.sheet.Sheet.visibility" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.sheet.unpack_RK">
+<code class="descclassname">xlrd.sheet.</code><code class="descname">unpack_RK</code><span class="sig-paren">(</span><em>rk_str</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.sheet.unpack_RK" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-xlrd.timemachine">
+<span id="xlrd-timemachine-module"></span><h2>xlrd.timemachine module<a class="headerlink" href="#module-xlrd.timemachine" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="xlrd.timemachine.BYTES_LITERAL">
+<code class="descclassname">xlrd.timemachine.</code><code class="descname">BYTES_LITERAL</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.timemachine.BYTES_LITERAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.timemachine.UNICODE_LITERAL">
+<code class="descclassname">xlrd.timemachine.</code><code class="descname">UNICODE_LITERAL</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.timemachine.UNICODE_LITERAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.timemachine.fprintf">
+<code class="descclassname">xlrd.timemachine.</code><code class="descname">fprintf</code><span class="sig-paren">(</span><em>f</em>, <em>fmt</em>, <em>*vargs</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.timemachine.fprintf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-xlrd.xldate">
+<span id="xlrd-xldate-module"></span><h2>xlrd.xldate module<a class="headerlink" href="#module-xlrd.xldate" title="Permalink to this headline">¶</a></h2>
+<dl class="exception">
+<dt id="xlrd.xldate.XLDateAmbiguous">
+<em class="property">exception </em><code class="descclassname">xlrd.xldate.</code><code class="descname">XLDateAmbiguous</code><a class="headerlink" href="#xlrd.xldate.XLDateAmbiguous" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xldate.XLDateError" title="xlrd.xldate.XLDateError"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xldate.XLDateError</span></code></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="xlrd.xldate.XLDateBadDatemode">
+<em class="property">exception </em><code class="descclassname">xlrd.xldate.</code><code class="descname">XLDateBadDatemode</code><a class="headerlink" href="#xlrd.xldate.XLDateBadDatemode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xldate.XLDateError" title="xlrd.xldate.XLDateError"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xldate.XLDateError</span></code></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="xlrd.xldate.XLDateBadTuple">
+<em class="property">exception </em><code class="descclassname">xlrd.xldate.</code><code class="descname">XLDateBadTuple</code><a class="headerlink" href="#xlrd.xldate.XLDateBadTuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xldate.XLDateError" title="xlrd.xldate.XLDateError"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xldate.XLDateError</span></code></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="xlrd.xldate.XLDateError">
+<em class="property">exception </em><code class="descclassname">xlrd.xldate.</code><code class="descname">XLDateError</code><a class="headerlink" href="#xlrd.xldate.XLDateError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/exceptions.html#exceptions.ValueError" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">exceptions.ValueError</span></code></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="xlrd.xldate.XLDateNegative">
+<em class="property">exception </em><code class="descclassname">xlrd.xldate.</code><code class="descname">XLDateNegative</code><a class="headerlink" href="#xlrd.xldate.XLDateNegative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xldate.XLDateError" title="xlrd.xldate.XLDateError"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xldate.XLDateError</span></code></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="xlrd.xldate.XLDateTooLarge">
+<em class="property">exception </em><code class="descclassname">xlrd.xldate.</code><code class="descname">XLDateTooLarge</code><a class="headerlink" href="#xlrd.xldate.XLDateTooLarge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xldate.XLDateError" title="xlrd.xldate.XLDateError"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xldate.XLDateError</span></code></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xldate.xldate_as_datetime">
+<code class="descclassname">xlrd.xldate.</code><code class="descname">xldate_as_datetime</code><span class="sig-paren">(</span><em>xldate</em>, <em>datemode</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xldate.xldate_as_datetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert an Excel date/time number into a datetime.datetime object.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xldate.xldate_as_tuple">
+<code class="descclassname">xlrd.xldate.</code><code class="descname">xldate_as_tuple</code><span class="sig-paren">(</span><em>xldate</em>, <em>datemode</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xldate.xldate_as_tuple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xldate.xldate_from_date_tuple">
+<code class="descclassname">xlrd.xldate.</code><code class="descname">xldate_from_date_tuple</code><span class="sig-paren">(</span><em>date_tuple</em>, <em>datemode</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xldate.xldate_from_date_tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an excel date from a tuple of (year, month, day)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xldate.xldate_from_datetime_tuple">
+<code class="descclassname">xlrd.xldate.</code><code class="descname">xldate_from_datetime_tuple</code><span class="sig-paren">(</span><em>datetime_tuple</em>, <em>datemode</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xldate.xldate_from_datetime_tuple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xldate.xldate_from_time_tuple">
+<code class="descclassname">xlrd.xldate.</code><code class="descname">xldate_from_time_tuple</code><span class="sig-paren">(</span><em>time_tuple</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xldate.xldate_from_time_tuple" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an excel date from a tuple of (hour, minute, second)</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-xlrd.xlsx">
+<span id="xlrd-xlsx-module"></span><h2>xlrd.xlsx module<a class="headerlink" href="#module-xlrd.xlsx" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="xlrd.xlsx.X12Book">
+<em class="property">class </em><code class="descclassname">xlrd.xlsx.</code><code class="descname">X12Book</code><span class="sig-paren">(</span><em>bk</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>verbosity=False</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Book" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xlsx.X12General" title="xlrd.xlsx.X12General"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xlsx.X12General</span></code></a></p>
+<dl class="attribute">
+<dt id="xlrd.xlsx.X12Book.core_props_menu">
+<code class="descname">core_props_menu</code><em class="property"> = {u'{http://purl.org/dc/terms/}created': (u'created', &lt;function cnv_ST_Xstring at 0x112422d70&gt;), u'{http://schemas.openxmlformats.org/package/2006/metadata/core-properties}lastModifiedBy': (u'last_modified_by', &lt;function cnv_ST_Xstring at 0x112422d70&gt;), u'{http://purl.org/dc/terms/}modified': (u'modified', &lt;function cnv_ST_Xstring at 0x112422d70&gt;), u'{http://purl.org/dc/elements/1.1/}creator': (u'creator', &lt;function cnv_ST_Xstring at 0x112422d70&gt;)}</em><a class="headerlink" href="#xlrd.xlsx.X12Book.core_props_menu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Book.do_defined_name">
+<code class="descname">do_defined_name</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Book.do_defined_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Book.do_defined_names">
+<code class="descname">do_defined_names</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Book.do_defined_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Book.do_sheet">
+<code class="descname">do_sheet</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Book.do_sheet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Book.do_workbookpr">
+<code class="descname">do_workbookpr</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Book.do_workbookpr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Book.process_coreprops">
+<code class="descname">process_coreprops</code><span class="sig-paren">(</span><em>stream</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Book.process_coreprops" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Book.process_rels">
+<code class="descname">process_rels</code><span class="sig-paren">(</span><em>stream</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Book.process_rels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.xlsx.X12Book.tag2meth">
+<code class="descname">tag2meth</code><em class="property"> = {u'sheet': &lt;function do_sheet at 0x1128e4488&gt;, u'definedNames': &lt;function do_defined_names at 0x1128e4410&gt;, u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}definedNames': &lt;function do_defined_names at 0x1128e4410&gt;, u'workbookPr': &lt;function do_workbookpr at 0x1128e4500&gt;, u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheet': &lt;function do_sheet at 0x1128e4488&gt;, u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}workbookPr': &lt;function do_workbookpr at 0x1128e4500&gt;}</em><a class="headerlink" href="#xlrd.xlsx.X12Book.tag2meth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.xlsx.X12General">
+<em class="property">class </em><code class="descclassname">xlrd.xlsx.</code><code class="descname">X12General</code><a class="headerlink" href="#xlrd.xlsx.X12General" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.xlsx.X12General.dump_elem">
+<code class="descname">dump_elem</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12General.dump_elem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12General.dumpout">
+<code class="descname">dumpout</code><span class="sig-paren">(</span><em>fmt</em>, <em>*vargs</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12General.dumpout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12General.finish_off">
+<code class="descname">finish_off</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12General.finish_off" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12General.process_stream">
+<code class="descname">process_stream</code><span class="sig-paren">(</span><em>stream</em>, <em>heading=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12General.process_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.xlsx.X12SST">
+<em class="property">class </em><code class="descclassname">xlrd.xlsx.</code><code class="descname">X12SST</code><span class="sig-paren">(</span><em>bk</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>verbosity=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12SST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xlsx.X12General" title="xlrd.xlsx.X12General"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xlsx.X12General</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.xlsx.X12SST.process_stream_findall">
+<code class="descname">process_stream_findall</code><span class="sig-paren">(</span><em>stream</em>, <em>heading=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12SST.process_stream_findall" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12SST.process_stream_iterparse">
+<code class="descname">process_stream_iterparse</code><span class="sig-paren">(</span><em>stream</em>, <em>heading=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12SST.process_stream_iterparse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.xlsx.X12Sheet">
+<em class="property">class </em><code class="descclassname">xlrd.xlsx.</code><code class="descname">X12Sheet</code><span class="sig-paren">(</span><em>sheet</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>verbosity=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Sheet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xlsx.X12General" title="xlrd.xlsx.X12General"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xlsx.X12General</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.xlsx.X12Sheet.do_dimension">
+<code class="descname">do_dimension</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Sheet.do_dimension" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Sheet.do_merge_cell">
+<code class="descname">do_merge_cell</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Sheet.do_merge_cell" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Sheet.do_row">
+<code class="descname">do_row</code><span class="sig-paren">(</span><em>row_elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Sheet.do_row" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Sheet.own_process_stream">
+<code class="descname">own_process_stream</code><span class="sig-paren">(</span><em>stream</em>, <em>heading=None</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Sheet.own_process_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Sheet.process_comments_stream">
+<code class="descname">process_comments_stream</code><span class="sig-paren">(</span><em>stream</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Sheet.process_comments_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.xlsx.X12Sheet.tag2meth">
+<code class="descname">tag2meth</code><em class="property"> = {u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row': &lt;function do_row at 0x1128e4b90&gt;, u'row': &lt;function do_row at 0x1128e4b90&gt;}</em><a class="headerlink" href="#xlrd.xlsx.X12Sheet.tag2meth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xlrd.xlsx.X12Styles">
+<em class="property">class </em><code class="descclassname">xlrd.xlsx.</code><code class="descname">X12Styles</code><span class="sig-paren">(</span><em>bk</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>verbosity=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Styles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#xlrd.xlsx.X12General" title="xlrd.xlsx.X12General"><code class="xref py py-class docutils literal"><span class="pre">xlrd.xlsx.X12General</span></code></a></p>
+<dl class="method">
+<dt id="xlrd.xlsx.X12Styles.do_cellstylexfs">
+<code class="descname">do_cellstylexfs</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Styles.do_cellstylexfs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Styles.do_cellxfs">
+<code class="descname">do_cellxfs</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Styles.do_cellxfs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Styles.do_numfmt">
+<code class="descname">do_numfmt</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Styles.do_numfmt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xlrd.xlsx.X12Styles.do_xf">
+<code class="descname">do_xf</code><span class="sig-paren">(</span><em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.X12Styles.do_xf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xlrd.xlsx.X12Styles.tag2meth">
+<code class="descname">tag2meth</code><em class="property"> = {u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}numFmt': &lt;function do_numfmt at 0x1128e4848&gt;, u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}cellXfs': &lt;function do_cellxfs at 0x1128e47d0&gt;, u'cellXfs': &lt;function do_cellxfs at 0x1128e47d0&gt;, u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}xf': &lt;function do_xf at 0x1128e48c0&gt;, u'xf': &lt;function do_xf at 0x1128e48c0&gt;, u'cellStyleXfs': &lt;function do_cellstylexfs at 0x1128e4758&gt;, u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}cellStyleXfs': &lt;function do_cellstylexfs at 0x1128e4758&gt;, u'numFmt': &lt;function do_numfmt at 0x1128e4848&gt;}</em><a class="headerlink" href="#xlrd.xlsx.X12Styles.tag2meth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.augment_keys">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">augment_keys</code><span class="sig-paren">(</span><em>adict</em>, <em>uri</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.augment_keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.cell_name_to_rowx_colx">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">cell_name_to_rowx_colx</code><span class="sig-paren">(</span><em>cell_name</em>, <em>letter_value={u'1': 0</em>, <em>u'3': 0</em>, <em>u'2': 0</em>, <em>u'5': 0</em>, <em>u'4': 0</em>, <em>u'7': 0</em>, <em>u'6': 0</em>, <em>u'9': 0</em>, <em>u'8': 0</em>, <em>u'A': 1</em>, <em>u'C': 3</em>, <em>u'B': 2</em>, <em>u'E': 5</em>, <em>u'D': 4</em>, <em>u'G': 7</em>, <em>u'F': 6</em>, <em>u'I': 9</em>, <em>u'H': 8</em>, <em>u'K': 11</em>, <em>u'J': 10</em>, <em>u'M': 13</em>, <em>u'L': 12</em>, <em>u'O': 15</em>, <em>u'N': 14</em>, <em>u'Q': 17</em>, <em>u'P': 16</em>, <em>u'S': 19</em>, <em>u'R': 18</em>, <em>u'U': 21</em>, <em>u'T': 20</em>, <em>u'W': 23</em>, <em>u'V': 22</em>, <em>u'Y': 25</em>, <em>u'X': 24</em>, <em>u'Z': 26}</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.cell_name_to_rowx_colx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.cnv_ST_Xstring">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">cnv_ST_Xstring</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.cnv_ST_Xstring" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.cnv_xsd_boolean">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">cnv_xsd_boolean</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.cnv_xsd_boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.cnv_xsd_unsignedInt">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">cnv_xsd_unsignedInt</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.cnv_xsd_unsignedInt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.cooked_text">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">cooked_text</code><span class="sig-paren">(</span><em>self</em>, <em>elem</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.cooked_text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.ensure_elementtree_imported">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">ensure_elementtree_imported</code><span class="sig-paren">(</span><em>verbosity</em>, <em>logfile</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.ensure_elementtree_imported" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.get_text_from_si_or_is">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">get_text_from_si_or_is</code><span class="sig-paren">(</span><em>self</em>, <em>elem</em>, <em>r_tag=u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}r'</em>, <em>t_tag=u'{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t'</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.get_text_from_si_or_is" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns unescaped unicode</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.make_name_access_maps">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">make_name_access_maps</code><span class="sig-paren">(</span><em>bk</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.make_name_access_maps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.map_attributes">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">map_attributes</code><span class="sig-paren">(</span><em>amap</em>, <em>elem</em>, <em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.map_attributes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.open_workbook_2007_xml">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">open_workbook_2007_xml</code><span class="sig-paren">(</span><em>zf</em>, <em>component_names</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>verbosity=0</em>, <em>use_mmap=0</em>, <em>formatting_info=0</em>, <em>on_demand=0</em>, <em>ragged_rows=0</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.open_workbook_2007_xml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.split_tag">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">split_tag</code><span class="sig-paren">(</span><em>tag</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.split_tag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.xlsx.unescape">
+<code class="descclassname">xlrd.xlsx.</code><code class="descname">unescape</code><span class="sig-paren">(</span><em>s</em>, <em>subber=&lt;built-in method sub of _sre.SRE_Pattern object&gt;</em>, <em>repl=&lt;function &lt;lambda&gt;&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.xlsx.unescape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-xlrd">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-xlrd" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="xlrd.count_records">
+<code class="descclassname">xlrd.</code><code class="descname">count_records</code><span class="sig-paren">(</span><em>filename</em>, <em>outfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.count_records" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.dump">
+<code class="descclassname">xlrd.</code><code class="descname">dump</code><span class="sig-paren">(</span><em>filename</em>, <em>outfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>unnumbered=False</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="xlrd.open_workbook">
+<code class="descclassname">xlrd.</code><code class="descname">open_workbook</code><span class="sig-paren">(</span><em>filename=None</em>, <em>logfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>verbosity=0</em>, <em>use_mmap=1</em>, <em>file_contents=None</em>, <em>encoding_override=None</em>, <em>formatting_info=False</em>, <em>on_demand=False</em>, <em>ragged_rows=False</em><span class="sig-paren">)</span><a class="headerlink" href="#xlrd.open_workbook" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">xlrd package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-xlrd.biffh">xlrd.biffh module</a></li>
+<li><a class="reference internal" href="#module-xlrd.book">xlrd.book module</a></li>
+<li><a class="reference internal" href="#module-xlrd.compdoc">xlrd.compdoc module</a></li>
+<li><a class="reference internal" href="#module-xlrd.formatting">xlrd.formatting module</a></li>
+<li><a class="reference internal" href="#module-xlrd.formula">xlrd.formula module</a></li>
+<li><a class="reference internal" href="#module-xlrd.info">xlrd.info module</a></li>
+<li><a class="reference internal" href="#module-xlrd.licences">xlrd.licences module</a></li>
+<li><a class="reference internal" href="#module-xlrd.sheet">xlrd.sheet module</a></li>
+<li><a class="reference internal" href="#module-xlrd.timemachine">xlrd.timemachine module</a></li>
+<li><a class="reference internal" href="#module-xlrd.xldate">xlrd.xldate module</a></li>
+<li><a class="reference internal" href="#module-xlrd.xlsx">xlrd.xlsx module</a></li>
+<li><a class="reference internal" href="#module-xlrd">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="view.html" title="previous chapter">view module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/xlrd.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, gb.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/xlrd.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>config module &mdash; doc 1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="doc 1 documentation" href="index.html" />
+    <link rel="next" title="confirm_disable_notes module" href="confirm_disable_notes.html" />
+    <link rel="prev" title="babel.messages package" href="babel.messages.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-config">
+<span id="config-module"></span><h1>config module<a class="headerlink" href="#module-config" title="Permalink to this headline">¶</a></h1>
+<p>Storage for configuration settings.  Settings can be global or specific
+to a repository, and their values can be of any JSON-encodable type.</p>
+<dl class="class">
+<dt id="config.ConfigEntry">
+<em class="property">class </em><code class="descclassname">config.</code><code class="descname">ConfigEntry</code><span class="sig-paren">(</span><em>parent=None</em>, <em>key_name=None</em>, <em>_app=None</em>, <em>_from_entity=False</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigEntry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">google.appengine.ext.db.Model</span></code></p>
+<p>An application configuration setting, identified by its key_name.</p>
+<dl class="attribute">
+<dt id="config.ConfigEntry.value">
+<code class="descname">value</code><a class="headerlink" href="#config.ConfigEntry.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string that can be longer than 1500 bytes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="config.Configuration">
+<em class="property">class </em><code class="descclassname">config.</code><code class="descname">Configuration</code><span class="sig-paren">(</span><em>repo</em><span class="sig-paren">)</span><a class="headerlink" href="#config.Configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/userdict.html#UserDict.DictMixin" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">UserDict.DictMixin</span></code></a></p>
+<dl class="method">
+<dt id="config.Configuration.keys">
+<code class="descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#config.Configuration.keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="config.ConfigurationCache">
+<em class="property">class </em><code class="descclassname">config.</code><code class="descname">ConfigurationCache</code><a class="headerlink" href="#config.ConfigurationCache" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class implements an in-memory cache used to store the config
+entries. Cache entries have a default lifetime of 600 seconds. When
+fetching a config entry, the cache is first searched. If the entry is
+not available in cache it is retrieved from database, added to cache and
+returned. Cache is enabled by setting a config entry <em>:config_cache_enable.
+Config entries are stored with the key repo:entry_name in database.
+This cache uses the repo as the key and stores all configs for a
+repository in one cache element. The global configs have repo=&#8217;</em>&#8216;.</p>
+<dl class="method">
+<dt id="config.ConfigurationCache.add">
+<code class="descname">add</code><span class="sig-paren">(</span><em>key</em>, <em>value</em>, <em>time_to_live_in_seconds</em><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigurationCache.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds the key/value pair to cache and updates the expiry time.
+If key already exists, its value and expiry are updated.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="config.ConfigurationCache.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigurationCache.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes the entry with given key from config_cache.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="config.ConfigurationCache.enable">
+<code class="descname">enable</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigurationCache.enable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/disable caching of config.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="config.ConfigurationCache.evict_count">
+<code class="descname">evict_count</code><em class="property"> = 0</em><a class="headerlink" href="#config.ConfigurationCache.evict_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="config.ConfigurationCache.expiry_time">
+<code class="descname">expiry_time</code><em class="property"> = 600</em><a class="headerlink" href="#config.ConfigurationCache.expiry_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="config.ConfigurationCache.flush">
+<code class="descname">flush</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigurationCache.flush" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="config.ConfigurationCache.get_config">
+<code class="descname">get_config</code><span class="sig-paren">(</span><em>repo</em>, <em>name</em>, <em>default=None</em><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigurationCache.get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Looks for data in cache. If not present, retrieves from
+database, stores it in cache and returns the required value.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="config.ConfigurationCache.hit_count">
+<code class="descname">hit_count</code><em class="property"> = 0</em><a class="headerlink" href="#config.ConfigurationCache.hit_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="config.ConfigurationCache.is_enabled">
+<code class="descname">is_enabled</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigurationCache.is_enabled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="config.ConfigurationCache.items_count">
+<code class="descname">items_count</code><em class="property"> = 0</em><a class="headerlink" href="#config.ConfigurationCache.items_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="config.ConfigurationCache.max_items">
+<code class="descname">max_items</code><em class="property"> = 0</em><a class="headerlink" href="#config.ConfigurationCache.max_items" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="config.ConfigurationCache.miss_count">
+<code class="descname">miss_count</code><em class="property"> = 0</em><a class="headerlink" href="#config.ConfigurationCache.miss_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="config.ConfigurationCache.read">
+<code class="descname">read</code><span class="sig-paren">(</span><em>key</em>, <em>default=None</em><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigurationCache.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the value corresponding to the key from cache. If cache entry
+has expired, it is deleted from the cache and None is returned.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="config.ConfigurationCache.stats">
+<code class="descname">stats</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#config.ConfigurationCache.stats" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="config.ConfigurationCache.storage">
+<code class="descname">storage</code><em class="property"> = {}</em><a class="headerlink" href="#config.ConfigurationCache.storage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="config.get">
+<code class="descclassname">config.</code><code class="descname">get</code><span class="sig-paren">(</span><em>name</em>, <em>default=None</em>, <em>repo='*'</em><span class="sig-paren">)</span><a class="headerlink" href="#config.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a configuration setting from cache if it is enabled,
+otherwise from the database.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="config.get_for_repo">
+<code class="descclassname">config.</code><code class="descname">get_for_repo</code><span class="sig-paren">(</span><em>repo</em>, <em>name</em>, <em>default=None</em><span class="sig-paren">)</span><a class="headerlink" href="#config.get_for_repo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a configuration setting for a particular repository.  Looks for a
+setting specific to the repository, then falls back to a global setting.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="config.set">
+<code class="descclassname">config.</code><code class="descname">set</code><span class="sig-paren">(</span><em>repo='*'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#config.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets configuration settings.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="config.set_for_repo">
+<code class="descclassname">config.</code><code class="descname">set_for_repo</code><span class="sig-paren">(</span><em>repo</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#config.set_for_repo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets configuration settings for a particular repository.  When used
+with get_for_repo, has the effect of overriding global settings.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="babel.messages.html" title="previous chapter">babel.messages package</a></li>
+      <li>Next: <a href="confirm_disable_notes.html" title="next chapter">confirm_disable_notes module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/config.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, gb.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/config.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
