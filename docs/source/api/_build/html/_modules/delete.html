@@ -1,0 +1,229 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>delete &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for delete</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#            http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">reveal</span>
+
+<span class="kn">import</span> <span class="nn">model</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+<span class="kn">from</span> <span class="nn">model</span> <span class="kn">import</span> <span class="n">db</span>
+
+<span class="kn">import</span> <span class="nn">django.utils.html</span>
+<span class="kn">from</span> <span class="nn">django.utils.translation</span> <span class="kn">import</span> <span class="n">ugettext</span> <span class="k">as</span> <span class="n">_</span>
+
+<span class="c"># The number of days an expired record lingers before the DeleteExpired task</span>
+<span class="c"># wipes it from the database.  When a user deletes a record through the UI,</span>
+<span class="c"># we carry that out by setting the expiry to the current time, so this is also</span>
+<span class="c"># the number of days after deletion during which the record can be restored.</span>
+<span class="n">EXPIRED_TTL_DAYS</span> <span class="o">=</span> <span class="mi">3</span>
+
+<div class="viewcode-block" id="send_delete_notice"><a class="viewcode-back" href="../delete.html#delete.send_delete_notice">[docs]</a><span class="k">def</span> <span class="nf">send_delete_notice</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">person</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Notify concerned folks about the potential deletion.&quot;&quot;&quot;</span>
+    <span class="c"># i18n: Subject line of an e-mail message notifying a user</span>
+    <span class="c"># i18n: that a person record has been deleted</span>
+    <span class="n">subject</span> <span class="o">=</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;[Person Finder] Deletion notice for &quot;</span><span class="si">%(full_name)s</span><span class="s">&quot;&#39;</span>
+            <span class="p">)</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;full_name&#39;</span><span class="p">:</span> <span class="n">person</span><span class="o">.</span><span class="n">primary_full_name</span><span class="p">}</span>
+
+    <span class="c"># Send e-mail to all the addresses notifying them of the deletion.</span>
+    <span class="k">for</span> <span class="n">email</span> <span class="ow">in</span> <span class="n">person</span><span class="o">.</span><span class="n">get_associated_emails</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">email</span> <span class="o">==</span> <span class="n">person</span><span class="o">.</span><span class="n">author_email</span><span class="p">:</span>
+            <span class="n">template_name</span> <span class="o">=</span> <span class="s">&#39;deletion_email_for_person_author.txt&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">template_name</span> <span class="o">=</span> <span class="s">&#39;deletion_email_for_note_author.txt&#39;</span>
+        <span class="n">handler</span><span class="o">.</span><span class="n">send_mail</span><span class="p">(</span>
+            <span class="n">subject</span><span class="o">=</span><span class="n">subject</span><span class="p">,</span>
+            <span class="n">to</span><span class="o">=</span><span class="n">email</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">handler</span><span class="o">.</span><span class="n">render_to_string</span><span class="p">(</span>
+                <span class="n">template_name</span><span class="p">,</span>
+                <span class="n">full_name</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">primary_full_name</span><span class="p">,</span>
+                <span class="n">site_url</span><span class="o">=</span><span class="n">handler</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">),</span>
+                <span class="n">days_until_deletion</span><span class="o">=</span><span class="n">EXPIRED_TTL_DAYS</span><span class="p">,</span>
+                <span class="n">restore_url</span><span class="o">=</span><span class="n">get_restore_url</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">person</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+</div>
+<div class="viewcode-block" id="get_restore_url"><a class="viewcode-back" href="../delete.html#delete.get_restore_url">[docs]</a><span class="k">def</span> <span class="nf">get_restore_url</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3</span><span class="o">*</span><span class="mi">24</span><span class="o">*</span><span class="mi">3600</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a URL to be used for restoring a deleted person record.</span>
+<span class="sd">    The default TTL for a restoration URL is 3 days.&quot;&quot;&quot;</span>
+    <span class="n">key_name</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="s">&#39;restore:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">key_name</span> 
+    <span class="n">token</span> <span class="o">=</span> <span class="n">reveal</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ttl</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">is_original</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">handler</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/restore&#39;</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">key_name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="delete_person"><a class="viewcode-back" href="../delete.html#delete.delete_person">[docs]</a><span class="k">def</span> <span class="nf">delete_person</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">send_notices</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Delete a person record and associated data.  If it&#39;s an original</span>
+<span class="sd">    record, deletion can be undone within EXPIRED_TTL_DAYS days.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">is_original</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">send_notices</span><span class="p">:</span>
+            <span class="c"># For an original record, send notifiations</span>
+            <span class="c"># to all the related e-mail addresses offering an undelete link.</span>
+            <span class="n">send_delete_notice</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">person</span><span class="p">)</span>
+
+        <span class="c"># Set the expiry_date to now, and set is_expired flags to match.</span>
+        <span class="c"># (The externally visible result will be as if we overwrote the</span>
+        <span class="c"># record with an expiry date and blank fields.)</span>
+        <span class="n">person</span><span class="o">.</span><span class="n">expiry_date</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_utcnow</span><span class="p">()</span>
+        <span class="n">person</span><span class="o">.</span><span class="n">put_expiry_flags</span><span class="p">()</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># For a clone record, we don&#39;t have authority to change the</span>
+        <span class="c"># expiry_date, so we just delete the record now.  (The externally</span>
+        <span class="c"># visible result will be as if we had never received a copy of it.)</span>
+        <span class="n">person</span><span class="o">.</span><span class="n">delete_related_entities</span><span class="p">(</span><span class="n">delete_self</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="get_tag_params"><a class="viewcode-back" href="../delete.html#delete.get_tag_params">[docs]</a><span class="k">def</span> <span class="nf">get_tag_params</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">person</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return HTML tag parameters used in delete.html.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s">&#39;begin_source_anchor_tag&#39;</span><span class="p">:</span>
+            <span class="s">&#39;&lt;a href=&quot;</span><span class="si">%s</span><span class="s">&quot;&gt;&#39;</span> <span class="o">%</span>
+                <span class="n">django</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">source_url</span><span class="p">),</span>
+        <span class="s">&#39;end_source_anchor_tag&#39;</span><span class="p">:</span>
+            <span class="s">&#39;&lt;/a&gt;&#39;</span><span class="p">,</span>
+        <span class="s">&#39;begin_view_anchor_tag&#39;</span><span class="p">:</span>
+            <span class="s">&#39;&lt;a target=&quot;_blank&quot; href=&quot;</span><span class="si">%s</span><span class="s">&quot;&gt;&#39;</span> <span class="o">%</span>
+                <span class="n">django</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span>
+                    <span class="n">handler</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/view&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">handler</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)),</span>
+        <span class="s">&#39;end_view_anchor_tag&#39;</span><span class="p">:</span>
+            <span class="s">&#39;&lt;/a&gt;&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+</div>
+<div class="viewcode-block" id="Handler"><a class="viewcode-back" href="../delete.html#delete.Handler">[docs]</a><span class="k">class</span> <span class="nc">Handler</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handles a user request to delete a person record.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Handler.get"><a class="viewcode-back" href="../delete.html#delete.Handler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prompts the user with a Turing test before carrying out deletion.&quot;&quot;&quot;</span>
+        <span class="n">person</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">person</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s">&#39;No person with ID: </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;delete.html&#39;</span><span class="p">,</span>
+                    <span class="n">person</span><span class="o">=</span><span class="n">person</span><span class="p">,</span>
+                    <span class="n">view_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/view&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+                    <span class="n">captcha_html</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_captcha_html</span><span class="p">(),</span>
+                    <span class="o">**</span><span class="n">get_tag_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Handler.post"><a class="viewcode-back" href="../delete.html#delete.Handler.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If the user passed the Turing test, delete the record.&quot;&quot;&quot;</span>
+        <span class="n">person</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">person</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s">&#39;No person with ID: </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="n">captcha_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_captcha_response</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">test_mode</span> <span class="ow">or</span> <span class="n">captcha_response</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
+            <span class="c"># Log the user action.</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">UserActionLog</span><span class="o">.</span><span class="n">put_new</span><span class="p">(</span>
+                <span class="s">&#39;delete&#39;</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;reason_for_deletion&#39;</span><span class="p">))</span>
+
+            <span class="n">delete_person</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;The record has been deleted.&#39;</span><span class="p">))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">captcha_html</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_captcha_html</span><span class="p">(</span><span class="n">captcha_response</span><span class="o">.</span><span class="n">error_code</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;delete.html&#39;</span><span class="p">,</span>
+                        <span class="n">person</span><span class="o">=</span><span class="n">person</span><span class="p">,</span>
+                        <span class="n">view_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/view&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+                        <span class="n">captcha_html</span><span class="o">=</span><span class="n">captcha_html</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">get_tag_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,605 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>utils module &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="index.html" />
+    <link rel="next" title="view module" href="view.html" />
+    <link rel="prev" title="user_agents module" href="user_agents.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-utils">
+<span id="utils-module"></span><h1>utils module<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="utils.BaseHandler">
+<em class="property">class </em><code class="descclassname">utils.</code><code class="descname">BaseHandler</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">google.appengine.ext.webapp._webapp25.RequestHandler</span></code></p>
+<dl class="staticmethod">
+<dt id="utils.BaseHandler.add_task_for_repo">
+<em class="property">static </em><code class="descname">add_task_for_repo</code><span class="sig-paren">(</span><em>repo</em>, <em>name</em>, <em>action</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.add_task_for_repo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.add_task_for_repo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queues up a task for an individual repository.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="utils.BaseHandler.admin_required">
+<code class="descname">admin_required</code><em class="property"> = False</em><a class="headerlink" href="#utils.BaseHandler.admin_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="utils.BaseHandler.auto_params">
+<code class="descname">auto_params</code><em class="property"> = {'home_state': &lt;function strip at 0x10f4dc398&gt;, 'photo': &lt;function validate_image at 0x10f4dca28&gt;, 'utcnow': &lt;function validate_timestamp at 0x10f4dc9b0&gt;, 'query': &lt;function strip at 0x10f4dc398&gt;, 'style': &lt;function strip at 0x10f4dc398&gt;, 'source': &lt;function strip at 0x10f4dc398&gt;, 'is_valid': &lt;function validate_checkbox_as_bool at 0x10f4dc578&gt;, 'source_date': &lt;function strip at 0x10f4dc398&gt;, 'text': &lt;function strip at 0x10f4dc398&gt;, 'new_repo': &lt;function validate_repo at 0x10f4dcb18&gt;, 'alternate_family_names': &lt;function strip at 0x10f4dc398&gt;, 'omit_notes': &lt;function validate_yes at 0x10f4dc488&gt;, 'add_note': &lt;function validate_yes at 0x10f4dc488&gt;, 'full_read_permission': &lt;function validate_checkbox_as_bool at 0x10f4dc578&gt;, 'suppress_redirect': &lt;function validate_yes at 0x10f4dc488&gt;, 'referrer': &lt;function strip at 0x10f4dc398&gt;, 'subscribe_email': &lt;function strip at 0x10f4dc398&gt;, 'mark_notes_reviewed': &lt;function validate_checkbox_as_bool at 0x10f4dc578&gt;, 'small': &lt;function validate_yes at 0x10f4dc488&gt;, 'sex': &lt;function validate_sex at 0x10f4dc6e0&gt;, 'home_neighborhood': &lt;function strip at 0x10f4dc398&gt;, 'domain_write_permission': &lt;function strip at 0x10f4dc398&gt;, 'contact_name': &lt;function strip at 0x10f4dc398&gt;, 'operation': &lt;function strip at 0x10f4dc398&gt;, 'confirm': &lt;function validate_yes at 0x10f4dc488&gt;, 'id2': &lt;function strip at 0x10f4dc398&gt;, 'id3': &lt;function strip at 0x10f4dc398&gt;, 'id1': &lt;function strip at 0x10f4dc398&gt;, 'organization_name': &lt;function strip at 0x10f4dc398&gt;, 'version': &lt;function validate_version at 0x10f4dcaa0&gt;, 'source_url': &lt;function strip at 0x10f4dc398&gt;, 'key': &lt;function strip at 0x10f4dc398&gt;, 'home_country': &lt;function strip at 0x10f4dc398&gt;, 'person_record_id': &lt;function strip at 0x10f4dc398&gt;, 'search_permission': &lt;function validate_checkbox_as_bool at 0x10f4dc578&gt;, 'resource_bundle_original': &lt;function validate_resource_name at 0x10f4dcb90&gt;, 'context': &lt;function strip at 0x10f4dc398&gt;, 'signature': &lt;function strip at 0x10f4dc398&gt;, 'dupe_notes': &lt;function validate_yes at 0x10f4dc488&gt;, 'subscribe_permission': &lt;function validate_checkbox_as_bool at 0x10f4dc578&gt;, 'source_name': &lt;function strip at 0x10f4dc398&gt;, 'alternate_given_names': &lt;function strip at 0x10f4dc398&gt;, 'subscribe': &lt;function validate_checkbox at 0x10f4dc500&gt;, 'max_results': &lt;function validate_int at 0x10f4dc668&gt;, 'author_made_contact': &lt;function validate_yes at 0x10f4dc488&gt;, 'author_phone': &lt;function strip at 0x10f4dc398&gt;, 'resource_lang': &lt;function validate_lang at 0x10f4dcc08&gt;, 'date_of_birth': &lt;function validate_approximate_date at 0x10f4dc7d0&gt;, 'note_photo': &lt;function validate_image at 0x10f4dca28&gt;, 'cache_seconds': &lt;function validate_cache_seconds at 0x10f4dcc80&gt;, 'profile_url3': &lt;function strip at 0x10f4dc398&gt;, 'email_of_found_person': &lt;function strip at 0x10f4dc398&gt;, 'home_city': &lt;function strip at 0x10f4dc398&gt;, 'contact_email': &lt;function strip at 0x10f4dc398&gt;, 'family_name': &lt;function strip at 0x10f4dc398&gt;, 'resource_bundle_default': &lt;function validate_resource_name at 0x10f4dcb90&gt;, 'target': &lt;function strip at 0x10f4dc398&gt;, 'cursor': &lt;function strip at 0x10f4dc398&gt;, 'ui': &lt;function strip_and_lower at 0x10f4dc410&gt;, 'error': &lt;function strip at 0x10f4dc398&gt;, 'min_entry_date': &lt;function validate_datetime at 0x10f4dc938&gt;, 'content_id': &lt;function strip at 0x10f4dc398&gt;, 'read_permission': &lt;function validate_checkbox_as_bool at 0x10f4dc578&gt;, 'home_postal_code': &lt;function strip at 0x10f4dc398&gt;, 'resource_bundle': &lt;function validate_resource_name at 0x10f4dcb90&gt;, 'author_name': &lt;function strip at 0x10f4dc398&gt;, 'note_photo_url': &lt;function strip at 0x10f4dc398&gt;, 'author_email': &lt;function strip at 0x10f4dc398&gt;, 'id': &lt;function strip at 0x10f4dc398&gt;, 'role': &lt;function validate_role at 0x10f4dc5f0&gt;, 'given_name': &lt;function strip at 0x10f4dc398&gt;, 'home_street': &lt;function strip at 0x10f4dc398&gt;, 'status': &lt;function validate_status at 0x10f4dc8c0&gt;, 'resource_name': &lt;function validate_resource_name at 0x10f4dcb90&gt;, 'description': &lt;function strip at 0x10f4dc398&gt;, 'query_type': &lt;function strip at 0x10f4dc398&gt;, 'clone': &lt;function validate_yes at 0x10f4dc488&gt;, 'believed_dead_permission': &lt;function validate_checkbox_as_bool at 0x10f4dc578&gt;, 'search_engine_id': &lt;function validate_int at 0x10f4dc668&gt;, 'expiry_option': &lt;function validate_expiry at 0x10f4dc758&gt;, 'photo_url': &lt;function strip at 0x10f4dc398&gt;, 'lang': &lt;function validate_lang at 0x10f4dcc08&gt;, 'profile_url2': &lt;function strip at 0x10f4dc398&gt;, 'profile_url1': &lt;function strip at 0x10f4dc398&gt;, 'stats_permission': &lt;function validate_checkbox_as_bool at 0x10f4dc578&gt;, 'age': &lt;function validate_age at 0x10f4dc848&gt;, 'last_known_location': &lt;function strip at 0x10f4dc398&gt;, 'skip': &lt;function validate_int at 0x10f4dc668&gt;, 'phone_of_found_person': &lt;function strip at 0x10f4dc398&gt;}</em><a class="headerlink" href="#utils.BaseHandler.auto_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.error">
+<code class="descname">error</code><span class="sig-paren">(</span><em>code</em>, <em>message=''</em>, <em>message_html=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.format_datetime_localized">
+<code class="descname">format_datetime_localized</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.format_datetime_localized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.format_datetime_localized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats a datetime object to a localized human-readable string based
+on the current locale.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.get_captcha_html">
+<code class="descname">get_captcha_html</code><span class="sig-paren">(</span><em>error_code=None</em>, <em>use_ssl=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.get_captcha_html"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.get_captcha_html" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the necessary HTML to display a CAPTCHA validation box.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.get_captcha_response">
+<code class="descname">get_captcha_response</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.get_captcha_response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.get_captcha_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an object containing the CAPTCHA response information for the
+given request&#8217;s CAPTCHA field information.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.get_url">
+<code class="descname">get_url</code><span class="sig-paren">(</span><em>action</em>, <em>repo=None</em>, <em>scheme=None</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.get_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.get_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the absolute URL for a given action and query parameters,
+preserving the current repo and the parameters listed in
+PRESERVED_QUERY_PARAM_NAMES.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.handle_exception">
+<code class="descname">handle_exception</code><span class="sig-paren">(</span><em>exception</em>, <em>debug_mode</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.handle_exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.handle_exception" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="utils.BaseHandler.https_required">
+<code class="descname">https_required</code><em class="property"> = False</em><a class="headerlink" href="#utils.BaseHandler.https_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="utils.BaseHandler.ignore_deactivation">
+<code class="descname">ignore_deactivation</code><em class="property"> = False</em><a class="headerlink" href="#utils.BaseHandler.ignore_deactivation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.info">
+<code class="descname">info</code><span class="sig-paren">(</span><em>code</em>, <em>message=''</em>, <em>message_html=''</em>, <em>style='info'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renders a simple page with a message.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><p class="first">code: HTTP status code.
+message: A message in plain text.
+message_html: A message in HTML.
+style: &#8216;info&#8217;, &#8216;error&#8217; or &#8216;plain&#8217;. &#8216;info&#8217; and &#8216;error&#8217; differs in</p>
+<blockquote class="last">
+<div>appearance. &#8216;plain&#8217; just renders the message without extra
+HTML tags. Good for API response.</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.maybe_redirect_for_repo_alias">
+<code class="descname">maybe_redirect_for_repo_alias</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.maybe_redirect_for_repo_alias"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.maybe_redirect_for_repo_alias" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the specified repository name is an alias, redirects to the URL
+with the canonical repository name and returns True. Otherwise returns
+False.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.redirect">
+<code class="descname">redirect</code><span class="sig-paren">(</span><em>path</em>, <em>repo=None</em>, <em>permanent=False</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.redirect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.redirect" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.render">
+<code class="descname">render</code><span class="sig-paren">(</span><em>name</em>, <em>language_override=None</em>, <em>cache_seconds=0</em>, <em>get_vars=&lt;function &lt;lambda&gt;&gt;</em>, <em>**vars</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.render" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renders a template to the output stream, passing in the variables
+specified in <a href="#id1"><span class="problematic" id="id2">**</span></a>vars as well as any additional variables returned by
+get_vars().  Since this is intended for use by a dynamic page handler,
+caching is off by default; if cache_seconds is positive, then
+get_vars() will be called only when cached content is unavailable.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.render_to_string">
+<code class="descname">render_to_string</code><span class="sig-paren">(</span><em>name</em>, <em>language_override=None</em>, <em>cache_seconds=0</em>, <em>get_vars=&lt;function &lt;lambda&gt;&gt;</em>, <em>**vars</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.render_to_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.render_to_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renders a template to a string, passing in the variables specified
+in <a href="#id3"><span class="problematic" id="id4">**</span></a>vars as well as any additional variables returned by get_vars().
+Since this is intended for use by a dynamic page handler, caching is
+off by default; if cache_seconds is positive, then get_vars() will be
+called only when cached content is unavailable.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="utils.BaseHandler.repo_required">
+<code class="descname">repo_required</code><em class="property"> = True</em><a class="headerlink" href="#utils.BaseHandler.repo_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.send_mail">
+<code class="descname">send_mail</code><span class="sig-paren">(</span><em>to</em>, <em>subject</em>, <em>body</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.send_mail"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.send_mail" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends e-mail using a sender address that&#8217;s allowed for this app.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.terminate_response">
+<code class="descname">terminate_response</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.terminate_response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.terminate_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prevents any further output from being written.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.to_formatted_local_time">
+<code class="descname">to_formatted_local_time</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.to_formatted_local_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.to_formatted_local_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a datetime object to the local time configured for the
+current repository and formats to a localized human-readable string
+based on the current locale.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.to_local_time">
+<code class="descname">to_local_time</code><span class="sig-paren">(</span><em>date</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.to_local_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.to_local_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a datetime object to the local time configured for the
+current repository.  For convenience, returns None if date is None.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="utils.BaseHandler.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#BaseHandler.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.BaseHandler.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends text to the client using the charset from select_charset().</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="utils.Struct">
+<em class="property">class </em><code class="descclassname">utils.</code><code class="descname">Struct</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#Struct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.Struct" title="Permalink to this definition">¶</a></dt>
+<dd><p>A simple bag of attributes.</p>
+<dl class="method">
+<dt id="utils.Struct.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>name</em>, <em>default=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#Struct.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.Struct.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.add_profile_icon_url">
+<code class="descclassname">utils.</code><code class="descname">add_profile_icon_url</code><span class="sig-paren">(</span><em>website</em>, <em>handler</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#add_profile_icon_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.add_profile_icon_url" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.anchor">
+<code class="descclassname">utils.</code><code class="descname">anchor</code><span class="sig-paren">(</span><em>href</em>, <em>body</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#anchor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.anchor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string anchor HTML element with the given href and body.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.anchor_start">
+<code class="descclassname">utils.</code><code class="descname">anchor_start</code><span class="sig-paren">(</span><em>href</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#anchor_start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.anchor_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the HREF escaped and embedded in an anchor tag.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.encode">
+<code class="descclassname">utils.</code><code class="descname">encode</code><span class="sig-paren">(</span><em>string</em>, <em>encoding='utf-8'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>If unicode, encode to encoding; if 8-bit string, leave unchanged.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.filter_sensitive_fields">
+<code class="descclassname">utils.</code><code class="descname">filter_sensitive_fields</code><span class="sig-paren">(</span><em>records</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#filter_sensitive_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.filter_sensitive_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes sensitive fields from a list of dictionaries.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.format_boolean">
+<code class="descclassname">utils.</code><code class="descname">format_boolean</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#format_boolean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.format_boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.format_sitemaps_datetime">
+<code class="descclassname">utils.</code><code class="descname">format_sitemaps_datetime</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#format_sitemaps_datetime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.format_sitemaps_datetime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.format_utc_datetime">
+<code class="descclassname">utils.</code><code class="descname">format_utc_datetime</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#format_utc_datetime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.format_utc_datetime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.format_utc_timestamp">
+<code class="descclassname">utils.</code><code class="descname">format_utc_timestamp</code><span class="sig-paren">(</span><em>timestamp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#format_utc_timestamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.format_utc_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.generate_random_key">
+<code class="descclassname">utils.</code><code class="descname">generate_random_key</code><span class="sig-paren">(</span><em>length</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#generate_random_key"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.generate_random_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a random key with given length.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_app_name">
+<code class="descclassname">utils.</code><code class="descname">get_app_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_app_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_app_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Canonical name of the app, without HR s~ nonsense.  This only works in
+the context of the appserver (eg remote_api can&#8217;t use it).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_full_name">
+<code class="descclassname">utils.</code><code class="descname">get_full_name</code><span class="sig-paren">(</span><em>given_name</em>, <em>family_name</em>, <em>config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_full_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_full_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return full name string obtained by concatenating given_name and
+family_name in the order specified by config.family_name_first, or just
+given_name if config.use_family_name is False.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_host">
+<code class="descclassname">utils.</code><code class="descname">get_host</code><span class="sig-paren">(</span><em>host=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_host"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_host" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.get_note_status_text">
+<code class="descclassname">utils.</code><code class="descname">get_note_status_text</code><span class="sig-paren">(</span><em>note</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_note_status_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_note_status_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the UI text for a note&#8217;s status field.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_person_sex_text">
+<code class="descclassname">utils.</code><code class="descname">get_person_sex_text</code><span class="sig-paren">(</span><em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_person_sex_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_person_sex_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the UI text for a person&#8217;s sex field.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_person_status_text">
+<code class="descclassname">utils.</code><code class="descname">get_person_status_text</code><span class="sig-paren">(</span><em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_person_status_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_person_status_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the UI text for a person&#8217;s latest_status.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_repo_url">
+<code class="descclassname">utils.</code><code class="descname">get_repo_url</code><span class="sig-paren">(</span><em>request</em>, <em>repo</em>, <em>scheme=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_repo_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_repo_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the absolute root URL for a given repository.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_secret">
+<code class="descclassname">utils.</code><code class="descname">get_secret</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_secret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_secret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a secret from the datastore by name, or returns None if missing.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_secret_key">
+<code class="descclassname">utils.</code><code class="descname">get_secret_key</code><span class="sig-paren">(</span><em>name='reveal'</em>, <em>length=20</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_secret_key"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_secret_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the secret key for authorizing reveal operations etc.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_timestamp">
+<code class="descclassname">utils.</code><code class="descname">get_timestamp</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_timestamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts datetime object to a float value in epoch seconds.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_url">
+<code class="descclassname">utils.</code><code class="descname">get_url</code><span class="sig-paren">(</span><em>request</em>, <em>repo</em>, <em>action</em>, <em>charset='utf-8'</em>, <em>scheme=None</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the absolute URL for a given action and query parameters,
+preserving the current repo and the parameters listed in
+PRESERVED_QUERY_PARAM_NAMES.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_utcnow">
+<code class="descclassname">utils.</code><code class="descname">get_utcnow</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_utcnow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_utcnow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current UTC datetime (settable with set_utcnow_for_test).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_utcnow_timestamp">
+<code class="descclassname">utils.</code><code class="descname">get_utcnow_timestamp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_utcnow_timestamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_utcnow_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current time in epoch seconds (settable with
+set_utcnow_for_test).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.log_api_action">
+<code class="descclassname">utils.</code><code class="descname">log_api_action</code><span class="sig-paren">(</span><em>handler</em>, <em>action</em>, <em>num_person_records=0</em>, <em>num_note_records=0</em>, <em>people_skipped=0</em>, <em>notes_skipped=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#log_api_action"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.log_api_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log an API action.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.optionally_filter_sensitive_fields">
+<code class="descclassname">utils.</code><code class="descname">optionally_filter_sensitive_fields</code><span class="sig-paren">(</span><em>records</em>, <em>auth=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#optionally_filter_sensitive_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.optionally_filter_sensitive_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes sensitive fields from a list of dictionaries, unless the client
+has full read authorization.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.require_api_key_management_permission">
+<code class="descclassname">utils.</code><code class="descname">require_api_key_management_permission</code><span class="sig-paren">(</span><em>handler_method</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#require_api_key_management_permission"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.require_api_key_management_permission" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a decorator for API Key management feature. The limitation
+is that the decorator can not preserve payloads within a POST/PUT
+request.</p>
+<p>Usage:
+class SomeHandler(utils.BaseHandler):</p>
+<blockquote>
+<div><p>&#64;utils.require_api_key_management_permission
+def get(self):</p>
+<blockquote>
+<div># ....
+# ....</div></blockquote>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.sanitize_urls">
+<code class="descclassname">utils.</code><code class="descname">sanitize_urls</code><span class="sig-paren">(</span><em>record</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#sanitize_urls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.sanitize_urls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clean up URLs to protect against XSS.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.send_confirmation_email_to_record_author">
+<code class="descclassname">utils.</code><code class="descname">send_confirmation_email_to_record_author</code><span class="sig-paren">(</span><em>handler</em>, <em>person</em>, <em>action</em>, <em>confirm_url</em>, <em>record_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#send_confirmation_email_to_record_author"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.send_confirmation_email_to_record_author" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send the author an email to confirm enabling/disabling notes
+of a record.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.set_param">
+<code class="descclassname">utils.</code><code class="descname">set_param</code><span class="sig-paren">(</span><em>params</em>, <em>param</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#set_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.set_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take the params from a urlparse and override one of the values.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.set_url_param">
+<code class="descclassname">utils.</code><code class="descname">set_url_param</code><span class="sig-paren">(</span><em>url</em>, <em>param</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#set_url_param"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.set_url_param" title="Permalink to this definition">¶</a></dt>
+<dd><p>This modifies a URL setting the given param to the specified value.  This
+may add the param or override an existing value, or, if the value is None,
+it will remove the param.  Note that value must be a basestring and can&#8217;t be
+an int, for example.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.set_utcnow_for_test">
+<code class="descclassname">utils.</code><code class="descname">set_utcnow_for_test</code><span class="sig-paren">(</span><em>now</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#set_utcnow_for_test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.set_utcnow_for_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the current time for testing purposes.  Pass in a datetime object
+or a timestamp in epoch seconds; or pass None to revert to real time.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.strip">
+<code class="descclassname">utils.</code><code class="descname">strip</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#strip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.strip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.strip_and_lower">
+<code class="descclassname">utils.</code><code class="descname">strip_and_lower</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#strip_and_lower"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.strip_and_lower" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.strip_url_scheme">
+<code class="descclassname">utils.</code><code class="descname">strip_url_scheme</code><span class="sig-paren">(</span><em>url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#strip_url_scheme"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.strip_url_scheme" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.url_is_safe">
+<code class="descclassname">utils.</code><code class="descname">url_is_safe</code><span class="sig-paren">(</span><em>url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#url_is_safe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.url_is_safe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.urlencode">
+<code class="descclassname">utils.</code><code class="descname">urlencode</code><span class="sig-paren">(</span><em>params</em>, <em>encoding='utf-8'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#urlencode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.urlencode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encode the key-value pairs in &#8216;params&#8217; into a query string, applying
+the specified encoding to any Unicode strings and ignoring any keys that
+have value == None.  (urllib.urlencode doesn&#8217;t support Unicode).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_age">
+<code class="descclassname">utils.</code><code class="descname">validate_age</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_age"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_age" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates the &#8216;age&#8217; parameter, returning a canonical value or &#8216;&#8217;.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_approximate_date">
+<code class="descclassname">utils.</code><code class="descname">validate_approximate_date</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_approximate_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_approximate_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_cache_seconds">
+<code class="descclassname">utils.</code><code class="descname">validate_cache_seconds</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_cache_seconds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_cache_seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>A number of seconds to cache a Resource in RAM.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_checkbox">
+<code class="descclassname">utils.</code><code class="descname">validate_checkbox</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_checkbox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_checkbox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_checkbox_as_bool">
+<code class="descclassname">utils.</code><code class="descname">validate_checkbox_as_bool</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_checkbox_as_bool"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_checkbox_as_bool" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_datetime">
+<code class="descclassname">utils.</code><code class="descname">validate_datetime</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_datetime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_datetime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_expiry">
+<code class="descclassname">utils.</code><code class="descname">validate_expiry</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_expiry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_expiry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates that the &#8216;expiry_option&#8217; parameter is a positive integer.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>the int() value if it&#8217;s present and parses, or the default_expiry_days
+for the repository, if it&#8217;s set, otherwise -1 which represents the
+&#8216;unspecified&#8217; status.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_image">
+<code class="descclassname">utils.</code><code class="descname">validate_image</code><span class="sig-paren">(</span><em>bytestring</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_image" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_int">
+<code class="descclassname">utils.</code><code class="descname">validate_int</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_int"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_int" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_lang">
+<code class="descclassname">utils.</code><code class="descname">validate_lang</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_lang"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_lang" title="Permalink to this definition">¶</a></dt>
+<dd><p>A BCP 47 language tag.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_repo">
+<code class="descclassname">utils.</code><code class="descname">validate_repo</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_repo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_repo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_resource_name">
+<code class="descclassname">utils.</code><code class="descname">validate_resource_name</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_resource_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_resource_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>A resource name or bundle label.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_role">
+<code class="descclassname">utils.</code><code class="descname">validate_role</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_role"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_role" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_sex">
+<code class="descclassname">utils.</code><code class="descname">validate_sex</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_sex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_sex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates the &#8216;sex&#8217; parameter, returning a canonical value or &#8216;&#8217;.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_status">
+<code class="descclassname">utils.</code><code class="descname">validate_status</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates an incoming status parameter, returning one of the canonical
+status strings or &#8216;&#8217;.  Note that &#8216;&#8217; is always used as the Python value
+to represent the &#8216;unspecified&#8217; status.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_timestamp">
+<code class="descclassname">utils.</code><code class="descname">validate_timestamp</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_timestamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_version">
+<code class="descclassname">utils.</code><code class="descname">validate_version</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Version, if present, should be in pfif versions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.validate_yes">
+<code class="descclassname">utils.</code><code class="descname">validate_yes</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#validate_yes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.validate_yes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="user_agents.html" title="previous chapter">user_agents module</a></li>
+      <li>Next: <a href="view.html" title="next chapter">view module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/utils.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/utils.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>full_text_search &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for full_text_search</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2015 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">appengine_search</span>
+
+<span class="kn">import</span> <span class="nn">model</span>
+
+<span class="c"># The index name for full text search.</span>
+<span class="c"># This index contains person name and location.</span>
+<span class="n">PERSON_LOCATION_FULL_TEXT_INDEX_NAME</span> <span class="o">=</span> <span class="s">&#39;person_location_information&#39;</span>
+
+<div class="viewcode-block" id="make_or_regexp"><a class="viewcode-back" href="../full_text_search.html#full_text_search.make_or_regexp">[docs]</a><span class="k">def</span> <span class="nf">make_or_regexp</span><span class="p">(</span><span class="n">query_txt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates compiled regular expression for OR search.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        query_txt: Search query</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        query_word | query_word | ...</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">query_words</span> <span class="o">=</span> <span class="n">query_txt</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+    <span class="n">regexp</span> <span class="o">=</span> <span class="s">&#39;|&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">query_words</span> <span class="k">if</span> <span class="n">word</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">regexp</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="enclose_in_double_quotes"><a class="viewcode-back" href="../full_text_search.html#full_text_search.enclose_in_double_quotes">[docs]</a><span class="k">def</span> <span class="nf">enclose_in_double_quotes</span><span class="p">(</span><span class="n">query_txt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Encloses each word in query_txt in double quotes.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        query_txt: Search query</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        &#39;&quot;query_word1&quot; &quot;query_word2&quot; ...&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">query_words</span> <span class="o">=</span> <span class="n">query_txt</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">&#39;&quot;&#39;</span> <span class="o">+</span> <span class="s">&#39;&quot; &quot;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">query_words</span> <span class="k">if</span> <span class="n">word</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39;&quot;&#39;</span>
+</div>
+<div class="viewcode-block" id="search"><a class="viewcode-back" href="../full_text_search.html#full_text_search.search">[docs]</a><span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">query_txt</span><span class="p">,</span> <span class="n">max_results</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Searches person with index.</span>
+<span class="sd">    Query_txt must match at least a part of person name.</span>
+<span class="sd">    (It&#39;s not allowed to search only by location.)</span>
+<span class="sd">    Args:</span>
+<span class="sd">        repo: The name of repository</span>
+<span class="sd">        query_txt: Search query</span>
+<span class="sd">        max_results: The max number of results you want.(Maximum: 1000)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        - Array of &lt;model.Person&gt; in datastore</span>
+<span class="sd">        - []: If query_txt doesn&#39;t contain a part of person name</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        search.Error: An error occurred when the index name is unknown</span>
+<span class="sd">                      or the query has syntax error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#TODO: Sanitaize query_txt</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">query_txt</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="c"># Remove double quotes so that we can safely apply enclose_in_double_quotes().</span>
+    <span class="n">query_txt</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">query_txt</span><span class="p">)</span>
+
+    <span class="n">person_location_index</span> <span class="o">=</span> <span class="n">appengine_search</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">PERSON_LOCATION_FULL_TEXT_INDEX_NAME</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">appengine_search</span><span class="o">.</span><span class="n">QueryOptions</span><span class="p">(</span>
+        <span class="n">limit</span><span class="o">=</span><span class="n">max_results</span><span class="p">,</span>
+        <span class="n">returned_fields</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;record_id&#39;</span><span class="p">,</span> <span class="s">&#39;names&#39;</span><span class="p">])</span>
+
+    <span class="c"># enclose_in_double_quotes is used for avoiding query_txt</span>
+    <span class="c"># which specifies index field name, contains special symbol, ...</span>
+    <span class="c"># (e.g., &quot;repo: repository_name&quot;, &quot;test: test&quot;, &quot;test AND test&quot;).</span>
+    <span class="n">and_query</span> <span class="o">=</span> <span class="n">enclose_in_double_quotes</span><span class="p">(</span><span class="n">query_txt</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; AND (repo: &#39;</span> <span class="o">+</span> <span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;)&#39;</span>
+    <span class="n">person_location_index_results</span> <span class="o">=</span> <span class="n">person_location_index</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+        <span class="n">appengine_search</span><span class="o">.</span><span class="n">Query</span><span class="p">(</span>
+            <span class="n">query_string</span><span class="o">=</span><span class="n">and_query</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">))</span>
+    <span class="n">index_results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">regexp</span> <span class="o">=</span> <span class="n">make_or_regexp</span><span class="p">(</span><span class="n">query_txt</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">document</span> <span class="ow">in</span> <span class="n">person_location_index_results</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">document</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;names&#39;</span><span class="p">:</span>
+                <span class="n">names</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;record_id&#39;</span><span class="p">:</span>
+                <span class="nb">id</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">if</span> <span class="n">regexp</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+            <span class="n">index_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">index_results</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">results</span>
+</div>
+<div class="viewcode-block" id="create_document"><a class="viewcode-back" href="../full_text_search.html#full_text_search.create_document">[docs]</a><span class="k">def</span> <span class="nf">create_document</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates document for full text search.</span>
+<span class="sd">    It should be called in add_record_to_index method.model.Person.get_by_key_name(repo + &#39;:&#39; + id</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">doc_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;repo&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;record_id&#39;</span><span class="p">]</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">appengine_search</span><span class="o">.</span><span class="n">TextField</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">field</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="n">field</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">appengine_search</span><span class="o">.</span><span class="n">Document</span><span class="p">(</span><span class="n">doc_id</span><span class="o">=</span><span class="n">doc_id</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="add_record_to_index"><a class="viewcode-back" href="../full_text_search.html#full_text_search.add_record_to_index">[docs]</a><span class="k">def</span> <span class="nf">add_record_to_index</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds person record to index.</span>
+<span class="sd">    Raises:</span>
+<span class="sd">        search.Error: An error occurred when the document could not be indexed</span>
+<span class="sd">                      or the query has a syntax error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">person_location_index</span> <span class="o">=</span> <span class="n">appengine_search</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">PERSON_LOCATION_FULL_TEXT_INDEX_NAME</span><span class="p">)</span>
+    <span class="n">name_params</span> <span class="o">=</span> <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">,</span>
+                   <span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">,</span>
+                   <span class="n">person</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span>
+                   <span class="n">person</span><span class="o">.</span><span class="n">alternate_names</span><span class="p">]</span>
+    <span class="n">names</span> <span class="o">=</span>  <span class="s">&#39;:&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">name_params</span> <span class="k">if</span> <span class="n">name</span><span class="p">])</span>
+    <span class="n">person_location_index</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">create_document</span><span class="p">(</span>
+        <span class="n">record_id</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">record_id</span><span class="p">,</span>
+        <span class="n">repo</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span>
+        <span class="n">names</span><span class="o">=</span><span class="n">names</span><span class="p">,</span>
+        <span class="n">given_name</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">,</span>
+        <span class="n">family_name</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">,</span>
+        <span class="n">full_name</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span>
+        <span class="n">alternate_names</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">alternate_names</span><span class="p">,</span>
+        <span class="n">home_street</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">home_street</span><span class="p">,</span>
+        <span class="n">home_city</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">home_city</span><span class="p">,</span>
+        <span class="n">home_state</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">home_state</span><span class="p">,</span>
+        <span class="n">home_postal_code</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">home_postal_code</span><span class="p">,</span>
+        <span class="n">home_neighborhood</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">home_neighborhood</span><span class="p">,</span>
+        <span class="n">home_country</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">home_country</span><span class="p">))</span>
+
+</div>
+<div class="viewcode-block" id="delete_record_from_index"><a class="viewcode-back" href="../full_text_search.html#full_text_search.delete_record_from_index">[docs]</a><span class="k">def</span> <span class="nf">delete_record_from_index</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Deletes person record from index.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        person: Person who should be removed</span>
+<span class="sd">    Raises:</span>
+<span class="sd">        search.Error: An error occurred when the index name is unknown</span>
+<span class="sd">                      or the query has a syntax error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">doc_id</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="n">record_id</span>
+    <span class="n">person_location_index</span> <span class="o">=</span> <span class="n">appengine_search</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">PERSON_LOCATION_FULL_TEXT_INDEX_NAME</span><span class="p">)</span>
+    <span class="n">person_location_index</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

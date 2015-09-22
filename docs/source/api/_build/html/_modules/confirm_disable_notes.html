@@ -1,0 +1,185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>confirm_disable_notes &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for confirm_disable_notes</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#            http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">reveal</span>
+
+<span class="kn">import</span> <span class="nn">model</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+<span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">db</span>
+
+<span class="kn">from</span> <span class="nn">django.utils.translation</span> <span class="kn">import</span> <span class="n">ugettext</span> <span class="k">as</span> <span class="n">_</span>
+
+<div class="viewcode-block" id="DisableAndEnableNotesError"><a class="viewcode-back" href="../confirm_disable_notes.html#confirm_disable_notes.DisableAndEnableNotesError">[docs]</a><span class="k">class</span> <span class="nc">DisableAndEnableNotesError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Container for user-facing error messages when confirming to disable</span>
+<span class="sd">    or enable future nots to a record.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Handler"><a class="viewcode-back" href="../confirm_disable_notes.html#confirm_disable_notes.Handler">[docs]</a><span class="k">class</span> <span class="nc">Handler</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This handler lets the author confirm to disable future notes </span>
+<span class="sd">    to a person record.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Handler.get"><a class="viewcode-back" href="../confirm_disable_notes.html#confirm_disable_notes.Handler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">person</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_person_and_verify_params</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">DisableAndEnableNotesError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;confirm_disable_notes.html&#39;</span><span class="p">,</span>
+                    <span class="n">person</span><span class="o">=</span><span class="n">person</span><span class="p">,</span>
+                    <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.post"><a class="viewcode-back" href="../confirm_disable_notes.html#confirm_disable_notes.Handler.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">person</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_person_and_verify_params</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">DisableAndEnableNotesError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+        <span class="c"># Log the user action.</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">UserActionLog</span><span class="o">.</span><span class="n">put_new</span><span class="p">(</span>
+            <span class="s">&#39;disable_notes&#39;</span><span class="p">,</span>
+            <span class="n">person</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;reason_for_disabling_notes&#39;</span><span class="p">))</span>
+
+        <span class="c"># Update the notes_disabled flag in person record.</span>
+        <span class="n">person</span><span class="o">.</span><span class="n">notes_disabled</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">person</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+
+        <span class="n">record_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span>
+            <span class="s">&#39;/view&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">record_id</span><span class="p">,</span> <span class="n">repo</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">repo</span><span class="p">)</span>
+
+        <span class="c"># Send subscribers a notice email.</span>
+        <span class="n">subject</span> <span class="o">=</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;[Person Finder] Notes are now disabled for &quot;</span><span class="si">%(full_name)s</span><span class="s">&quot;&#39;</span>
+                <span class="p">)</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;full_name&#39;</span><span class="p">:</span> <span class="n">person</span><span class="o">.</span><span class="n">primary_full_name</span><span class="p">}</span>
+        <span class="n">email_addresses</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">get_associated_emails</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">email_addresses</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send_mail</span><span class="p">(</span>
+                <span class="n">subject</span><span class="o">=</span><span class="n">subject</span><span class="p">,</span>
+                <span class="n">to</span><span class="o">=</span><span class="n">address</span><span class="p">,</span>
+                <span class="n">body</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">render_to_string</span><span class="p">(</span>
+                    <span class="s">&#39;disable_notes_notice_email.txt&#39;</span><span class="p">,</span>
+                    <span class="n">full_name</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">primary_full_name</span><span class="p">,</span>
+                    <span class="n">record_url</span><span class="o">=</span><span class="n">record_url</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="n">record_url</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.get_person_and_verify_params"><a class="viewcode-back" href="../confirm_disable_notes.html#confirm_disable_notes.Handler.get_person_and_verify_params">[docs]</a>    <span class="k">def</span> <span class="nf">get_person_and_verify_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check the request for a valid person id and valid crypto token.</span>
+<span class="sd">        Returns a tuple containing: (person, token)</span>
+<span class="sd">        If there is an error we raise a DisableAndEnableNotesError. &quot;&quot;&quot;</span>
+        <span class="n">person</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">person</span><span class="p">:</span>
+            <span class="c"># Place holder name here is id_str, not id, because</span>
+            <span class="c"># the translation system doesn&#39;t allow the same string in both</span>
+            <span class="c"># a place holder name and a normal uppercase word in one message.</span>
+            <span class="k">raise</span> <span class="n">DisableAndEnableNotesError</span><span class="p">(</span>
+                <span class="n">_</span><span class="p">(</span><span class="s">&#39;No person with ID: </span><span class="si">%(id_str)s</span><span class="s">.&#39;</span><span class="p">)</span>
+                <span class="o">%</span> <span class="p">{</span><span class="s">&#39;id_str&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
+
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;token&#39;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="s">&#39;disable_notes:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">reveal</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">DisableAndEnableNotesError</span><span class="p">(</span>
+                <span class="n">_</span><span class="p">(</span><span class="s">&quot;The token </span><span class="si">%(token)s</span><span class="s"> was invalid.&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;token&#39;</span><span class="p">:</span> <span class="n">token</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pytz.exceptions &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../../index.html" />
+    <link rel="up" title="pytz" href="../pytz.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pytz.exceptions</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Custom exceptions raised by pytz.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&#39;UnknownTimeZoneError&#39;</span><span class="p">,</span> <span class="s">&#39;InvalidTimeError&#39;</span><span class="p">,</span> <span class="s">&#39;AmbiguousTimeError&#39;</span><span class="p">,</span>
+    <span class="s">&#39;NonExistentTimeError&#39;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+
+<div class="viewcode-block" id="UnknownTimeZoneError"><a class="viewcode-back" href="../../pytz.html#pytz.UnknownTimeZoneError">[docs]</a><span class="k">class</span> <span class="nc">UnknownTimeZoneError</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Exception raised when pytz is passed an unknown timezone.</span>
+
+<span class="sd">    &gt;&gt;&gt; isinstance(UnknownTimeZoneError(), LookupError)</span>
+<span class="sd">    True</span>
+
+<span class="sd">    This class is actually a subclass of KeyError to provide backwards</span>
+<span class="sd">    compatibility with code relying on the undocumented behavior of earlier</span>
+<span class="sd">    pytz releases.</span>
+
+<span class="sd">    &gt;&gt;&gt; isinstance(UnknownTimeZoneError(), KeyError)</span>
+<span class="sd">    True</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="InvalidTimeError"><a class="viewcode-back" href="../../pytz.html#pytz.InvalidTimeError">[docs]</a><span class="k">class</span> <span class="nc">InvalidTimeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Base class for invalid time exceptions.&#39;&#39;&#39;</span>
+
+</div>
+<div class="viewcode-block" id="AmbiguousTimeError"><a class="viewcode-back" href="../../pytz.html#pytz.AmbiguousTimeError">[docs]</a><span class="k">class</span> <span class="nc">AmbiguousTimeError</span><span class="p">(</span><span class="n">InvalidTimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Exception raised when attempting to create an ambiguous wallclock time.</span>
+
+<span class="sd">    At the end of a DST transition period, a particular wallclock time will</span>
+<span class="sd">    occur twice (once before the clocks are set back, once after). Both</span>
+<span class="sd">    possibilities may be correct, unless further information is supplied.</span>
+
+<span class="sd">    See DstTzInfo.normalize() for more info</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+</div>
+<div class="viewcode-block" id="NonExistentTimeError"><a class="viewcode-back" href="../../pytz.html#pytz.NonExistentTimeError">[docs]</a><span class="k">class</span> <span class="nc">NonExistentTimeError</span><span class="p">(</span><span class="n">InvalidTimeError</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Exception raised when attempting to create a wallclock time that</span>
+<span class="sd">    cannot exist.</span>
+
+<span class="sd">    At the start of a DST transition period, the wallclock time jumps forward.</span>
+<span class="sd">    The instants jumped over never occur.</span>
+<span class="sd">    &#39;&#39;&#39;</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../pytz.html">pytz</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

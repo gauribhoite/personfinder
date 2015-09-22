@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>confirm_post_flagged_note module &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="index.html" />
+    <link rel="next" title="const module" href="const.html" />
+    <link rel="prev" title="confirm_enable_notes module" href="confirm_enable_notes.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-confirm_post_flagged_note">
+<span id="confirm-post-flagged-note-module"></span><h1>confirm_post_flagged_note module<a class="headerlink" href="#module-confirm_post_flagged_note" title="Permalink to this headline">¶</a></h1>
+<dl class="exception">
+<dt id="confirm_post_flagged_note.ConfirmPostNoteWithBadWordsError">
+<em class="property">exception </em><code class="descclassname">confirm_post_flagged_note.</code><code class="descname">ConfirmPostNoteWithBadWordsError</code><a class="reference internal" href="_modules/confirm_post_flagged_note.html#ConfirmPostNoteWithBadWordsError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.ConfirmPostNoteWithBadWordsError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+<p>Container for user-facing error messages when confirming to post
+a note with bad words.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="confirm_post_flagged_note.Handler">
+<em class="property">class </em><code class="descclassname">confirm_post_flagged_note.</code><code class="descname">Handler</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<p>This handler lets the author confirm to post a note containing  
+bad words.</p>
+<dl class="method">
+<dt id="confirm_post_flagged_note.Handler.confirm_note_with_bad_words">
+<code class="descname">confirm_note_with_bad_words</code><span class="sig-paren">(</span><em>note</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler.confirm_note_with_bad_words"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler.confirm_note_with_bad_words" title="Permalink to this definition">¶</a></dt>
+<dd><p>After a note containing bad words is confirmed by the author,
+we will:
+(1) set note.confirmed = True;
+(2) copy the note from NoteWithBadWords to Note;
+(3) log user action;
+(4) update person record.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="confirm_post_flagged_note.Handler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="confirm_post_flagged_note.Handler.get_note_and_verify_params">
+<code class="descname">get_note_and_verify_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler.get_note_and_verify_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler.get_note_and_verify_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the request for a valid note record_id and valid crypto token.
+Returns a tuple containing: (note, token)
+If there is an error we raise a ConfirmPostNoteWithBadWordsError.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="confirm_post_flagged_note.Handler.post">
+<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler.post" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="confirm_enable_notes.html" title="previous chapter">confirm_enable_notes module</a></li>
+      <li>Next: <a href="const.html" title="next chapter">const module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/confirm_post_flagged_note.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/confirm_post_flagged_note.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

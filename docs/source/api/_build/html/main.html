@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>main module &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="index.html" />
+    <link rel="next" title="model module" href="model.html" />
+    <link rel="prev" title="jp_mobile_carriers module" href="jp_mobile_carriers.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-main">
+<span id="main-module"></span><h1>main module<a class="headerlink" href="#module-main" title="Permalink to this headline">¶</a></h1>
+<p>The main request handler.  All dynamic requests except for remote_api are
+handled by this handler, which dispatches to all other dynamic handlers.</p>
+<dl class="class">
+<dt id="main.Main">
+<em class="property">class </em><code class="descclassname">main.</code><code class="descname">Main</code><a class="reference internal" href="_modules/main.html#Main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.Main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">google.appengine.ext.webapp._webapp25.RequestHandler</span></code></p>
+<p>The main request handler.  All dynamic requests except for remote_api are
+handled by this handler, which dispatches to all other dynamic handlers.</p>
+<dl class="method">
+<dt id="main.Main.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#Main.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.Main.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="main.Main.head">
+<code class="descname">head</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#Main.head"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.Main.head" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="main.Main.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>request</em>, <em>response</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#Main.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.Main.initialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="main.Main.post">
+<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#Main.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.Main.post" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="main.Main.serve">
+<code class="descname">serve</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#Main.serve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.Main.serve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="main.flush_caches">
+<code class="descclassname">main.</code><code class="descname">flush_caches</code><span class="sig-paren">(</span><em>*keywords</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#flush_caches"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.flush_caches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flushes the specified set of caches.  Pass &#8216;*&#8217; to flush everything.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.get_hidden_input_tags_for_preserved_query_params">
+<code class="descclassname">main.</code><code class="descname">get_hidden_input_tags_for_preserved_query_params</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#get_hidden_input_tags_for_preserved_query_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.get_hidden_input_tags_for_preserved_query_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets HTML with &lt;input type=&#8221;hidden&#8221;&gt; tags to preserve query parameters
+listed in utils.PRESERVED_QUERY_PARAM_NAMES e.g. &#8220;ui&#8221;.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.get_language_option">
+<code class="descclassname">main.</code><code class="descname">get_language_option</code><span class="sig-paren">(</span><em>request</em>, <em>lang</em>, <em>is_selected</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#get_language_option"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.get_language_option" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="main.get_language_options">
+<code class="descclassname">main.</code><code class="descname">get_language_options</code><span class="sig-paren">(</span><em>request</em>, <em>config</em>, <em>current_lang</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#get_language_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.get_language_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of information needed to generate the language menu.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.get_localized_message">
+<code class="descclassname">main.</code><code class="descname">get_localized_message</code><span class="sig-paren">(</span><em>localized_messages</em>, <em>lang</em>, <em>default</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#get_localized_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.get_localized_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the localized message for lang from a dictionary that maps language
+codes to localized messages.  Falls back to English if language &#8216;lang&#8217; is
+not available, or to a default message if English is not available.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.get_repo_and_action">
+<code class="descclassname">main.</code><code class="descname">get_repo_and_action</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#get_repo_and_action"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.get_repo_and_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the repo and action for a request.  The action is the part
+of the URL path after the repo, with no leading or trailing slashes.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.get_repo_options">
+<code class="descclassname">main.</code><code class="descname">get_repo_options</code><span class="sig-paren">(</span><em>request</em>, <em>lang</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#get_repo_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.get_repo_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of the names and titles of the launched repositories.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.get_secret">
+<code class="descclassname">main.</code><code class="descname">get_secret</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#get_secret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.get_secret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a secret from the datastore by name, or returns None if missing.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.is_cron_task">
+<code class="descclassname">main.</code><code class="descname">is_cron_task</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#is_cron_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.is_cron_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the request is from appengine cron.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.is_development_server">
+<code class="descclassname">main.</code><code class="descname">is_development_server</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#is_development_server"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.is_development_server" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the app is running in development.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.is_task_queue_task">
+<code class="descclassname">main.</code><code class="descname">is_task_queue_task</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#is_task_queue_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.is_task_queue_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the request is from the appengine task queue.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.select_charset">
+<code class="descclassname">main.</code><code class="descname">select_charset</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#select_charset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.select_charset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a request, chooses a charset for encoding the response.</p>
+<p>If the selected charset is UTF-8, it always returns
+&#8216;utf-8&#8217; (const.CHARSET_UTF8), not &#8216;utf8&#8217;, &#8216;UTF-8&#8217;, etc.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.select_lang">
+<code class="descclassname">main.</code><code class="descname">select_lang</code><span class="sig-paren">(</span><em>request</em>, <em>config=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#select_lang"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.select_lang" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects the best language to use for a given request.  The &#8216;lang&#8217; query
+parameter has priority, then the django_language cookie, then the first
+language in the language menu, then the default setting.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="main.setup_env">
+<code class="descclassname">main.</code><code class="descname">setup_env</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#setup_env"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#main.setup_env" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the &#8216;env&#8217; object, which contains various template variables
+that are commonly used by most handlers.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="jp_mobile_carriers.html" title="previous chapter">jp_mobile_carriers module</a></li>
+      <li>Next: <a href="model.html" title="next chapter">model module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/main.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/main.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

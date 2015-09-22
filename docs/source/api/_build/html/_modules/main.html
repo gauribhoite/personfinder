@@ -1,0 +1,622 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>main &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for main</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;The main request handler.  All dynamic requests except for remote_api are</span>
+<span class="sd">handled by this handler, which dispatches to all other dynamic handlers.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">django_setup</span>  <span class="c"># always keep this first</span>
+
+<span class="kn">import</span> <span class="nn">mimetypes</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">urlparse</span>
+
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">memcache</span>
+<span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">webapp</span>
+
+<span class="kn">import</span> <span class="nn">config</span>
+<span class="kn">import</span> <span class="nn">const</span>
+<span class="kn">import</span> <span class="nn">django.utils.html</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">model</span>
+<span class="kn">import</span> <span class="nn">pfif</span>
+<span class="kn">import</span> <span class="nn">resources</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+<span class="kn">import</span> <span class="nn">user_agents</span>
+
+
+<span class="c"># When no action or repo is specified, redirect to this action.</span>
+<span class="n">HOME_ACTION</span> <span class="o">=</span> <span class="s">&#39;home.html&#39;</span>
+
+<span class="c"># Map of URL actions to Python module and class names.</span>
+<span class="c"># TODO(kpy): Remove the need for this configuration information, either by</span>
+<span class="c"># regularizing the module and class names or adding a URL attribute to handlers.</span>
+<span class="n">HANDLER_CLASSES</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="s">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;.Handler&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span>
+  <span class="s">&#39;start&#39;</span><span class="p">,</span>
+  <span class="s">&#39;query&#39;</span><span class="p">,</span>
+  <span class="s">&#39;results&#39;</span><span class="p">,</span>
+  <span class="s">&#39;create&#39;</span><span class="p">,</span>
+  <span class="s">&#39;view&#39;</span><span class="p">,</span>
+  <span class="s">&#39;multiview&#39;</span><span class="p">,</span>
+  <span class="s">&#39;reveal&#39;</span><span class="p">,</span>
+  <span class="s">&#39;photo&#39;</span><span class="p">,</span>
+  <span class="s">&#39;embed&#39;</span><span class="p">,</span>
+  <span class="s">&#39;extend&#39;</span><span class="p">,</span>
+  <span class="s">&#39;gadget&#39;</span><span class="p">,</span>
+  <span class="s">&#39;delete&#39;</span><span class="p">,</span>
+  <span class="s">&#39;flag_note&#39;</span><span class="p">,</span>
+  <span class="s">&#39;restore&#39;</span><span class="p">,</span>
+  <span class="s">&#39;subscribe&#39;</span><span class="p">,</span>
+  <span class="s">&#39;unsubscribe&#39;</span><span class="p">,</span>
+  <span class="s">&#39;disable_notes&#39;</span><span class="p">,</span>
+  <span class="s">&#39;confirm_disable_notes&#39;</span><span class="p">,</span>
+  <span class="s">&#39;enable_notes&#39;</span><span class="p">,</span>
+  <span class="s">&#39;confirm_enable_notes&#39;</span><span class="p">,</span>
+  <span class="s">&#39;post_flagged_note&#39;</span><span class="p">,</span>
+  <span class="s">&#39;confirm_post_flagged_note&#39;</span><span class="p">,</span>
+  <span class="s">&#39;third_party_search&#39;</span><span class="p">,</span>
+  <span class="s">&#39;admin&#39;</span><span class="p">,</span>
+  <span class="s">&#39;admin/dashboard&#39;</span><span class="p">,</span>
+  <span class="s">&#39;admin/resources&#39;</span><span class="p">,</span>
+  <span class="s">&#39;admin/review&#39;</span><span class="p">,</span>
+  <span class="s">&#39;css&#39;</span><span class="p">,</span>
+<span class="p">])</span>
+
+<span class="c"># Exceptional cases where the module name doesn&#39;t match the URL.</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;start.Handler&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;admin/api_keys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;admin_api_keys.CreateOrUpdateApiKey&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;admin/api_keys/list&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;admin_api_keys.ListApiKeys&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/import&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Import&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/import/notes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Import&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/import/persons&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Import&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/read&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Read&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/write&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Write&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/search&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Search&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/subscribe&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Subscribe&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/unsubscribe&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Unsubscribe&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/stats&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.Stats&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/handle_sms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.HandleSMS&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;api/photo_upload&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;api.PhotoUpload&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;feeds/repo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;feeds.Repo&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;feeds/note&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;feeds.Note&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;feeds/person&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;feeds.Person&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;sitemap&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;sitemap.SiteMap&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;sitemap/ping&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;sitemap.SiteMapPing&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;tasks/count/note&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;tasks.CountNote&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;tasks/count/person&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;tasks.CountPerson&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;tasks/count/reindex&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;tasks.Reindex&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;tasks/count/update_dead_status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;tasks.UpdateDeadStatus&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;tasks/count/update_status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;tasks.UpdateStatus&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;tasks/delete_expired&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;tasks.DeleteExpired&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;tasks/delete_old&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;tasks.DeleteOld&#39;</span>
+<span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="s">&#39;tasks/clean_up_in_test_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;tasks.CleanUpInTestMode&#39;</span>
+
+<div class="viewcode-block" id="is_development_server"><a class="viewcode-back" href="../main.html#main.is_development_server">[docs]</a><span class="k">def</span> <span class="nf">is_development_server</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if the app is running in development.&quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SERVER_SOFTWARE&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">&#39;Development&#39;</span> <span class="ow">in</span> <span class="n">server</span>
+</div>
+<div class="viewcode-block" id="is_cron_task"><a class="viewcode-back" href="../main.html#main.is_cron_task">[docs]</a><span class="k">def</span> <span class="nf">is_cron_task</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if the request is from appengine cron.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s">&#39;X-AppEngine-Cron&#39;</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span>
+</div>
+<div class="viewcode-block" id="is_task_queue_task"><a class="viewcode-back" href="../main.html#main.is_task_queue_task">[docs]</a><span class="k">def</span> <span class="nf">is_task_queue_task</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if the request is from the appengine task queue.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s">&#39;X-AppEngine-TaskName&#39;</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span>
+</div>
+<div class="viewcode-block" id="get_repo_and_action"><a class="viewcode-back" href="../main.html#main.get_repo_and_action">[docs]</a><span class="k">def</span> <span class="nf">get_repo_and_action</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Determines the repo and action for a request.  The action is the part</span>
+<span class="sd">    of the URL path after the repo, with no leading or trailing slashes.&quot;&quot;&quot;</span>
+    <span class="n">scheme</span><span class="p">,</span> <span class="n">netloc</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">urlparse</span><span class="o">.</span><span class="n">urlsplit</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+
+    <span class="c"># Depending on whether we&#39;re serving from appspot directly or</span>
+    <span class="c"># google.org/personfinder we could have /global or /personfinder/global</span>
+    <span class="c"># as the &#39;global&#39; prefix.</span>
+    <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;personfinder&#39;</span><span class="p">:</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">parts</span> <span class="ow">and</span> <span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">None</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="s">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">repo</span> <span class="o">==</span> <span class="s">&#39;global&#39;</span><span class="p">:</span>
+        <span class="n">repo</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">return</span> <span class="n">repo</span><span class="p">,</span> <span class="n">action</span>
+</div>
+<div class="viewcode-block" id="select_charset"><a class="viewcode-back" href="../main.html#main.select_charset">[docs]</a><span class="k">def</span> <span class="nf">select_charset</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Given a request, chooses a charset for encoding the response.</span>
+
+<span class="sd">    If the selected charset is UTF-8, it always returns</span>
+<span class="sd">    &#39;utf-8&#39; (const.CHARSET_UTF8), not &#39;utf8&#39;, &#39;UTF-8&#39;, etc.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># We assume that any client that doesn&#39;t support UTF-8 will specify a</span>
+    <span class="c"># preferred encoding in the Accept-Charset header, and will use this</span>
+    <span class="c"># encoding for content, query parameters, and form data.  We make this</span>
+    <span class="c"># assumption across all repositories.</span>
+
+    <span class="c"># Get a list of the charsets that the client supports.</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;charsets&#39;</span><span class="p">):</span>
+        <span class="n">charsets</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;charsets&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">user_agents</span><span class="o">.</span><span class="n">prefer_sjis_charset</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+        <span class="c"># Some Japanese feature phones don&#39;t (fully) support UTF-8.</span>
+        <span class="c"># They only support Shift_JIS. But they may not send Accept-Charset</span>
+        <span class="c"># header. Also, we haven&#39;t confirmed, but there may be phones whose</span>
+        <span class="c"># Accept-Charset header includes UTF-8 but its UTF-8 support is buggy.</span>
+        <span class="c"># So we always use Shift_JIS regardless of Accept-Charset header.</span>
+        <span class="n">charsets</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Shift_JIS&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">charsets</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">accept_charset</span><span class="o">.</span><span class="n">best_matches</span><span class="p">()</span>
+
+    <span class="c"># Always prefer UTF-8 if the client supports it.</span>
+    <span class="k">for</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">charsets</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">charset</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">,</span> <span class="s">&#39;-&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;utf8&#39;</span><span class="p">,</span> <span class="s">&#39;utf-8&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">const</span><span class="o">.</span><span class="n">CHARSET_UTF8</span>
+
+    <span class="c"># Otherwise, look for a requested charset that Python supports.</span>
+    <span class="k">for</span> <span class="n">charset</span> <span class="ow">in</span> <span class="n">charsets</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="s">&#39;xyz&#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">charset</span><span class="p">,</span> <span class="s">&#39;replace&#39;</span><span class="p">)</span>  <span class="c"># test if charset is known</span>
+            <span class="k">return</span> <span class="n">charset</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+    <span class="c"># If Python doesn&#39;t know any of the requested charsets, use UTF-8.</span>
+    <span class="k">return</span> <span class="n">const</span><span class="o">.</span><span class="n">CHARSET_UTF8</span>
+</div>
+<div class="viewcode-block" id="select_lang"><a class="viewcode-back" href="../main.html#main.select_lang">[docs]</a><span class="k">def</span> <span class="nf">select_lang</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Selects the best language to use for a given request.  The &#39;lang&#39; query</span>
+<span class="sd">    parameter has priority, then the django_language cookie, then the first</span>
+<span class="sd">    language in the language menu, then the default setting.&quot;&quot;&quot;</span>
+    <span class="n">default_lang</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span> <span class="ow">and</span>
+                    <span class="n">config</span><span class="o">.</span><span class="n">language_menu_options</span> <span class="ow">and</span>
+                    <span class="n">config</span><span class="o">.</span><span class="n">language_menu_options</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">lang</span> <span class="o">=</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;lang&#39;</span><span class="p">)</span> <span class="ow">or</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;django_language&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span>
+            <span class="n">default_lang</span> <span class="ow">or</span>
+            <span class="n">django_setup</span><span class="o">.</span><span class="n">LANGUAGE_CODE</span><span class="p">)</span>
+    <span class="n">lang</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&#39;[^A-Za-z0-9-]&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">lang</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">const</span><span class="o">.</span><span class="n">LANGUAGE_SYNONYMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">lang</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="get_repo_options"><a class="viewcode-back" href="../main.html#main.get_repo_options">[docs]</a><span class="k">def</span> <span class="nf">get_repo_options</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">lang</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a list of the names and titles of the launched repositories.&quot;&quot;&quot;</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">repo</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">Repo</span><span class="o">.</span><span class="n">list_launched</span><span class="p">():</span>
+        <span class="n">titles</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_for_repo</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="s">&#39;repo_titles&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">default_title</span> <span class="o">=</span> <span class="p">(</span><span class="n">titles</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="ow">or</span> <span class="p">[</span><span class="s">&#39;?&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">titles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">titles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;en&#39;</span><span class="p">,</span> <span class="n">default_title</span><span class="p">))</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_repo_url</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">repo</span><span class="p">)</span>
+        <span class="n">test_mode</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_for_repo</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="s">&#39;test_mode&#39;</span><span class="p">)</span>
+        <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">Struct</span><span class="p">(</span><span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+                                    <span class="n">test_mode</span><span class="o">=</span><span class="n">test_mode</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">options</span>
+</div>
+<div class="viewcode-block" id="get_language_options"><a class="viewcode-back" href="../main.html#main.get_language_options">[docs]</a><span class="k">def</span> <span class="nf">get_language_options</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">current_lang</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a list of information needed to generate the language menu.&quot;&quot;&quot;</span>
+    <span class="n">primary_langs</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">language_menu_options</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[</span><span class="s">&#39;en&#39;</span><span class="p">]</span>
+    <span class="n">all_langs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="n">const</span><span class="o">.</span><span class="n">LANGUAGE_ENDONYMS</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+        <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">const</span><span class="o">.</span><span class="n">LANGUAGE_ENDONYMS</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s">&#39;primary&#39;</span><span class="p">:</span>
+            <span class="p">[</span><span class="n">get_language_option</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">lang</span><span class="p">,</span> <span class="n">lang</span> <span class="o">==</span> <span class="n">current_lang</span><span class="p">)</span>
+             <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">primary_langs</span><span class="p">],</span>
+        <span class="s">&#39;all&#39;</span><span class="p">:</span>
+            <span class="c"># We put both &#39;primary&#39; and &#39;all&#39; languages into a single &lt;select&gt;</span>
+            <span class="c"># box (See app/resources/language-menu.html.template).</span>
+            <span class="c"># If current_lang is in the primary languages, we mark the</span>
+            <span class="c"># language as is_selected in &#39;primary&#39;, not in &#39;all&#39;, to make sure</span>
+            <span class="c"># a single option is selected in the &lt;select&gt; box.</span>
+            <span class="p">[</span><span class="n">get_language_option</span><span class="p">(</span>
+                <span class="n">request</span><span class="p">,</span> <span class="n">lang</span><span class="p">,</span>
+                <span class="n">lang</span> <span class="o">==</span> <span class="n">current_lang</span> <span class="ow">and</span> <span class="n">lang</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">primary_langs</span><span class="p">)</span>
+             <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">all_langs</span><span class="p">],</span>
+    <span class="p">}</span>
+</div>
+<div class="viewcode-block" id="get_language_option"><a class="viewcode-back" href="../main.html#main.get_language_option">[docs]</a><span class="k">def</span> <span class="nf">get_language_option</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">lang</span><span class="p">,</span> <span class="n">is_selected</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s">&#39;lang&#39;</span><span class="p">:</span> <span class="n">lang</span><span class="p">,</span>
+        <span class="s">&#39;endonym&#39;</span><span class="p">:</span> <span class="n">const</span><span class="o">.</span><span class="n">LANGUAGE_ENDONYMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="s">&#39;?&#39;</span><span class="p">),</span>
+        <span class="s">&#39;url&#39;</span><span class="p">:</span> <span class="n">utils</span><span class="o">.</span><span class="n">set_url_param</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="s">&#39;lang&#39;</span><span class="p">,</span> <span class="n">lang</span><span class="p">),</span>
+        <span class="s">&#39;is_selected&#39;</span><span class="p">:</span> <span class="n">is_selected</span><span class="p">,</span>
+    <span class="p">}</span>
+</div>
+<div class="viewcode-block" id="get_secret"><a class="viewcode-back" href="../main.html#main.get_secret">[docs]</a><span class="k">def</span> <span class="nf">get_secret</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets a secret from the datastore by name, or returns None if missing.&quot;&quot;&quot;</span>
+    <span class="n">secret</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Secret</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">secret</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">secret</span><span class="o">.</span><span class="n">secret</span>
+</div>
+<div class="viewcode-block" id="get_localized_message"><a class="viewcode-back" href="../main.html#main.get_localized_message">[docs]</a><span class="k">def</span> <span class="nf">get_localized_message</span><span class="p">(</span><span class="n">localized_messages</span><span class="p">,</span> <span class="n">lang</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets the localized message for lang from a dictionary that maps language</span>
+<span class="sd">    codes to localized messages.  Falls back to English if language &#39;lang&#39; is</span>
+<span class="sd">    not available, or to a default message if English is not available.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">localized_messages</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">default</span>
+    <span class="k">return</span> <span class="n">localized_messages</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">localized_messages</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;en&#39;</span><span class="p">,</span> <span class="n">default</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="get_hidden_input_tags_for_preserved_query_params"><a class="viewcode-back" href="../main.html#main.get_hidden_input_tags_for_preserved_query_params">[docs]</a><span class="k">def</span> <span class="nf">get_hidden_input_tags_for_preserved_query_params</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets HTML with &lt;input type=&quot;hidden&quot;&gt; tags to preserve query parameters</span>
+<span class="sd">    listed in utils.PRESERVED_QUERY_PARAM_NAMES e.g. &quot;ui&quot;.&quot;&quot;&quot;</span>
+    <span class="n">tags_str</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">PRESERVED_QUERY_PARAM_NAMES</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+            <span class="n">tags_str</span> <span class="o">+=</span> <span class="s">&#39;&lt;input type=&quot;hidden&quot; name=&quot;</span><span class="si">%s</span><span class="s">&quot; value=&quot;</span><span class="si">%s</span><span class="s">&quot;&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">django</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">name</span><span class="p">),</span>
+                <span class="n">django</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">tags_str</span>
+</div>
+<div class="viewcode-block" id="setup_env"><a class="viewcode-back" href="../main.html#main.setup_env">[docs]</a><span class="k">def</span> <span class="nf">setup_env</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Constructs the &#39;env&#39; object, which contains various template variables</span>
+<span class="sd">    that are commonly used by most handlers.&quot;&quot;&quot;</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">Struct</span><span class="p">()</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">action</span> <span class="o">=</span> <span class="n">get_repo_and_action</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">Configuration</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">repo</span> <span class="ow">or</span> <span class="s">&#39;*&#39;</span><span class="p">)</span>
+    <span class="c"># TODO(ryok): Rename to local_test_mode or something alike to disambiguate</span>
+    <span class="c"># better from repository&#39;s test_mode.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">test_mode</span> <span class="o">=</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">remote_addr</span> <span class="o">==</span> <span class="s">&#39;127.0.0.1&#39;</span> <span class="ow">and</span>
+                     <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;test_mode&#39;</span><span class="p">))</span>
+
+    <span class="c"># TODO(kpy): Make these global config settings and get rid of get_secret().</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">analytics_id</span> <span class="o">=</span> <span class="n">get_secret</span><span class="p">(</span><span class="s">&#39;analytics_id&#39;</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">maps_api_key</span> <span class="o">=</span> <span class="n">get_secret</span><span class="p">(</span><span class="s">&#39;maps_api_key&#39;</span><span class="p">)</span>
+
+    <span class="c"># Internationalization-related stuff.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">select_charset</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">lang</span> <span class="o">=</span> <span class="n">select_lang</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">rtl</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span> <span class="ow">in</span> <span class="n">django_setup</span><span class="o">.</span><span class="n">LANGUAGES_BIDI</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">virtual_keyboard_layout</span> <span class="o">=</span> <span class="n">const</span><span class="o">.</span><span class="n">VIRTUAL_KEYBOARD_LAYOUTS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">)</span>
+
+    <span class="c"># Used for parsing query params. This must be done before accessing any</span>
+    <span class="c"># query params which may have multi-byte value, such as &quot;given_name&quot; below</span>
+    <span class="c"># in this function.</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">charset</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">charset</span>
+
+    <span class="c"># Determine the resource bundle to use.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">default_resource_bundle</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;default_resource_bundle&#39;</span><span class="p">,</span> <span class="s">&#39;1&#39;</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">resource_bundle</span> <span class="o">=</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;resource_bundle&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span> <span class="ow">or</span>
+                           <span class="n">env</span><span class="o">.</span><span class="n">default_resource_bundle</span><span class="p">)</span>
+
+    <span class="c"># Information about the request.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">set_url_param</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="s">&#39;lang&#39;</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">scheme</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">urlparse</span><span class="o">.</span><span class="n">urlsplit</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">force_https</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">domain</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">netloc</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">global_url</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_repo_url</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s">&#39;global&#39;</span><span class="p">)</span>
+
+    <span class="c"># Commonly used information that&#39;s rendered or localized for templates.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">language_options</span> <span class="o">=</span> <span class="n">get_language_options</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">repo_options</span> <span class="o">=</span> <span class="n">get_repo_options</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">expiry_options</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">Struct</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">PERSON_EXPIRY_TEXT</span><span class="p">[</span><span class="n">value</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">PERSON_EXPIRY_TEXT</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">status_options</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">Struct</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">NOTE_STATUS_TEXT</span><span class="p">[</span><span class="n">value</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">pfif</span><span class="o">.</span><span class="n">NOTE_STATUS_VALUES</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">!=</span> <span class="s">&#39;believed_dead&#39;</span> <span class="ow">or</span>
+            <span class="ow">not</span> <span class="n">env</span><span class="o">.</span><span class="n">config</span> <span class="ow">or</span> <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">allow_believed_dead_via_ui</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">hidden_input_tags_for_preserved_query_params</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">get_hidden_input_tags_for_preserved_query_params</span><span class="p">(</span><span class="n">request</span><span class="p">))</span>
+
+    <span class="n">ui_param</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ui&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="c"># Interprets &quot;small&quot; and &quot;style&quot; parameters for backward compatibility.</span>
+    <span class="c"># TODO(ichikawa): Delete these in near future when we decide to drop</span>
+    <span class="c"># support of these parameters.</span>
+    <span class="n">small_param</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;small&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">style_param</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;style&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ui_param</span> <span class="ow">and</span> <span class="n">small_param</span> <span class="o">==</span> <span class="s">&#39;yes&#39;</span><span class="p">:</span>
+        <span class="n">ui_param</span> <span class="o">=</span> <span class="s">&#39;small&#39;</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">ui_param</span> <span class="ow">and</span> <span class="n">style_param</span><span class="p">:</span>
+        <span class="n">ui_param</span> <span class="o">=</span> <span class="n">style_param</span>
+
+    <span class="k">if</span> <span class="n">ui_param</span><span class="p">:</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">ui</span> <span class="o">=</span> <span class="n">ui_param</span>
+    <span class="k">elif</span> <span class="n">user_agents</span><span class="o">.</span><span class="n">is_jp_tier2_mobile_phone</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">ui</span> <span class="o">=</span> <span class="s">&#39;light&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">ui</span> <span class="o">=</span> <span class="s">&#39;default&#39;</span>
+
+    <span class="c"># UI configurations.</span>
+    <span class="c">#</span>
+    <span class="c"># Enables features which require JavaScript.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">enable_javascript</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c"># Enables operations which requires Captcha.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">enable_captcha</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c"># Enables photo upload.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">enable_photo_upload</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c"># Enables to flag/unflag notes as spam, and to reveal spam notes.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">enable_spam_ops</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c"># Enables duplicate marking mode.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">enable_dup_mode</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c"># Shows a logo on top of the page.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">show_logo</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c"># Shows language menu.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">show_language_menu</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c"># Uses short labels for buttons.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">use_short_buttons</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="c"># Optional &quot;target&quot; attribute for links to non-small pages.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">target_attr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="c"># Shows record IDs in the results page.</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">show_record_ids_in_results</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">ui</span> <span class="o">==</span> <span class="s">&#39;small&#39;</span><span class="p">:</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">show_logo</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">target_attr</span> <span class="o">=</span> <span class="s">&#39; target=&quot;_blank&quot; &#39;</span>
+
+    <span class="k">elif</span> <span class="n">env</span><span class="o">.</span><span class="n">ui</span> <span class="o">==</span> <span class="s">&#39;light&#39;</span><span class="p">:</span>
+        <span class="c"># Disables features which requires JavaScript. Some feature phones</span>
+        <span class="c"># doesn&#39;t support JavaScript.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">enable_javascript</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># Disables operations which requires Captcha because Captcha requires</span>
+        <span class="c"># JavaScript.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">enable_captcha</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># Uploading is often not supported in feature phones.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">enable_photo_upload</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># Disables spam operations because it requires JavaScript and</span>
+        <span class="c"># supporting more pages on ui=light.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">enable_spam_ops</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># Disables duplicate marking mode because it doesn&#39;t support</span>
+        <span class="c"># small screens and it requires JavaScript.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">enable_dup_mode</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># Hides the logo on the top to save the space. Also, the logo links</span>
+        <span class="c"># to the global page which doesn&#39;t support small screens.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">show_logo</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># Hides language menu because the menu in the current position is</span>
+        <span class="c"># annoying in feature phones.</span>
+        <span class="c"># TODO(ichikawa): Consider layout of the language menu.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">show_language_menu</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># Too long buttons are not fully shown in some feature phones.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">use_short_buttons</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c"># To make it simple.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">show_record_ids_in_results</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="n">env</span><span class="o">.</span><span class="n">back_chevron</span> <span class="o">=</span> <span class="s">u&#39;</span><span class="se">\xab</span><span class="s">&#39;</span>
+    <span class="n">back_chevron_in_charset</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">back_chevron</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">UnicodeEncodeError</span><span class="p">:</span>
+        <span class="c"># u&#39;\xab&#39; is not in the charset (e.g. Shift_JIS).</span>
+        <span class="n">back_chevron_in_charset</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">back_chevron_in_charset</span> <span class="ow">or</span> <span class="n">env</span><span class="o">.</span><span class="n">ui</span> <span class="o">==</span> <span class="s">&#39;light&#39;</span><span class="p">:</span>
+        <span class="c"># Use ASCII characters on ui=light too because some feature phones</span>
+        <span class="c"># support UTF-8 but don&#39;t render UTF-8 symbols such as u&#39;\xab&#39;.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">back_chevron</span> <span class="o">=</span> <span class="s">u&#39;&lt;&lt;&#39;</span>
+
+    <span class="c"># Repo-specific information.</span>
+    <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">repo</span><span class="p">:</span>
+        <span class="c"># repo_url is the root URL for the repository.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">repo_url</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_repo_url</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">repo</span><span class="p">)</span>
+        <span class="c"># start_url is like repo_url but preserves parameters such as &#39;ui&#39;.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">start_url</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="c"># URL of the link in the heading. The link on ui=small links to the</span>
+        <span class="c"># normal UI.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">repo_title_url</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">repo_url</span> <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">ui</span> <span class="o">==</span> <span class="s">&#39;small&#39;</span> <span class="k">else</span> <span class="n">env</span><span class="o">.</span><span class="n">start_url</span><span class="p">)</span>
+        <span class="c"># URL to force default UI. Note that we show ui=light version in some</span>
+        <span class="c"># user agents when ui parameter is not specified.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">default_ui_url</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">ui</span><span class="o">=</span><span class="s">&#39;default&#39;</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">repo_path</span> <span class="o">=</span> <span class="n">urlparse</span><span class="o">.</span><span class="n">urlsplit</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">repo_url</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">repo_title</span> <span class="o">=</span> <span class="n">get_localized_message</span><span class="p">(</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">repo_titles</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">,</span> <span class="s">&#39;?&#39;</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">start_page_custom_html</span> <span class="o">=</span> <span class="n">get_localized_message</span><span class="p">(</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">start_page_custom_htmls</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">results_page_custom_html</span> <span class="o">=</span> <span class="n">get_localized_message</span><span class="p">(</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">results_page_custom_htmls</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">view_page_custom_html</span> <span class="o">=</span> <span class="n">get_localized_message</span><span class="p">(</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">view_page_custom_htmls</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">seek_query_form_custom_html</span> <span class="o">=</span> <span class="n">get_localized_message</span><span class="p">(</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">seek_query_form_custom_htmls</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">footer_custom_html</span> <span class="o">=</span> <span class="n">get_localized_message</span><span class="p">(</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">footer_custom_htmls</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="c"># If the repository is deactivated, we should not show test mode</span>
+        <span class="c"># notification.</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">repo_test_mode</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">test_mode</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">deactivated</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">force_https</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">force_https</span>
+
+        <span class="n">env</span><span class="o">.</span><span class="n">params_full_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;full_name&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">env</span><span class="o">.</span><span class="n">params_full_name</span><span class="p">:</span>
+            <span class="c"># Preformat the name from &#39;given_name&#39; and &#39;family_name&#39; parameters.</span>
+            <span class="n">given_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;given_name&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">family_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;family_name&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">params_full_name</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_full_name</span><span class="p">(</span>
+                <span class="n">given_name</span><span class="p">,</span> <span class="n">family_name</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">env</span>
+</div>
+<div class="viewcode-block" id="flush_caches"><a class="viewcode-back" href="../main.html#main.flush_caches">[docs]</a><span class="k">def</span> <span class="nf">flush_caches</span><span class="p">(</span><span class="o">*</span><span class="n">keywords</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flushes the specified set of caches.  Pass &#39;*&#39; to flush everything.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;*&#39;</span> <span class="ow">in</span> <span class="n">keywords</span> <span class="ow">or</span> <span class="s">&#39;resource&#39;</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+       <span class="n">resources</span><span class="o">.</span><span class="n">clear_caches</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s">&#39;*&#39;</span> <span class="ow">in</span> <span class="n">keywords</span> <span class="ow">or</span> <span class="s">&#39;memcache&#39;</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+       <span class="n">memcache</span><span class="o">.</span><span class="n">flush_all</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s">&#39;*&#39;</span> <span class="ow">in</span> <span class="n">keywords</span> <span class="ow">or</span> <span class="s">&#39;config&#39;</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+       <span class="n">config</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">keyword</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;config/&#39;</span><span class="p">):</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">keyword</span><span class="p">[</span><span class="mi">7</span><span class="p">:])</span>
+
+</div>
+<div class="viewcode-block" id="Main"><a class="viewcode-back" href="../main.html#main.Main">[docs]</a><span class="k">class</span> <span class="nc">Main</span><span class="p">(</span><span class="n">webapp</span><span class="o">.</span><span class="n">RequestHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The main request handler.  All dynamic requests except for remote_api are</span>
+<span class="sd">    handled by this handler, which dispatches to all other dynamic handlers.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Main.initialize"><a class="viewcode-back" href="../main.html#main.Main.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+        <span class="n">webapp</span><span class="o">.</span><span class="n">RequestHandler</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+
+        <span class="c"># If requested, set the clock before doing anything clock-related.</span>
+        <span class="c"># Only works on localhost for testing.  Specify ?utcnow=1293840000 to</span>
+        <span class="c"># set the clock to 2011-01-01, or ?utcnow=real to revert to real time.</span>
+        <span class="n">utcnow</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;utcnow&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">remote_addr</span> <span class="o">==</span> <span class="s">&#39;127.0.0.1&#39;</span> <span class="ow">and</span> <span class="n">utcnow</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">utcnow</span> <span class="o">==</span> <span class="s">&#39;real&#39;</span><span class="p">:</span>
+                <span class="n">utils</span><span class="o">.</span><span class="n">set_utcnow_for_test</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">utils</span><span class="o">.</span><span class="n">set_utcnow_for_test</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">utcnow</span><span class="p">))</span>
+
+        <span class="c"># If requested, flush caches before we touch anything that uses them.</span>
+        <span class="n">flush_caches</span><span class="p">(</span><span class="o">*</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;flush&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span>
+
+        <span class="c"># Gather commonly used information into self.env.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="n">setup_env</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="c"># Force a redirect if requested, except where https is not supported:</span>
+        <span class="c"># - for cron jobs</span>
+        <span class="c"># - for task queue jobs</span>
+        <span class="c"># - in development</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">force_https</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s">&#39;http&#39;</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_cron_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_task_queue_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_development_server</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;http:&#39;</span><span class="p">,</span> <span class="s">&#39;https:&#39;</span><span class="p">))</span>
+
+        <span class="c"># Activate the selected language.</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Content-Language&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">lang</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Set-Cookie&#39;</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="s">&#39;django_language=</span><span class="si">%s</span><span class="s">; path=/&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">lang</span>
+        <span class="n">django_setup</span><span class="o">.</span><span class="n">activate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">)</span>
+
+        <span class="c"># Activate the appropriate resource bundle.</span>
+        <span class="n">resources</span><span class="o">.</span><span class="n">set_active_bundle_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">resource_bundle</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Main.serve"><a class="viewcode-back" href="../main.html#main.Main.serve">[docs]</a>    <span class="k">def</span> <span class="nf">serve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">env</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">env</span><span class="o">.</span><span class="n">action</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">env</span><span class="o">.</span><span class="n">repo</span><span class="p">:</span>
+            <span class="c"># Redirect to the default home page.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">global_url</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">HOME_ACTION</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">env</span><span class="o">.</span><span class="n">action</span> <span class="ow">in</span> <span class="n">HANDLER_CLASSES</span><span class="p">:</span>
+            <span class="c"># Dispatch to the handler for the specified action.</span>
+            <span class="n">module_name</span><span class="p">,</span> <span class="n">class_name</span> <span class="o">=</span> <span class="n">HANDLER_CLASSES</span><span class="p">[</span><span class="n">env</span><span class="o">.</span><span class="n">action</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+            <span class="n">handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">__import__</span><span class="p">(</span><span class="n">module_name</span><span class="p">),</span> <span class="n">class_name</span><span class="p">)(</span>
+                <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">env</span><span class="p">)</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">())()</span>  <span class="c"># get() or post()</span>
+        <span class="k">elif</span> <span class="n">env</span><span class="o">.</span><span class="n">action</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.template&#39;</span><span class="p">):</span>
+            <span class="c"># Don&#39;t serve template source code.</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="mi">404</span><span class="p">)</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Not found&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Serve a static page or file.</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">robots_ok</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">get_vars</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;env&#39;</span><span class="p">:</span> <span class="n">env</span><span class="p">,</span> <span class="s">&#39;config&#39;</span><span class="p">:</span> <span class="n">env</span><span class="o">.</span><span class="n">config</span><span class="p">}</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">get_rendered</span><span class="p">(</span>
+                <span class="n">env</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">lang</span><span class="p">,</span> <span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">env</span><span class="o">.</span><span class="n">charset</span><span class="p">),</span> <span class="n">get_vars</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">content</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="mi">404</span><span class="p">)</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Not found&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">content_type</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">action</span><span class="p">)</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Content-Type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">content_type</span> <span class="ow">or</span> <span class="s">&#39;text/plain&#39;</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Main.get"><a class="viewcode-back" href="../main.html#main.Main.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serve</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Main.post"><a class="viewcode-back" href="../main.html#main.Main.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serve</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Main.head"><a class="viewcode-back" href="../main.html#main.Main.head">[docs]</a>    <span class="k">def</span> <span class="nf">head</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s">&#39;GET&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serve</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">webapp</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">run_wsgi_app</span><span class="p">(</span><span class="n">webapp</span><span class="o">.</span><span class="n">WSGIApplication</span><span class="p">([(</span><span class="s">&#39;.*&#39;</span><span class="p">,</span> <span class="n">Main</span><span class="p">)]))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

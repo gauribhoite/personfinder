@@ -1,0 +1,377 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>view &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for view</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">datastore_errors</span>
+
+<span class="kn">from</span> <span class="nn">model</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">photo</span> <span class="kn">import</span> <span class="n">create_photo</span><span class="p">,</span> <span class="n">PhotoError</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">detect_spam</span> <span class="kn">import</span> <span class="n">SpamDetector</span>
+<span class="kn">import</span> <span class="nn">extend</span>
+<span class="kn">import</span> <span class="nn">reveal</span>
+<span class="kn">import</span> <span class="nn">subscribe</span>
+
+<span class="kn">from</span> <span class="nn">django.utils.translation</span> <span class="kn">import</span> <span class="n">ugettext</span> <span class="k">as</span> <span class="n">_</span>
+<span class="kn">from</span> <span class="nn">urlparse</span> <span class="kn">import</span> <span class="n">urlparse</span>
+
+<span class="c"># how many days left before we warn about imminent expiration.</span>
+<span class="c"># Make this at least 1.</span>
+<span class="n">EXPIRY_WARNING_THRESHOLD</span> <span class="o">=</span> <span class="mi">7</span>
+
+<div class="viewcode-block" id="get_profile_pages"><a class="viewcode-back" href="../view.html#view.get_profile_pages">[docs]</a><span class="k">def</span> <span class="nf">get_profile_pages</span><span class="p">(</span><span class="n">profile_urls</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
+    <span class="n">profile_pages</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">profile_url</span> <span class="ow">in</span> <span class="n">profile_urls</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+        <span class="c"># Use the hostname as the website name by default.</span>
+        <span class="n">profile_page</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">profile_url</span><span class="p">)</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span>
+            <span class="s">&#39;url&#39;</span><span class="p">:</span> <span class="n">profile_url</span> <span class="p">}</span>
+        <span class="k">for</span> <span class="n">website</span> <span class="ow">in</span> <span class="n">handler</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">profile_websites</span> <span class="ow">or</span> <span class="p">[]:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="s">&#39;url_regexp&#39;</span> <span class="ow">in</span> <span class="n">website</span> <span class="ow">and</span>
+                <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">website</span><span class="p">[</span><span class="s">&#39;url_regexp&#39;</span><span class="p">],</span> <span class="n">profile_url</span><span class="p">)):</span>
+                <span class="n">profile_page</span> <span class="o">=</span> <span class="n">add_profile_icon_url</span><span class="p">(</span><span class="n">website</span><span class="p">,</span> <span class="n">handler</span><span class="p">)</span>
+                <span class="n">profile_page</span><span class="p">[</span><span class="s">&#39;url&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">profile_url</span>
+                <span class="k">break</span>
+        <span class="n">profile_pages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">profile_page</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">profile_pages</span>
+</div>
+<div class="viewcode-block" id="Handler"><a class="viewcode-back" href="../view.html#view.Handler">[docs]</a><span class="k">class</span> <span class="nc">Handler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Handler.get"><a class="viewcode-back" href="../view.html#view.Handler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># Check the request parameters.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s">&#39;No person id was specified.&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">person</span> <span class="o">=</span> <span class="n">Person</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span>
+                <span class="n">_</span><span class="p">(</span><span class="s">&quot;This person&#39;s entry does not exist or has been deleted.&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">person</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span>
+                <span class="n">_</span><span class="p">(</span><span class="s">&quot;This person&#39;s entry does not exist or has been deleted.&quot;</span><span class="p">))</span>
+        <span class="n">standalone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;standalone&#39;</span><span class="p">)</span>
+
+        <span class="c"># Check if private info should be revealed.</span>
+        <span class="n">content_id</span> <span class="o">=</span> <span class="s">&#39;view:&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">reveal_url</span> <span class="o">=</span> <span class="n">reveal</span><span class="o">.</span><span class="n">make_reveal_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content_id</span><span class="p">)</span>
+        <span class="n">show_private_info</span> <span class="o">=</span> <span class="n">reveal</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">content_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">signature</span><span class="p">)</span>
+
+        <span class="c"># Compute the local times for the date fields on the person.</span>
+        <span class="n">person</span><span class="o">.</span><span class="n">source_date_local_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_formatted_local_time</span><span class="p">(</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">source_date</span><span class="p">)</span>
+        <span class="n">person</span><span class="o">.</span><span class="n">expiry_date_local_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_formatted_local_time</span><span class="p">(</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">get_effective_expiry_date</span><span class="p">())</span>
+
+        <span class="c"># Get the notes and duplicate links.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">notes</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">get_notes</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">datastore_errors</span><span class="o">.</span><span class="n">NeedIndexError</span><span class="p">:</span>
+            <span class="n">notes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">person</span><span class="o">.</span><span class="n">sex_text</span> <span class="o">=</span> <span class="n">get_person_sex_text</span><span class="p">(</span><span class="n">person</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">notes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_fields_to_notes</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">linked_persons</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">get_all_linked_persons</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">datastore_errors</span><span class="o">.</span><span class="n">NeedIndexError</span><span class="p">:</span>
+            <span class="n">linked_persons</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">linked_person_info</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">linked_person</span> <span class="ow">in</span> <span class="n">linked_persons</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">linked_notes</span> <span class="o">=</span> <span class="n">linked_person</span><span class="o">.</span><span class="n">get_notes</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">datastore_errors</span><span class="o">.</span><span class="n">NeedIndexError</span><span class="p">:</span>
+                <span class="n">linked_notes</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">linked_notes</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_fields_to_notes</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+            <span class="n">linked_person_info</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="n">linked_person</span><span class="o">.</span><span class="n">record_id</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">linked_person</span><span class="o">.</span><span class="n">primary_full_name</span><span class="p">,</span>
+                <span class="n">view_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/view&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">linked_person</span><span class="o">.</span><span class="n">record_id</span><span class="p">),</span>
+                <span class="n">notes</span><span class="o">=</span><span class="n">linked_notes</span><span class="p">))</span>
+
+        <span class="c"># Render the page.</span>
+        <span class="n">dupe_notes_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span>
+            <span class="s">&#39;/view&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">dupe_notes</span><span class="o">=</span><span class="s">&#39;yes&#39;</span><span class="p">)</span>
+        <span class="n">results_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span>
+            <span class="s">&#39;/results&#39;</span><span class="p">,</span>
+            <span class="n">role</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">role</span><span class="p">,</span>
+            <span class="n">query</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
+            <span class="n">given_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">given_name</span><span class="p">,</span>
+            <span class="n">family_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">family_name</span><span class="p">)</span>
+        <span class="n">feed_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span>
+            <span class="s">&#39;/feeds/note&#39;</span><span class="p">,</span>
+            <span class="n">person_record_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">repo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">)</span>
+        <span class="n">subscribe_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/subscribe&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">delete_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/delete&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">disable_notes_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/disable_notes&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">enable_notes_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/enable_notes&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">extend_url</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">extension_days</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">expiration_days</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">expiry_date</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">get_effective_expiry_date</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">expiry_date</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">person</span><span class="o">.</span><span class="n">is_clone</span><span class="p">():</span>
+            <span class="n">expiration_delta</span> <span class="o">=</span> <span class="n">expiry_date</span> <span class="o">-</span> <span class="n">get_utcnow</span><span class="p">()</span>
+            <span class="n">extend_url</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/extend&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">extension_days</span> <span class="o">=</span> <span class="n">extend</span><span class="o">.</span><span class="n">get_extension_days</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">expiration_delta</span><span class="o">.</span><span class="n">days</span> <span class="o">&lt;</span> <span class="n">EXPIRY_WARNING_THRESHOLD</span><span class="p">:</span>
+                <span class="c"># round 0 up to 1, to make the msg read better.</span>
+                <span class="n">expiration_days</span> <span class="o">=</span> <span class="n">expiration_delta</span><span class="o">.</span><span class="n">days</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">is_clone</span><span class="p">():</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">provider_name</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">get_original_domain</span><span class="p">()</span>
+
+        <span class="n">sanitize_urls</span><span class="p">(</span><span class="n">person</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">notes</span><span class="p">:</span>
+            <span class="n">sanitize_urls</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">profile_urls</span><span class="p">:</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">profile_pages</span> <span class="o">=</span> <span class="n">get_profile_pages</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">profile_urls</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;view.html&#39;</span><span class="p">,</span>
+                    <span class="n">person</span><span class="o">=</span><span class="n">person</span><span class="p">,</span>
+                    <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">,</span>
+                    <span class="n">linked_person_info</span><span class="o">=</span><span class="n">linked_person_info</span><span class="p">,</span>
+                    <span class="n">standalone</span><span class="o">=</span><span class="n">standalone</span><span class="p">,</span>
+                    <span class="n">onload_function</span><span class="o">=</span><span class="s">&#39;view_page_loaded()&#39;</span><span class="p">,</span>
+                    <span class="n">show_private_info</span><span class="o">=</span><span class="n">show_private_info</span><span class="p">,</span>
+                    <span class="n">admin</span><span class="o">=</span><span class="n">users</span><span class="o">.</span><span class="n">is_current_user_admin</span><span class="p">(),</span>
+                    <span class="n">dupe_notes_url</span><span class="o">=</span><span class="n">dupe_notes_url</span><span class="p">,</span>
+                    <span class="n">results_url</span><span class="o">=</span><span class="n">results_url</span><span class="p">,</span>
+                    <span class="n">reveal_url</span><span class="o">=</span><span class="n">reveal_url</span><span class="p">,</span>
+                    <span class="n">feed_url</span><span class="o">=</span><span class="n">feed_url</span><span class="p">,</span>
+                    <span class="n">subscribe_url</span><span class="o">=</span><span class="n">subscribe_url</span><span class="p">,</span>
+                    <span class="n">delete_url</span><span class="o">=</span><span class="n">delete_url</span><span class="p">,</span>
+                    <span class="n">disable_notes_url</span><span class="o">=</span><span class="n">disable_notes_url</span><span class="p">,</span>
+                    <span class="n">enable_notes_url</span><span class="o">=</span><span class="n">enable_notes_url</span><span class="p">,</span>
+                    <span class="n">extend_url</span><span class="o">=</span><span class="n">extend_url</span><span class="p">,</span>
+                    <span class="n">extension_days</span><span class="o">=</span><span class="n">extension_days</span><span class="p">,</span>
+                    <span class="n">expiration_days</span><span class="o">=</span><span class="n">expiration_days</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.post"><a class="viewcode-back" href="../view.html#view.Handler.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">text</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="mi">200</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;Message is required. Please go back and try again.&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="mi">200</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;Your name is required in the &quot;About you&quot; section.  &#39;</span>
+                       <span class="s">&#39;Please go back and try again.&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s">&#39;is_note_author&#39;</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_made_contact</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="mi">200</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;Please check that you have been in contact with &#39;</span>
+                       <span class="s">&#39;the person after the earthquake, or change the &#39;</span>
+                       <span class="s">&#39;&quot;Status of this person&quot; field.&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s">&#39;believed_dead&#39;</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">allow_believed_dead_via_ui</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="mi">200</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;Not authorized to post notes with the status &#39;</span>
+                       <span class="s">&#39;&quot;believed_dead&quot;.&#39;</span><span class="p">))</span>
+
+        <span class="n">person</span> <span class="o">=</span> <span class="n">Person</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">notes_disabled</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="mi">200</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;The author has disabled status updates &#39;</span>
+                       <span class="s">&#39;on this record.&#39;</span><span class="p">))</span>
+
+        <span class="c"># If a photo was uploaded, create and store a new Photo entry and get</span>
+        <span class="c"># the URL where it&#39;s served; otherwise, use the note_photo_url provided.</span>
+        <span class="n">photo</span><span class="p">,</span> <span class="n">photo_url</span> <span class="o">=</span> <span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">note_photo_url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">note_photo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">photo</span><span class="p">,</span> <span class="n">photo_url</span> <span class="o">=</span> <span class="n">create_photo</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">note_photo</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">PhotoError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+            <span class="n">photo</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+
+        <span class="n">spam_detector</span> <span class="o">=</span> <span class="n">SpamDetector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">bad_words</span><span class="p">)</span>
+        <span class="n">spam_score</span> <span class="o">=</span> <span class="n">spam_detector</span><span class="o">.</span><span class="n">estimate_spam_score</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">spam_score</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">note</span> <span class="o">=</span> <span class="n">NoteWithBadWords</span><span class="o">.</span><span class="n">create_original</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span>
+                <span class="n">entry_date</span><span class="o">=</span><span class="n">get_utcnow</span><span class="p">(),</span>
+                <span class="n">person_record_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">author_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_name</span><span class="p">,</span>
+                <span class="n">author_email</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_email</span><span class="p">,</span>
+                <span class="n">author_phone</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_phone</span><span class="p">,</span>
+                <span class="n">source_date</span><span class="o">=</span><span class="n">get_utcnow</span><span class="p">(),</span>
+                <span class="n">author_made_contact</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_made_contact</span><span class="p">),</span>
+                <span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                <span class="n">email_of_found_person</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">email_of_found_person</span><span class="p">,</span>
+                <span class="n">phone_of_found_person</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">phone_of_found_person</span><span class="p">,</span>
+                <span class="n">last_known_location</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">last_known_location</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                <span class="n">photo</span><span class="o">=</span><span class="n">photo</span><span class="p">,</span>
+                <span class="n">photo_url</span><span class="o">=</span><span class="n">photo_url</span><span class="p">,</span>
+                <span class="n">spam_score</span><span class="o">=</span><span class="n">spam_score</span><span class="p">,</span>
+                <span class="n">confirmed</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="c"># Write the new NoteWithBadWords to the datastore</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+            <span class="n">UserActionLog</span><span class="o">.</span><span class="n">put_new</span><span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="n">note</span><span class="p">,</span> <span class="n">copy_properties</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="c"># When the note is detected as spam, we do not update person record</span>
+            <span class="c"># or log action. We ask the note author for confirmation first.</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="s">&#39;/post_flagged_note&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">note</span><span class="o">.</span><span class="n">get_record_id</span><span class="p">(),</span>
+                                 <span class="n">author_email</span><span class="o">=</span><span class="n">note</span><span class="o">.</span><span class="n">author_email</span><span class="p">,</span>
+                                 <span class="n">repo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">note</span> <span class="o">=</span> <span class="n">Note</span><span class="o">.</span><span class="n">create_original</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span>
+                <span class="n">entry_date</span><span class="o">=</span><span class="n">get_utcnow</span><span class="p">(),</span>
+                <span class="n">person_record_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">author_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_name</span><span class="p">,</span>
+                <span class="n">author_email</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_email</span><span class="p">,</span>
+                <span class="n">author_phone</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_phone</span><span class="p">,</span>
+                <span class="n">source_date</span><span class="o">=</span><span class="n">get_utcnow</span><span class="p">(),</span>
+                <span class="n">author_made_contact</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_made_contact</span><span class="p">),</span>
+                <span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                <span class="n">email_of_found_person</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">email_of_found_person</span><span class="p">,</span>
+                <span class="n">phone_of_found_person</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">phone_of_found_person</span><span class="p">,</span>
+                <span class="n">last_known_location</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">last_known_location</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                <span class="n">photo</span><span class="o">=</span><span class="n">photo</span><span class="p">,</span>
+                <span class="n">photo_url</span><span class="o">=</span><span class="n">photo_url</span><span class="p">)</span>
+            <span class="c"># Write the new regular Note to the datastore</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+            <span class="n">UserActionLog</span><span class="o">.</span><span class="n">put_new</span><span class="p">(</span><span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="n">note</span><span class="p">,</span> <span class="n">copy_properties</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="c"># Specially log &#39;believed_dead&#39;.</span>
+        <span class="k">if</span> <span class="n">note</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s">&#39;believed_dead&#39;</span><span class="p">:</span>
+            <span class="n">UserActionLog</span><span class="o">.</span><span class="n">put_new</span><span class="p">(</span>
+                <span class="s">&#39;mark_dead&#39;</span><span class="p">,</span> <span class="n">note</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">primary_full_name</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">remote_addr</span><span class="p">)</span>
+
+        <span class="c"># Specially log a switch to an alive status.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">note</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;believed_alive&#39;</span><span class="p">,</span> <span class="s">&#39;is_note_author&#39;</span><span class="p">]</span> <span class="ow">and</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">latest_status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;believed_alive&#39;</span><span class="p">,</span> <span class="s">&#39;is_note_author&#39;</span><span class="p">]):</span>
+            <span class="n">UserActionLog</span><span class="o">.</span><span class="n">put_new</span><span class="p">(</span><span class="s">&#39;mark_alive&#39;</span><span class="p">,</span> <span class="n">note</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">primary_full_name</span><span class="p">)</span>
+
+        <span class="c"># Update the Person based on the Note.</span>
+        <span class="k">if</span> <span class="n">person</span><span class="p">:</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">update_from_note</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+            <span class="c"># Send notification to all people</span>
+            <span class="c"># who subscribed to updates on this person</span>
+            <span class="n">subscribe</span><span class="o">.</span><span class="n">send_notifications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="p">[</span><span class="n">note</span><span class="p">])</span>
+            <span class="c"># write the updated person record to datastore</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">person</span><span class="p">)</span>
+
+        <span class="c"># If user wants to subscribe to updates, redirect to the subscribe page</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">subscribe</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="s">&#39;/subscribe&#39;</span><span class="p">,</span>
+                                 <span class="nb">id</span><span class="o">=</span><span class="n">person</span><span class="o">.</span><span class="n">record_id</span><span class="p">,</span>
+                                 <span class="n">subscribe_email</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">author_email</span><span class="p">,</span>
+                                 <span class="n">context</span><span class="o">=</span><span class="s">&#39;add_note&#39;</span><span class="p">)</span>
+
+        <span class="c"># Redirect to this page so the browser&#39;s back button works properly.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="s">&#39;/view&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.add_fields_to_notes"><a class="viewcode-back" href="../view.html#view.Handler.add_fields_to_notes">[docs]</a>    <span class="k">def</span> <span class="nf">add_fields_to_notes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">note</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds some fields used in the template to a note.&quot;&quot;&quot;</span>
+        <span class="n">note</span><span class="o">.</span><span class="n">status_text</span> <span class="o">=</span> <span class="n">get_note_status_text</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+        <span class="n">note</span><span class="o">.</span><span class="n">linked_person_url</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/view&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">note</span><span class="o">.</span><span class="n">linked_person_record_id</span><span class="p">)</span>
+        <span class="n">note</span><span class="o">.</span><span class="n">flag_spam_url</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/flag_note&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">note</span><span class="o">.</span><span class="n">note_record_id</span><span class="p">,</span>
+                         <span class="n">hide</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">note</span><span class="o">.</span><span class="n">hidden</span><span class="p">)</span> <span class="ow">and</span> <span class="s">&#39;yes&#39;</span> <span class="ow">or</span> <span class="s">&#39;no&#39;</span><span class="p">,</span>
+                         <span class="n">signature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">signature</span><span class="p">)</span>
+        <span class="n">note</span><span class="o">.</span><span class="n">source_date_local_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_formatted_local_time</span><span class="p">(</span>
+            <span class="n">note</span><span class="o">.</span><span class="n">source_date</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
