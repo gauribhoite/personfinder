@@ -2,6 +2,7 @@ Personfinder API documentation!
 ===============================
 
 .. toctree::
+    :maxdepth: 1
 
     admin
     admin_api_keys

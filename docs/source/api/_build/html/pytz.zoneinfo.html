@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="app  documentation" href="index.html" />
     <link rel="up" title="pytz package" href="pytz.html" />
-    <link rel="next" title="query module" href="query.html" />
+    <link rel="next" title="pytz.zoneinfo.Africa package" href="pytz.zoneinfo.Africa.html" />
     <link rel="prev" title="pytz.tests package" href="pytz.tests.html" />
    
   
@@ -41,6 +41,617 @@
             
   <div class="section" id="pytz-zoneinfo-package">
 <h1>pytz.zoneinfo package<a class="headerlink" href="#pytz-zoneinfo-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Africa.html">pytz.zoneinfo.Africa package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-abidjan-module">pytz.zoneinfo.Africa.Abidjan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-accra-module">pytz.zoneinfo.Africa.Accra module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-addis-ababa-module">pytz.zoneinfo.Africa.Addis_Ababa module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-algiers-module">pytz.zoneinfo.Africa.Algiers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-asmera-module">pytz.zoneinfo.Africa.Asmera module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-bamako-module">pytz.zoneinfo.Africa.Bamako module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-bangui-module">pytz.zoneinfo.Africa.Bangui module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-banjul-module">pytz.zoneinfo.Africa.Banjul module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-bissau-module">pytz.zoneinfo.Africa.Bissau module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-blantyre-module">pytz.zoneinfo.Africa.Blantyre module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-brazzaville-module">pytz.zoneinfo.Africa.Brazzaville module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-bujumbura-module">pytz.zoneinfo.Africa.Bujumbura module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-cairo-module">pytz.zoneinfo.Africa.Cairo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-casablanca-module">pytz.zoneinfo.Africa.Casablanca module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-ceuta-module">pytz.zoneinfo.Africa.Ceuta module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-conakry-module">pytz.zoneinfo.Africa.Conakry module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-dakar-module">pytz.zoneinfo.Africa.Dakar module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-dar-es-salaam-module">pytz.zoneinfo.Africa.Dar_es_Salaam module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-djibouti-module">pytz.zoneinfo.Africa.Djibouti module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-douala-module">pytz.zoneinfo.Africa.Douala module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-el-aaiun-module">pytz.zoneinfo.Africa.El_Aaiun module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-freetown-module">pytz.zoneinfo.Africa.Freetown module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-gaborone-module">pytz.zoneinfo.Africa.Gaborone module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-harare-module">pytz.zoneinfo.Africa.Harare module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-johannesburg-module">pytz.zoneinfo.Africa.Johannesburg module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-kampala-module">pytz.zoneinfo.Africa.Kampala module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-khartoum-module">pytz.zoneinfo.Africa.Khartoum module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-kigali-module">pytz.zoneinfo.Africa.Kigali module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-kinshasa-module">pytz.zoneinfo.Africa.Kinshasa module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-lagos-module">pytz.zoneinfo.Africa.Lagos module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-libreville-module">pytz.zoneinfo.Africa.Libreville module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-lome-module">pytz.zoneinfo.Africa.Lome module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-luanda-module">pytz.zoneinfo.Africa.Luanda module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-lubumbashi-module">pytz.zoneinfo.Africa.Lubumbashi module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-lusaka-module">pytz.zoneinfo.Africa.Lusaka module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-malabo-module">pytz.zoneinfo.Africa.Malabo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-maputo-module">pytz.zoneinfo.Africa.Maputo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-maseru-module">pytz.zoneinfo.Africa.Maseru module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-mbabane-module">pytz.zoneinfo.Africa.Mbabane module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-mogadishu-module">pytz.zoneinfo.Africa.Mogadishu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-monrovia-module">pytz.zoneinfo.Africa.Monrovia module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-nairobi-module">pytz.zoneinfo.Africa.Nairobi module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-ndjamena-module">pytz.zoneinfo.Africa.Ndjamena module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-niamey-module">pytz.zoneinfo.Africa.Niamey module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-nouakchott-module">pytz.zoneinfo.Africa.Nouakchott module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-ouagadougou-module">pytz.zoneinfo.Africa.Ouagadougou module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-porto-minus-novo-module">pytz.zoneinfo.Africa.Porto_minus_Novo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-sao-tome-module">pytz.zoneinfo.Africa.Sao_Tome module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-timbuktu-module">pytz.zoneinfo.Africa.Timbuktu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-tripoli-module">pytz.zoneinfo.Africa.Tripoli module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-tunis-module">pytz.zoneinfo.Africa.Tunis module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#pytz-zoneinfo-africa-windhoek-module">pytz.zoneinfo.Africa.Windhoek module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Africa.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.America.html">pytz.zoneinfo.America package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html">pytz.zoneinfo.America.Argentina package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-buenos-aires-module">pytz.zoneinfo.America.Argentina.Buenos_Aires module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-catamarca-module">pytz.zoneinfo.America.Argentina.Catamarca module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-comodrivadavia-module">pytz.zoneinfo.America.Argentina.ComodRivadavia module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-cordoba-module">pytz.zoneinfo.America.Argentina.Cordoba module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-jujuy-module">pytz.zoneinfo.America.Argentina.Jujuy module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-la-rioja-module">pytz.zoneinfo.America.Argentina.La_Rioja module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-mendoza-module">pytz.zoneinfo.America.Argentina.Mendoza module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-rio-gallegos-module">pytz.zoneinfo.America.Argentina.Rio_Gallegos module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-san-juan-module">pytz.zoneinfo.America.Argentina.San_Juan module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-tucuman-module">pytz.zoneinfo.America.Argentina.Tucuman module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#pytz-zoneinfo-america-argentina-ushuaia-module">pytz.zoneinfo.America.Argentina.Ushuaia module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Argentina.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html">pytz.zoneinfo.America.Indiana package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html#pytz-zoneinfo-america-indiana-indianapolis-module">pytz.zoneinfo.America.Indiana.Indianapolis module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html#pytz-zoneinfo-america-indiana-knox-module">pytz.zoneinfo.America.Indiana.Knox module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html#pytz-zoneinfo-america-indiana-marengo-module">pytz.zoneinfo.America.Indiana.Marengo module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html#pytz-zoneinfo-america-indiana-petersburg-module">pytz.zoneinfo.America.Indiana.Petersburg module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html#pytz-zoneinfo-america-indiana-vevay-module">pytz.zoneinfo.America.Indiana.Vevay module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html#pytz-zoneinfo-america-indiana-vincennes-module">pytz.zoneinfo.America.Indiana.Vincennes module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Indiana.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytz.zoneinfo.America.Kentucky.html">pytz.zoneinfo.America.Kentucky package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Kentucky.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Kentucky.html#pytz-zoneinfo-america-kentucky-louisville-module">pytz.zoneinfo.America.Kentucky.Louisville module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Kentucky.html#pytz-zoneinfo-america-kentucky-monticello-module">pytz.zoneinfo.America.Kentucky.Monticello module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.Kentucky.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pytz.zoneinfo.America.North_Dakota.html">pytz.zoneinfo.America.North_Dakota package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.North_Dakota.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.North_Dakota.html#pytz-zoneinfo-america-north-dakota-center-module">pytz.zoneinfo.America.North_Dakota.Center module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.North_Dakota.html#pytz-zoneinfo-america-north-dakota-new-salem-module">pytz.zoneinfo.America.North_Dakota.New_Salem module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pytz.zoneinfo.America.North_Dakota.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-adak-module">pytz.zoneinfo.America.Adak module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-anchorage-module">pytz.zoneinfo.America.Anchorage module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-anguilla-module">pytz.zoneinfo.America.Anguilla module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-antigua-module">pytz.zoneinfo.America.Antigua module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-araguaina-module">pytz.zoneinfo.America.Araguaina module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-aruba-module">pytz.zoneinfo.America.Aruba module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-asuncion-module">pytz.zoneinfo.America.Asuncion module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-atikokan-module">pytz.zoneinfo.America.Atikokan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-atka-module">pytz.zoneinfo.America.Atka module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-bahia-module">pytz.zoneinfo.America.Bahia module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-barbados-module">pytz.zoneinfo.America.Barbados module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-belem-module">pytz.zoneinfo.America.Belem module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-belize-module">pytz.zoneinfo.America.Belize module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-blanc-minus-sablon-module">pytz.zoneinfo.America.Blanc_minus_Sablon module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-boa-vista-module">pytz.zoneinfo.America.Boa_Vista module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-bogota-module">pytz.zoneinfo.America.Bogota module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-boise-module">pytz.zoneinfo.America.Boise module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-buenos-aires-module">pytz.zoneinfo.America.Buenos_Aires module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-cambridge-bay-module">pytz.zoneinfo.America.Cambridge_Bay module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-campo-grande-module">pytz.zoneinfo.America.Campo_Grande module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-cancun-module">pytz.zoneinfo.America.Cancun module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-caracas-module">pytz.zoneinfo.America.Caracas module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-catamarca-module">pytz.zoneinfo.America.Catamarca module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-cayenne-module">pytz.zoneinfo.America.Cayenne module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-cayman-module">pytz.zoneinfo.America.Cayman module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-chicago-module">pytz.zoneinfo.America.Chicago module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-chihuahua-module">pytz.zoneinfo.America.Chihuahua module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-coral-harbour-module">pytz.zoneinfo.America.Coral_Harbour module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-cordoba-module">pytz.zoneinfo.America.Cordoba module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-costa-rica-module">pytz.zoneinfo.America.Costa_Rica module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-cuiaba-module">pytz.zoneinfo.America.Cuiaba module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-curacao-module">pytz.zoneinfo.America.Curacao module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-danmarkshavn-module">pytz.zoneinfo.America.Danmarkshavn module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-dawson-module">pytz.zoneinfo.America.Dawson module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-dawson-creek-module">pytz.zoneinfo.America.Dawson_Creek module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-denver-module">pytz.zoneinfo.America.Denver module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-detroit-module">pytz.zoneinfo.America.Detroit module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-dominica-module">pytz.zoneinfo.America.Dominica module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-edmonton-module">pytz.zoneinfo.America.Edmonton module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-eirunepe-module">pytz.zoneinfo.America.Eirunepe module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-el-salvador-module">pytz.zoneinfo.America.El_Salvador module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-ensenada-module">pytz.zoneinfo.America.Ensenada module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-fort-wayne-module">pytz.zoneinfo.America.Fort_Wayne module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-fortaleza-module">pytz.zoneinfo.America.Fortaleza module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-glace-bay-module">pytz.zoneinfo.America.Glace_Bay module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-godthab-module">pytz.zoneinfo.America.Godthab module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-goose-bay-module">pytz.zoneinfo.America.Goose_Bay module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-grand-turk-module">pytz.zoneinfo.America.Grand_Turk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-grenada-module">pytz.zoneinfo.America.Grenada module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-guadeloupe-module">pytz.zoneinfo.America.Guadeloupe module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-guatemala-module">pytz.zoneinfo.America.Guatemala module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-guayaquil-module">pytz.zoneinfo.America.Guayaquil module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-guyana-module">pytz.zoneinfo.America.Guyana module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-halifax-module">pytz.zoneinfo.America.Halifax module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-havana-module">pytz.zoneinfo.America.Havana module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-hermosillo-module">pytz.zoneinfo.America.Hermosillo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-indianapolis-module">pytz.zoneinfo.America.Indianapolis module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-inuvik-module">pytz.zoneinfo.America.Inuvik module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-iqaluit-module">pytz.zoneinfo.America.Iqaluit module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-jamaica-module">pytz.zoneinfo.America.Jamaica module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-jujuy-module">pytz.zoneinfo.America.Jujuy module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-juneau-module">pytz.zoneinfo.America.Juneau module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-knox-in-module">pytz.zoneinfo.America.Knox_IN module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-la-paz-module">pytz.zoneinfo.America.La_Paz module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-lima-module">pytz.zoneinfo.America.Lima module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-los-angeles-module">pytz.zoneinfo.America.Los_Angeles module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-louisville-module">pytz.zoneinfo.America.Louisville module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-maceio-module">pytz.zoneinfo.America.Maceio module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-managua-module">pytz.zoneinfo.America.Managua module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-manaus-module">pytz.zoneinfo.America.Manaus module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-martinique-module">pytz.zoneinfo.America.Martinique module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-mazatlan-module">pytz.zoneinfo.America.Mazatlan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-mendoza-module">pytz.zoneinfo.America.Mendoza module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-menominee-module">pytz.zoneinfo.America.Menominee module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-merida-module">pytz.zoneinfo.America.Merida module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-mexico-city-module">pytz.zoneinfo.America.Mexico_City module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-miquelon-module">pytz.zoneinfo.America.Miquelon module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-moncton-module">pytz.zoneinfo.America.Moncton module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-monterrey-module">pytz.zoneinfo.America.Monterrey module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-montevideo-module">pytz.zoneinfo.America.Montevideo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-montreal-module">pytz.zoneinfo.America.Montreal module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-montserrat-module">pytz.zoneinfo.America.Montserrat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-nassau-module">pytz.zoneinfo.America.Nassau module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-new-york-module">pytz.zoneinfo.America.New_York module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-nipigon-module">pytz.zoneinfo.America.Nipigon module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-nome-module">pytz.zoneinfo.America.Nome module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-noronha-module">pytz.zoneinfo.America.Noronha module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-panama-module">pytz.zoneinfo.America.Panama module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-pangnirtung-module">pytz.zoneinfo.America.Pangnirtung module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-paramaribo-module">pytz.zoneinfo.America.Paramaribo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-phoenix-module">pytz.zoneinfo.America.Phoenix module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-port-minus-au-minus-prince-module">pytz.zoneinfo.America.Port_minus_au_minus_Prince module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-port-of-spain-module">pytz.zoneinfo.America.Port_of_Spain module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-porto-acre-module">pytz.zoneinfo.America.Porto_Acre module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-porto-velho-module">pytz.zoneinfo.America.Porto_Velho module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-puerto-rico-module">pytz.zoneinfo.America.Puerto_Rico module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-rainy-river-module">pytz.zoneinfo.America.Rainy_River module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-rankin-inlet-module">pytz.zoneinfo.America.Rankin_Inlet module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-recife-module">pytz.zoneinfo.America.Recife module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-regina-module">pytz.zoneinfo.America.Regina module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-rio-branco-module">pytz.zoneinfo.America.Rio_Branco module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-rosario-module">pytz.zoneinfo.America.Rosario module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-santiago-module">pytz.zoneinfo.America.Santiago module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-santo-domingo-module">pytz.zoneinfo.America.Santo_Domingo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-sao-paulo-module">pytz.zoneinfo.America.Sao_Paulo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-scoresbysund-module">pytz.zoneinfo.America.Scoresbysund module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-shiprock-module">pytz.zoneinfo.America.Shiprock module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-st-johns-module">pytz.zoneinfo.America.St_Johns module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-st-kitts-module">pytz.zoneinfo.America.St_Kitts module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-st-lucia-module">pytz.zoneinfo.America.St_Lucia module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-st-thomas-module">pytz.zoneinfo.America.St_Thomas module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-st-vincent-module">pytz.zoneinfo.America.St_Vincent module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-swift-current-module">pytz.zoneinfo.America.Swift_Current module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-tegucigalpa-module">pytz.zoneinfo.America.Tegucigalpa module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-thule-module">pytz.zoneinfo.America.Thule module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-thunder-bay-module">pytz.zoneinfo.America.Thunder_Bay module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-tijuana-module">pytz.zoneinfo.America.Tijuana module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-toronto-module">pytz.zoneinfo.America.Toronto module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-tortola-module">pytz.zoneinfo.America.Tortola module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-vancouver-module">pytz.zoneinfo.America.Vancouver module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-virgin-module">pytz.zoneinfo.America.Virgin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-whitehorse-module">pytz.zoneinfo.America.Whitehorse module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-winnipeg-module">pytz.zoneinfo.America.Winnipeg module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-yakutat-module">pytz.zoneinfo.America.Yakutat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#pytz-zoneinfo-america-yellowknife-module">pytz.zoneinfo.America.Yellowknife module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.America.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html">pytz.zoneinfo.Antarctica package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-casey-module">pytz.zoneinfo.Antarctica.Casey module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-davis-module">pytz.zoneinfo.Antarctica.Davis module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-dumontdurville-module">pytz.zoneinfo.Antarctica.DumontDUrville module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-mawson-module">pytz.zoneinfo.Antarctica.Mawson module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-mcmurdo-module">pytz.zoneinfo.Antarctica.McMurdo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-palmer-module">pytz.zoneinfo.Antarctica.Palmer module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-rothera-module">pytz.zoneinfo.Antarctica.Rothera module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-south-pole-module">pytz.zoneinfo.Antarctica.South_Pole module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-syowa-module">pytz.zoneinfo.Antarctica.Syowa module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#pytz-zoneinfo-antarctica-vostok-module">pytz.zoneinfo.Antarctica.Vostok module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Antarctica.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Arctic.html">pytz.zoneinfo.Arctic package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Arctic.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Arctic.html#pytz-zoneinfo-arctic-longyearbyen-module">pytz.zoneinfo.Arctic.Longyearbyen module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Arctic.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Asia.html">pytz.zoneinfo.Asia package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-aden-module">pytz.zoneinfo.Asia.Aden module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-almaty-module">pytz.zoneinfo.Asia.Almaty module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-amman-module">pytz.zoneinfo.Asia.Amman module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-anadyr-module">pytz.zoneinfo.Asia.Anadyr module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-aqtau-module">pytz.zoneinfo.Asia.Aqtau module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-aqtobe-module">pytz.zoneinfo.Asia.Aqtobe module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-ashgabat-module">pytz.zoneinfo.Asia.Ashgabat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-ashkhabad-module">pytz.zoneinfo.Asia.Ashkhabad module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-baghdad-module">pytz.zoneinfo.Asia.Baghdad module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-bahrain-module">pytz.zoneinfo.Asia.Bahrain module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-baku-module">pytz.zoneinfo.Asia.Baku module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-bangkok-module">pytz.zoneinfo.Asia.Bangkok module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-beirut-module">pytz.zoneinfo.Asia.Beirut module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-bishkek-module">pytz.zoneinfo.Asia.Bishkek module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-brunei-module">pytz.zoneinfo.Asia.Brunei module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-calcutta-module">pytz.zoneinfo.Asia.Calcutta module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-choibalsan-module">pytz.zoneinfo.Asia.Choibalsan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-chongqing-module">pytz.zoneinfo.Asia.Chongqing module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-chungking-module">pytz.zoneinfo.Asia.Chungking module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-colombo-module">pytz.zoneinfo.Asia.Colombo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-dacca-module">pytz.zoneinfo.Asia.Dacca module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-damascus-module">pytz.zoneinfo.Asia.Damascus module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-dhaka-module">pytz.zoneinfo.Asia.Dhaka module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-dili-module">pytz.zoneinfo.Asia.Dili module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-dubai-module">pytz.zoneinfo.Asia.Dubai module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-dushanbe-module">pytz.zoneinfo.Asia.Dushanbe module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-gaza-module">pytz.zoneinfo.Asia.Gaza module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-harbin-module">pytz.zoneinfo.Asia.Harbin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-hong-kong-module">pytz.zoneinfo.Asia.Hong_Kong module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-hovd-module">pytz.zoneinfo.Asia.Hovd module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-irkutsk-module">pytz.zoneinfo.Asia.Irkutsk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-istanbul-module">pytz.zoneinfo.Asia.Istanbul module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-jakarta-module">pytz.zoneinfo.Asia.Jakarta module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-jayapura-module">pytz.zoneinfo.Asia.Jayapura module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-jerusalem-module">pytz.zoneinfo.Asia.Jerusalem module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-kabul-module">pytz.zoneinfo.Asia.Kabul module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-kamchatka-module">pytz.zoneinfo.Asia.Kamchatka module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-karachi-module">pytz.zoneinfo.Asia.Karachi module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-kashgar-module">pytz.zoneinfo.Asia.Kashgar module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-katmandu-module">pytz.zoneinfo.Asia.Katmandu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-krasnoyarsk-module">pytz.zoneinfo.Asia.Krasnoyarsk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-kuala-lumpur-module">pytz.zoneinfo.Asia.Kuala_Lumpur module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-kuching-module">pytz.zoneinfo.Asia.Kuching module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-kuwait-module">pytz.zoneinfo.Asia.Kuwait module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-macao-module">pytz.zoneinfo.Asia.Macao module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-macau-module">pytz.zoneinfo.Asia.Macau module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-magadan-module">pytz.zoneinfo.Asia.Magadan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-makassar-module">pytz.zoneinfo.Asia.Makassar module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-manila-module">pytz.zoneinfo.Asia.Manila module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-muscat-module">pytz.zoneinfo.Asia.Muscat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-nicosia-module">pytz.zoneinfo.Asia.Nicosia module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-novosibirsk-module">pytz.zoneinfo.Asia.Novosibirsk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-omsk-module">pytz.zoneinfo.Asia.Omsk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-oral-module">pytz.zoneinfo.Asia.Oral module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-phnom-penh-module">pytz.zoneinfo.Asia.Phnom_Penh module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-pontianak-module">pytz.zoneinfo.Asia.Pontianak module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-pyongyang-module">pytz.zoneinfo.Asia.Pyongyang module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-qatar-module">pytz.zoneinfo.Asia.Qatar module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-qyzylorda-module">pytz.zoneinfo.Asia.Qyzylorda module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-rangoon-module">pytz.zoneinfo.Asia.Rangoon module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-riyadh-module">pytz.zoneinfo.Asia.Riyadh module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-saigon-module">pytz.zoneinfo.Asia.Saigon module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-sakhalin-module">pytz.zoneinfo.Asia.Sakhalin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-samarkand-module">pytz.zoneinfo.Asia.Samarkand module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-seoul-module">pytz.zoneinfo.Asia.Seoul module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-shanghai-module">pytz.zoneinfo.Asia.Shanghai module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-singapore-module">pytz.zoneinfo.Asia.Singapore module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-taipei-module">pytz.zoneinfo.Asia.Taipei module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-tashkent-module">pytz.zoneinfo.Asia.Tashkent module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-tbilisi-module">pytz.zoneinfo.Asia.Tbilisi module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-tehran-module">pytz.zoneinfo.Asia.Tehran module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-tel-aviv-module">pytz.zoneinfo.Asia.Tel_Aviv module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-thimbu-module">pytz.zoneinfo.Asia.Thimbu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-thimphu-module">pytz.zoneinfo.Asia.Thimphu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-tokyo-module">pytz.zoneinfo.Asia.Tokyo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-ujung-pandang-module">pytz.zoneinfo.Asia.Ujung_Pandang module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-ulaanbaatar-module">pytz.zoneinfo.Asia.Ulaanbaatar module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-ulan-bator-module">pytz.zoneinfo.Asia.Ulan_Bator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-urumqi-module">pytz.zoneinfo.Asia.Urumqi module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-vientiane-module">pytz.zoneinfo.Asia.Vientiane module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-vladivostok-module">pytz.zoneinfo.Asia.Vladivostok module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-yakutsk-module">pytz.zoneinfo.Asia.Yakutsk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-yekaterinburg-module">pytz.zoneinfo.Asia.Yekaterinburg module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#pytz-zoneinfo-asia-yerevan-module">pytz.zoneinfo.Asia.Yerevan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Asia.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html">pytz.zoneinfo.Atlantic package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-azores-module">pytz.zoneinfo.Atlantic.Azores module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-bermuda-module">pytz.zoneinfo.Atlantic.Bermuda module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-canary-module">pytz.zoneinfo.Atlantic.Canary module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-cape-verde-module">pytz.zoneinfo.Atlantic.Cape_Verde module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-faeroe-module">pytz.zoneinfo.Atlantic.Faeroe module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-jan-mayen-module">pytz.zoneinfo.Atlantic.Jan_Mayen module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-madeira-module">pytz.zoneinfo.Atlantic.Madeira module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-reykjavik-module">pytz.zoneinfo.Atlantic.Reykjavik module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-south-georgia-module">pytz.zoneinfo.Atlantic.South_Georgia module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-st-helena-module">pytz.zoneinfo.Atlantic.St_Helena module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#pytz-zoneinfo-atlantic-stanley-module">pytz.zoneinfo.Atlantic.Stanley module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Atlantic.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Australia.html">pytz.zoneinfo.Australia package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-act-module">pytz.zoneinfo.Australia.ACT module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-adelaide-module">pytz.zoneinfo.Australia.Adelaide module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-brisbane-module">pytz.zoneinfo.Australia.Brisbane module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-broken-hill-module">pytz.zoneinfo.Australia.Broken_Hill module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-canberra-module">pytz.zoneinfo.Australia.Canberra module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-currie-module">pytz.zoneinfo.Australia.Currie module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-darwin-module">pytz.zoneinfo.Australia.Darwin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-hobart-module">pytz.zoneinfo.Australia.Hobart module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-lhi-module">pytz.zoneinfo.Australia.LHI module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-lindeman-module">pytz.zoneinfo.Australia.Lindeman module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-lord-howe-module">pytz.zoneinfo.Australia.Lord_Howe module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-melbourne-module">pytz.zoneinfo.Australia.Melbourne module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-nsw-module">pytz.zoneinfo.Australia.NSW module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-north-module">pytz.zoneinfo.Australia.North module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-perth-module">pytz.zoneinfo.Australia.Perth module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-queensland-module">pytz.zoneinfo.Australia.Queensland module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-south-module">pytz.zoneinfo.Australia.South module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-sydney-module">pytz.zoneinfo.Australia.Sydney module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-tasmania-module">pytz.zoneinfo.Australia.Tasmania module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-victoria-module">pytz.zoneinfo.Australia.Victoria module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-west-module">pytz.zoneinfo.Australia.West module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#pytz-zoneinfo-australia-yancowinna-module">pytz.zoneinfo.Australia.Yancowinna module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Australia.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Brazil.html">pytz.zoneinfo.Brazil package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Brazil.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Brazil.html#pytz-zoneinfo-brazil-acre-module">pytz.zoneinfo.Brazil.Acre module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Brazil.html#pytz-zoneinfo-brazil-denoronha-module">pytz.zoneinfo.Brazil.DeNoronha module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Brazil.html#pytz-zoneinfo-brazil-east-module">pytz.zoneinfo.Brazil.East module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Brazil.html#pytz-zoneinfo-brazil-west-module">pytz.zoneinfo.Brazil.West module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Brazil.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Canada.html">pytz.zoneinfo.Canada package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-atlantic-module">pytz.zoneinfo.Canada.Atlantic module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-central-module">pytz.zoneinfo.Canada.Central module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-east-minus-saskatchewan-module">pytz.zoneinfo.Canada.East_minus_Saskatchewan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-eastern-module">pytz.zoneinfo.Canada.Eastern module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-mountain-module">pytz.zoneinfo.Canada.Mountain module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-newfoundland-module">pytz.zoneinfo.Canada.Newfoundland module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-pacific-module">pytz.zoneinfo.Canada.Pacific module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-saskatchewan-module">pytz.zoneinfo.Canada.Saskatchewan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#pytz-zoneinfo-canada-yukon-module">pytz.zoneinfo.Canada.Yukon module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Canada.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Chile.html">pytz.zoneinfo.Chile package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Chile.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Chile.html#pytz-zoneinfo-chile-continental-module">pytz.zoneinfo.Chile.Continental module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Chile.html#pytz-zoneinfo-chile-easterisland-module">pytz.zoneinfo.Chile.EasterIsland module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Chile.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Etc.html">pytz.zoneinfo.Etc package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-module">pytz.zoneinfo.Etc.GMT module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt0-module">pytz.zoneinfo.Etc.GMT0 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-0-module">pytz.zoneinfo.Etc.GMT_minus_0 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-1-module">pytz.zoneinfo.Etc.GMT_minus_1 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-10-module">pytz.zoneinfo.Etc.GMT_minus_10 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-11-module">pytz.zoneinfo.Etc.GMT_minus_11 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-12-module">pytz.zoneinfo.Etc.GMT_minus_12 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-13-module">pytz.zoneinfo.Etc.GMT_minus_13 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-14-module">pytz.zoneinfo.Etc.GMT_minus_14 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-2-module">pytz.zoneinfo.Etc.GMT_minus_2 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-3-module">pytz.zoneinfo.Etc.GMT_minus_3 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-4-module">pytz.zoneinfo.Etc.GMT_minus_4 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-5-module">pytz.zoneinfo.Etc.GMT_minus_5 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-6-module">pytz.zoneinfo.Etc.GMT_minus_6 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-7-module">pytz.zoneinfo.Etc.GMT_minus_7 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-8-module">pytz.zoneinfo.Etc.GMT_minus_8 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-minus-9-module">pytz.zoneinfo.Etc.GMT_minus_9 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-0-module">pytz.zoneinfo.Etc.GMT_plus_0 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-1-module">pytz.zoneinfo.Etc.GMT_plus_1 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-10-module">pytz.zoneinfo.Etc.GMT_plus_10 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-11-module">pytz.zoneinfo.Etc.GMT_plus_11 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-12-module">pytz.zoneinfo.Etc.GMT_plus_12 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-2-module">pytz.zoneinfo.Etc.GMT_plus_2 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-3-module">pytz.zoneinfo.Etc.GMT_plus_3 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-4-module">pytz.zoneinfo.Etc.GMT_plus_4 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-5-module">pytz.zoneinfo.Etc.GMT_plus_5 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-6-module">pytz.zoneinfo.Etc.GMT_plus_6 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-7-module">pytz.zoneinfo.Etc.GMT_plus_7 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-8-module">pytz.zoneinfo.Etc.GMT_plus_8 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-gmt-plus-9-module">pytz.zoneinfo.Etc.GMT_plus_9 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-greenwich-module">pytz.zoneinfo.Etc.Greenwich module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-uct-module">pytz.zoneinfo.Etc.UCT module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-utc-module">pytz.zoneinfo.Etc.UTC module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-universal-module">pytz.zoneinfo.Etc.Universal module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#pytz-zoneinfo-etc-zulu-module">pytz.zoneinfo.Etc.Zulu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Etc.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Europe.html">pytz.zoneinfo.Europe package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-amsterdam-module">pytz.zoneinfo.Europe.Amsterdam module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-andorra-module">pytz.zoneinfo.Europe.Andorra module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-athens-module">pytz.zoneinfo.Europe.Athens module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-belfast-module">pytz.zoneinfo.Europe.Belfast module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-belgrade-module">pytz.zoneinfo.Europe.Belgrade module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-berlin-module">pytz.zoneinfo.Europe.Berlin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-bratislava-module">pytz.zoneinfo.Europe.Bratislava module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-brussels-module">pytz.zoneinfo.Europe.Brussels module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-bucharest-module">pytz.zoneinfo.Europe.Bucharest module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-budapest-module">pytz.zoneinfo.Europe.Budapest module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-chisinau-module">pytz.zoneinfo.Europe.Chisinau module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-copenhagen-module">pytz.zoneinfo.Europe.Copenhagen module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-dublin-module">pytz.zoneinfo.Europe.Dublin module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-gibraltar-module">pytz.zoneinfo.Europe.Gibraltar module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-guernsey-module">pytz.zoneinfo.Europe.Guernsey module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-helsinki-module">pytz.zoneinfo.Europe.Helsinki module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-isle-of-man-module">pytz.zoneinfo.Europe.Isle_of_Man module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-istanbul-module">pytz.zoneinfo.Europe.Istanbul module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-jersey-module">pytz.zoneinfo.Europe.Jersey module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-kaliningrad-module">pytz.zoneinfo.Europe.Kaliningrad module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-kiev-module">pytz.zoneinfo.Europe.Kiev module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-lisbon-module">pytz.zoneinfo.Europe.Lisbon module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-ljubljana-module">pytz.zoneinfo.Europe.Ljubljana module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-london-module">pytz.zoneinfo.Europe.London module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-luxembourg-module">pytz.zoneinfo.Europe.Luxembourg module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-madrid-module">pytz.zoneinfo.Europe.Madrid module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-malta-module">pytz.zoneinfo.Europe.Malta module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-mariehamn-module">pytz.zoneinfo.Europe.Mariehamn module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-minsk-module">pytz.zoneinfo.Europe.Minsk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-monaco-module">pytz.zoneinfo.Europe.Monaco module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-moscow-module">pytz.zoneinfo.Europe.Moscow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-nicosia-module">pytz.zoneinfo.Europe.Nicosia module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-oslo-module">pytz.zoneinfo.Europe.Oslo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-paris-module">pytz.zoneinfo.Europe.Paris module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-podgorica-module">pytz.zoneinfo.Europe.Podgorica module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-prague-module">pytz.zoneinfo.Europe.Prague module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-riga-module">pytz.zoneinfo.Europe.Riga module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-rome-module">pytz.zoneinfo.Europe.Rome module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-samara-module">pytz.zoneinfo.Europe.Samara module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-san-marino-module">pytz.zoneinfo.Europe.San_Marino module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-sarajevo-module">pytz.zoneinfo.Europe.Sarajevo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-simferopol-module">pytz.zoneinfo.Europe.Simferopol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-skopje-module">pytz.zoneinfo.Europe.Skopje module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-sofia-module">pytz.zoneinfo.Europe.Sofia module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-stockholm-module">pytz.zoneinfo.Europe.Stockholm module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-tallinn-module">pytz.zoneinfo.Europe.Tallinn module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-tirane-module">pytz.zoneinfo.Europe.Tirane module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-tiraspol-module">pytz.zoneinfo.Europe.Tiraspol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-uzhgorod-module">pytz.zoneinfo.Europe.Uzhgorod module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-vaduz-module">pytz.zoneinfo.Europe.Vaduz module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-vatican-module">pytz.zoneinfo.Europe.Vatican module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-vienna-module">pytz.zoneinfo.Europe.Vienna module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-vilnius-module">pytz.zoneinfo.Europe.Vilnius module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-volgograd-module">pytz.zoneinfo.Europe.Volgograd module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-warsaw-module">pytz.zoneinfo.Europe.Warsaw module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-zagreb-module">pytz.zoneinfo.Europe.Zagreb module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-zaporozhye-module">pytz.zoneinfo.Europe.Zaporozhye module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#pytz-zoneinfo-europe-zurich-module">pytz.zoneinfo.Europe.Zurich module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Europe.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Indian.html">pytz.zoneinfo.Indian package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-antananarivo-module">pytz.zoneinfo.Indian.Antananarivo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-chagos-module">pytz.zoneinfo.Indian.Chagos module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-christmas-module">pytz.zoneinfo.Indian.Christmas module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-cocos-module">pytz.zoneinfo.Indian.Cocos module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-comoro-module">pytz.zoneinfo.Indian.Comoro module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-kerguelen-module">pytz.zoneinfo.Indian.Kerguelen module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-mahe-module">pytz.zoneinfo.Indian.Mahe module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-maldives-module">pytz.zoneinfo.Indian.Maldives module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-mauritius-module">pytz.zoneinfo.Indian.Mauritius module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-mayotte-module">pytz.zoneinfo.Indian.Mayotte module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#pytz-zoneinfo-indian-reunion-module">pytz.zoneinfo.Indian.Reunion module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Indian.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Mexico.html">pytz.zoneinfo.Mexico package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Mexico.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Mexico.html#pytz-zoneinfo-mexico-bajanorte-module">pytz.zoneinfo.Mexico.BajaNorte module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Mexico.html#pytz-zoneinfo-mexico-bajasur-module">pytz.zoneinfo.Mexico.BajaSur module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Mexico.html#pytz-zoneinfo-mexico-general-module">pytz.zoneinfo.Mexico.General module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Mexico.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.Pacific.html">pytz.zoneinfo.Pacific package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-apia-module">pytz.zoneinfo.Pacific.Apia module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-auckland-module">pytz.zoneinfo.Pacific.Auckland module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-chatham-module">pytz.zoneinfo.Pacific.Chatham module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-easter-module">pytz.zoneinfo.Pacific.Easter module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-efate-module">pytz.zoneinfo.Pacific.Efate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-enderbury-module">pytz.zoneinfo.Pacific.Enderbury module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-fakaofo-module">pytz.zoneinfo.Pacific.Fakaofo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-fiji-module">pytz.zoneinfo.Pacific.Fiji module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-funafuti-module">pytz.zoneinfo.Pacific.Funafuti module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-galapagos-module">pytz.zoneinfo.Pacific.Galapagos module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-gambier-module">pytz.zoneinfo.Pacific.Gambier module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-guadalcanal-module">pytz.zoneinfo.Pacific.Guadalcanal module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-guam-module">pytz.zoneinfo.Pacific.Guam module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-honolulu-module">pytz.zoneinfo.Pacific.Honolulu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-johnston-module">pytz.zoneinfo.Pacific.Johnston module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-kiritimati-module">pytz.zoneinfo.Pacific.Kiritimati module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-kosrae-module">pytz.zoneinfo.Pacific.Kosrae module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-kwajalein-module">pytz.zoneinfo.Pacific.Kwajalein module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-majuro-module">pytz.zoneinfo.Pacific.Majuro module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-marquesas-module">pytz.zoneinfo.Pacific.Marquesas module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-midway-module">pytz.zoneinfo.Pacific.Midway module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-nauru-module">pytz.zoneinfo.Pacific.Nauru module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-niue-module">pytz.zoneinfo.Pacific.Niue module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-norfolk-module">pytz.zoneinfo.Pacific.Norfolk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-noumea-module">pytz.zoneinfo.Pacific.Noumea module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-pago-pago-module">pytz.zoneinfo.Pacific.Pago_Pago module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-palau-module">pytz.zoneinfo.Pacific.Palau module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-pitcairn-module">pytz.zoneinfo.Pacific.Pitcairn module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-ponape-module">pytz.zoneinfo.Pacific.Ponape module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-port-moresby-module">pytz.zoneinfo.Pacific.Port_Moresby module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-rarotonga-module">pytz.zoneinfo.Pacific.Rarotonga module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-saipan-module">pytz.zoneinfo.Pacific.Saipan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-samoa-module">pytz.zoneinfo.Pacific.Samoa module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-tahiti-module">pytz.zoneinfo.Pacific.Tahiti module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-tarawa-module">pytz.zoneinfo.Pacific.Tarawa module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-tongatapu-module">pytz.zoneinfo.Pacific.Tongatapu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-truk-module">pytz.zoneinfo.Pacific.Truk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-wake-module">pytz.zoneinfo.Pacific.Wake module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-wallis-module">pytz.zoneinfo.Pacific.Wallis module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#pytz-zoneinfo-pacific-yap-module">pytz.zoneinfo.Pacific.Yap module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.Pacific.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pytz.zoneinfo.US.html">pytz.zoneinfo.US package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-alaska-module">pytz.zoneinfo.US.Alaska module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-aleutian-module">pytz.zoneinfo.US.Aleutian module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-arizona-module">pytz.zoneinfo.US.Arizona module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-central-module">pytz.zoneinfo.US.Central module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-east-minus-indiana-module">pytz.zoneinfo.US.East_minus_Indiana module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-eastern-module">pytz.zoneinfo.US.Eastern module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-hawaii-module">pytz.zoneinfo.US.Hawaii module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-indiana-minus-starke-module">pytz.zoneinfo.US.Indiana_minus_Starke module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-michigan-module">pytz.zoneinfo.US.Michigan module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-mountain-module">pytz.zoneinfo.US.Mountain module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-pacific-module">pytz.zoneinfo.US.Pacific module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-pacific-minus-new-module">pytz.zoneinfo.US.Pacific_minus_New module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#pytz-zoneinfo-us-samoa-module">pytz.zoneinfo.US.Samoa module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytz.zoneinfo.US.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
@@ -193,6 +804,7 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">pytz.zoneinfo package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#pytz-zoneinfo-cet-module">pytz.zoneinfo.CET module</a></li>
 <li><a class="reference internal" href="#pytz-zoneinfo-cst6cdt-module">pytz.zoneinfo.CST6CDT module</a></li>
@@ -249,7 +861,7 @@
   <li><a href="index.html">Documentation overview</a><ul>
   <li><a href="pytz.html">pytz package</a><ul>
       <li>Previous: <a href="pytz.tests.html" title="previous chapter">pytz.tests package</a></li>
-      <li>Next: <a href="query.html" title="next chapter">query module</a></li>
+      <li>Next: <a href="pytz.zoneinfo.Africa.html" title="next chapter">pytz.zoneinfo.Africa package</a></li>
   </ul></li>
   </ul></li>
 </ul>

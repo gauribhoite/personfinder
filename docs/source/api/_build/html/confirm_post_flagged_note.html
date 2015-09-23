@@ -38,53 +38,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-confirm_post_flagged_note">
-<span id="confirm-post-flagged-note-module"></span><h1>confirm_post_flagged_note module<a class="headerlink" href="#module-confirm_post_flagged_note" title="Permalink to this headline">¶</a></h1>
-<dl class="exception">
-<dt id="confirm_post_flagged_note.ConfirmPostNoteWithBadWordsError">
-<em class="property">exception </em><code class="descclassname">confirm_post_flagged_note.</code><code class="descname">ConfirmPostNoteWithBadWordsError</code><a class="reference internal" href="_modules/confirm_post_flagged_note.html#ConfirmPostNoteWithBadWordsError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.ConfirmPostNoteWithBadWordsError" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
-<p>Container for user-facing error messages when confirming to post
-a note with bad words.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="confirm_post_flagged_note.Handler">
-<em class="property">class </em><code class="descclassname">confirm_post_flagged_note.</code><code class="descname">Handler</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
-<p>This handler lets the author confirm to post a note containing  
-bad words.</p>
-<dl class="method">
-<dt id="confirm_post_flagged_note.Handler.confirm_note_with_bad_words">
-<code class="descname">confirm_note_with_bad_words</code><span class="sig-paren">(</span><em>note</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler.confirm_note_with_bad_words"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler.confirm_note_with_bad_words" title="Permalink to this definition">¶</a></dt>
-<dd><p>After a note containing bad words is confirmed by the author,
-we will:
-(1) set note.confirmed = True;
-(2) copy the note from NoteWithBadWords to Note;
-(3) log user action;
-(4) update person record.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="confirm_post_flagged_note.Handler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler.get" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="confirm_post_flagged_note.Handler.get_note_and_verify_params">
-<code class="descname">get_note_and_verify_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler.get_note_and_verify_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler.get_note_and_verify_params" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check the request for a valid note record_id and valid crypto token.
-Returns a tuple containing: (note, token)
-If there is an error we raise a ConfirmPostNoteWithBadWordsError.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="confirm_post_flagged_note.Handler.post">
-<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/confirm_post_flagged_note.html#Handler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#confirm_post_flagged_note.Handler.post" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="confirm-post-flagged-note-module">
+<h1>confirm_post_flagged_note module<a class="headerlink" href="#confirm-post-flagged-note-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 

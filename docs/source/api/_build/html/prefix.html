@@ -38,45 +38,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-prefix">
-<span id="prefix-module"></span><h1>prefix module<a class="headerlink" href="#module-prefix" title="Permalink to this headline">¶</a></h1>
-<p>Support for approximate string prefix queries.</p>
-<dl class="function">
-<dt id="prefix.add_prefix_properties">
-<code class="descclassname">prefix.</code><code class="descname">add_prefix_properties</code><span class="sig-paren">(</span><em>model_class</em>, <em>*properties</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prefix.html#add_prefix_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prefix.add_prefix_properties" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds indexable properties to a model class to support prefix queries.
-All properties ending in &#8216;_&#8217; are extra properties.  The &#8216;properties&#8217;
-arguments should be names of existing string properties on the class.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="prefix.filter_prefix">
-<code class="descclassname">prefix.</code><code class="descname">filter_prefix</code><span class="sig-paren">(</span><em>query</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prefix.html#filter_prefix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prefix.filter_prefix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Approximately filters a query for the given prefix strings.  Each
-keyword argument should specify a desired normalized prefix for a string
-property.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="prefix.get_prefix_matches">
-<code class="descclassname">prefix.</code><code class="descname">get_prefix_matches</code><span class="sig-paren">(</span><em>query</em>, <em>limit</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prefix.html#get_prefix_matches"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prefix.get_prefix_matches" title="Permalink to this definition">¶</a></dt>
-<dd><p>Scans the results from a given query, yielding only those which actually
-match the given normalized prefixes.  Each keyword argument should specify
-a desired normalized prefix for a string property.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="prefix.normalize">
-<code class="descclassname">prefix.</code><code class="descname">normalize</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prefix.html#normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prefix.normalize" title="Permalink to this definition">¶</a></dt>
-<dd><p>Normalize a string to all uppercase and remove accents.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="prefix.update_prefix_properties">
-<code class="descclassname">prefix.</code><code class="descname">update_prefix_properties</code><span class="sig-paren">(</span><em>entity</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/prefix.html#update_prefix_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#prefix.update_prefix_properties" title="Permalink to this definition">¶</a></dt>
-<dd><p>Finds and updates all prefix-related properties on the given entity.</p>
-</dd></dl>
-
+  <div class="section" id="prefix-module">
+<h1>prefix module<a class="headerlink" href="#prefix-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 

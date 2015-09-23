@@ -38,51 +38,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-external_search">
-<span id="external-search-module"></span><h1>external_search module<a class="headerlink" href="#module-external_search" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="external_search.fetch_with_load_balancing">
-<code class="descclassname">external_search.</code><code class="descname">fetch_with_load_balancing</code><span class="sig-paren">(</span><em>urls</em>, <em>fetch_timeout=1.0</em>, <em>total_timeout=5.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/external_search.html#fetch_with_load_balancing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#external_search.fetch_with_load_balancing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Attempt to fetch a content from one or more urls.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><dl class="first last docutils">
-<dt>urls: A list of urls from which content may be fetched.  This may be</dt>
-<dd>iterated over several times if needed.</dd>
-<dt>fetch_timeout: The time in seconds to allow for one request before</dt>
-<dd>retrying.</dd>
-<dt>total_timeout: The total time in seconds to allow for all requests</dt>
-<dd>before giving up.</dd>
-</dl>
-</dd>
-<dt>Returns:</dt>
-<dd>A urlfetch.Response object, or None if the timeout has been exceeded.</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="external_search.remove_non_name_matches">
-<code class="descclassname">external_search.</code><code class="descname">remove_non_name_matches</code><span class="sig-paren">(</span><em>entries</em>, <em>query_obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/external_search.html#remove_non_name_matches"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#external_search.remove_non_name_matches" title="Permalink to this definition">¶</a></dt>
-<dd><p>Filter out Person entries if there is no overlap between names_prefixes
-and query_obj.query_words.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="external_search.search">
-<code class="descclassname">external_search.</code><code class="descname">search</code><span class="sig-paren">(</span><em>repo</em>, <em>query_obj</em>, <em>max_results</em>, <em>backends</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/external_search.html#search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#external_search.search" title="Permalink to this definition">¶</a></dt>
-<dd><p>Search persons using external search backends.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd>repo: PF&#8217;s repository for which the query was sent.
-query_obj: TextQuery instance representing the input query.
-max_results: Maximum number of entries to return.
-backends: List of backend IPs or hostnames to access.</dd>
-<dt>Returns:</dt>
-<dd>List of Persons that are returned from an external search backend (may
-be []), or None if backends return bad responses.</dd>
-</dl>
-</dd></dl>
-
+  <div class="section" id="external-search-module">
+<h1>external_search module<a class="headerlink" href="#external-search-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 

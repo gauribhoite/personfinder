@@ -38,47 +38,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-restore">
-<span id="restore-module"></span><h1>restore module<a class="headerlink" href="#module-restore" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
-<dt id="restore.Handler">
-<em class="property">class </em><code class="descclassname">restore.</code><code class="descname">Handler</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/restore.html#Handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#restore.Handler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
-<p>This handler lets the user restore a record that has expired but hasn&#8217;t
-been wiped yet.  This can &#8216;undelete&#8217; a deleted record, as long as it has
-been less than within delete.EXPIRED_TTL_DAYS days after deletion.</p>
-<dl class="method">
-<dt id="restore.Handler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/restore.html#Handler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#restore.Handler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Prompts a user with a CAPTCHA to restore the specified record.
-There must be a valid token supplied in the &#8216;token&#8217; query parameter.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="restore.Handler.get_person_and_verify_params">
-<code class="descname">get_person_and_verify_params</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/restore.html#Handler.get_person_and_verify_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#restore.Handler.get_person_and_verify_params" title="Permalink to this definition">¶</a></dt>
-<dd><p>Checks the request for a valid person id and valid crypto token.</p>
-<p>Returns a tuple containing: (person, token)</p>
-<p>If there is an error we raise a RestoreError, instead of pretending 
-we&#8217;re using C.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="restore.Handler.post">
-<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/restore.html#Handler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#restore.Handler.post" title="Permalink to this definition">¶</a></dt>
-<dd><p>If the Turing test response is valid, restores the record by setting
-its expiry date into the future.  Otherwise, offer another test.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="exception">
-<dt id="restore.RestoreError">
-<em class="property">exception </em><code class="descclassname">restore.</code><code class="descname">RestoreError</code><a class="reference internal" href="_modules/restore.html#RestoreError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#restore.RestoreError" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
-<p>Container for user-facing error messages about the restore operation.</p>
-</dd></dl>
-
+  <div class="section" id="restore-module">
+<h1>restore module<a class="headerlink" href="#restore-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
