@@ -1,7 +1,9 @@
-xlrd
+pytz
 ====
 
 .. toctree::
    :maxdepth: 4
 
-   xlrd
+   pytz
+   pytz.zoneinfo
+   
