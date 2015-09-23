@@ -38,8 +38,53 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="delete-module">
-<h1>delete module<a class="headerlink" href="#delete-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-delete">
+<span id="delete-module"></span><h1>delete module<a class="headerlink" href="#module-delete" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="delete.Handler">
+<em class="property">class </em><code class="descclassname">delete.</code><code class="descname">Handler</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/delete.html#Handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#delete.Handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<p>Handles a user request to delete a person record.</p>
+<dl class="method">
+<dt id="delete.Handler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/delete.html#Handler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#delete.Handler.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prompts the user with a Turing test before carrying out deletion.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="delete.Handler.post">
+<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/delete.html#Handler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#delete.Handler.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the user passed the Turing test, delete the record.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="delete.delete_person">
+<code class="descclassname">delete.</code><code class="descname">delete_person</code><span class="sig-paren">(</span><em>handler</em>, <em>person</em>, <em>send_notices=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/delete.html#delete_person"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#delete.delete_person" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a person record and associated data.  If it&#8217;s an original
+record, deletion can be undone within EXPIRED_TTL_DAYS days.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="delete.get_restore_url">
+<code class="descclassname">delete.</code><code class="descname">get_restore_url</code><span class="sig-paren">(</span><em>handler</em>, <em>person</em>, <em>ttl=259200</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/delete.html#get_restore_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#delete.get_restore_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a URL to be used for restoring a deleted person record.
+The default TTL for a restoration URL is 3 days.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="delete.get_tag_params">
+<code class="descclassname">delete.</code><code class="descname">get_tag_params</code><span class="sig-paren">(</span><em>handler</em>, <em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/delete.html#get_tag_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#delete.get_tag_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return HTML tag parameters used in delete.html.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="delete.send_delete_notice">
+<code class="descclassname">delete.</code><code class="descname">send_delete_notice</code><span class="sig-paren">(</span><em>handler</em>, <em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/delete.html#send_delete_notice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#delete.send_delete_notice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Notify concerned folks about the potential deletion.</p>
+</dd></dl>
+
 </div>
 
 

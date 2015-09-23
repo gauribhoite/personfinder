@@ -38,8 +38,87 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="feeds-module">
-<h1>feeds module<a class="headerlink" href="#feeds-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-feeds">
+<span id="feeds-module"></span><h1>feeds module<a class="headerlink" href="#module-feeds" title="Permalink to this headline">¶</a></h1>
+<p>Handler for Atom PFIF 1.2 person and note feeds.</p>
+<dl class="class">
+<dt id="feeds.Note">
+<em class="property">class </em><code class="descclassname">feeds.</code><code class="descname">Note</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Note"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Note" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<dl class="method">
+<dt id="feeds.Note.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Note.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Note.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Note.https_required">
+<code class="descname">https_required</code><em class="property"> = False</em><a class="headerlink" href="#feeds.Note.https_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feeds.Person">
+<em class="property">class </em><code class="descclassname">feeds.</code><code class="descname">Person</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Person"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Person" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<dl class="method">
+<dt id="feeds.Person.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Person.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Person.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Person.https_required">
+<code class="descname">https_required</code><em class="property"> = True</em><a class="headerlink" href="#feeds.Person.https_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feeds.Repo">
+<em class="property">class </em><code class="descclassname">feeds.</code><code class="descname">Repo</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Repo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Repo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<dl class="attribute">
+<dt id="feeds.Repo.TITLE">
+<code class="descname">TITLE</code><em class="property"> = 'Person Finder Repository Feed'</em><a class="headerlink" href="#feeds.Repo.TITLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="feeds.Repo.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Repo.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Repo.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Repo.https_required">
+<code class="descname">https_required</code><em class="property"> = False</em><a class="headerlink" href="#feeds.Repo.https_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Repo.ignore_deactivation">
+<code class="descname">ignore_deactivation</code><em class="property"> = True</em><a class="headerlink" href="#feeds.Repo.ignore_deactivation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Repo.repo_required">
+<code class="descname">repo_required</code><em class="property"> = False</em><a class="headerlink" href="#feeds.Repo.repo_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="feeds.get_latest_entry_date">
+<code class="descclassname">feeds.</code><code class="descname">get_latest_entry_date</code><span class="sig-paren">(</span><em>entities</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#get_latest_entry_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.get_latest_entry_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="feeds.get_latest_repo_updated_date">
+<code class="descclassname">feeds.</code><code class="descname">get_latest_repo_updated_date</code><span class="sig-paren">(</span><em>repos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#get_latest_repo_updated_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.get_latest_repo_updated_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="feeds.make_hidden_notes_blank">
+<code class="descclassname">feeds.</code><code class="descname">make_hidden_notes_blank</code><span class="sig-paren">(</span><em>notes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#make_hidden_notes_blank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.make_hidden_notes_blank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 
 

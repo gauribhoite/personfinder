@@ -1,0 +1,1085 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>model &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for model</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;The Person Finder data model, based on PFIF (http://zesty.ca/pfif).&quot;&quot;&quot;</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;kpy@google.com (Ka-Ping Yee) and many other Googlers&#39;</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">datastore_errors</span>
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">memcache</span>
+<span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">db</span>
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">search</span>
+
+<span class="kn">import</span> <span class="nn">config</span>
+<span class="kn">import</span> <span class="nn">full_text_search</span>
+<span class="kn">import</span> <span class="nn">indexing</span>
+<span class="kn">import</span> <span class="nn">pfif</span>
+<span class="kn">import</span> <span class="nn">prefix</span>
+<span class="kn">from</span> <span class="nn">const</span> <span class="kn">import</span> <span class="n">HOME_DOMAIN</span>
+
+<span class="c"># default # of days for a record to expire.</span>
+<span class="n">DEFAULT_EXPIRATION_DAYS</span> <span class="o">=</span> <span class="mi">40</span>
+
+<span class="c"># ==== PFIF record IDs =====================================================</span>
+
+<div class="viewcode-block" id="is_original"><a class="viewcode-back" href="../model.html#model.is_original">[docs]</a><span class="k">def</span> <span class="nf">is_original</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if this is a record_id for a record originally created in</span>
+<span class="sd">    the specified repository.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">repo_id</span><span class="p">,</span> <span class="n">local_id</span> <span class="o">=</span> <span class="n">record_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">repo_id</span> <span class="o">==</span> <span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;.&#39;</span> <span class="o">+</span> <span class="n">HOME_DOMAIN</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%r</span><span class="s"> is not a valid record_id&#39;</span> <span class="o">%</span> <span class="n">record_id</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="is_clone"><a class="viewcode-back" href="../model.html#model.is_clone">[docs]</a><span class="k">def</span> <span class="nf">is_clone</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns True if this is a record_id for a clone record (a record created</span>
+<span class="sd">    in another repository and copied into the specified one).&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">is_original</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="filter_by_prefix"><a class="viewcode-back" href="../model.html#model.filter_by_prefix">[docs]</a><span class="k">def</span> <span class="nf">filter_by_prefix</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">key_name_prefix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filters a query for key_names that have the given prefix.  If root_kind</span>
+<span class="sd">    is specified, filters the query for children of any entities that are of</span>
+<span class="sd">    that kind with the given prefix; otherwise, the results are assumed to be</span>
+<span class="sd">    top-level entities of the kind being queried.&quot;&quot;&quot;</span>
+    <span class="n">root_kind</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="n">__name__</span>
+    <span class="n">min_key</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="n">root_kind</span><span class="p">,</span> <span class="n">key_name_prefix</span><span class="p">)</span>
+    <span class="n">max_key</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="n">root_kind</span><span class="p">,</span> <span class="n">key_name_prefix</span> <span class="o">+</span> <span class="s">u&#39;</span><span class="se">\uffff</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;__key__ &gt;=&#39;</span><span class="p">,</span> <span class="n">min_key</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;__key__ &lt;=&#39;</span><span class="p">,</span> <span class="n">max_key</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="get_properties_as_dict"><a class="viewcode-back" href="../model.html#model.get_properties_as_dict">[docs]</a><span class="k">def</span> <span class="nf">get_properties_as_dict</span><span class="p">(</span><span class="n">db_obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a dictionary containing all (dynamic)* properties of db_obj.&quot;&quot;&quot;</span>
+    <span class="n">properties</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">__get__</span><span class="p">(</span><span class="n">db_obj</span><span class="p">,</span> <span class="n">db_obj</span><span class="o">.</span><span class="n">__class__</span><span class="p">))</span> <span class="k">for</span>
+                      <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">db_obj</span><span class="o">.</span><span class="n">properties</span><span class="p">()</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">if</span>
+                      <span class="n">v</span><span class="o">.</span><span class="n">__get__</span><span class="p">(</span><span class="n">db_obj</span><span class="p">,</span> <span class="n">db_obj</span><span class="o">.</span><span class="n">__class__</span><span class="p">))</span>
+    <span class="n">dynamic_properties</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">prop</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">db_obj</span><span class="p">,</span> <span class="n">prop</span><span class="p">))</span> <span class="k">for</span>
+                              <span class="n">prop</span> <span class="ow">in</span> <span class="n">db_obj</span><span class="o">.</span><span class="n">dynamic_properties</span><span class="p">())</span>
+    <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dynamic_properties</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">properties</span>
+</div>
+<div class="viewcode-block" id="clone_to_new_type"><a class="viewcode-back" href="../model.html#model.clone_to_new_type">[docs]</a><span class="k">def</span> <span class="nf">clone_to_new_type</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="n">dest_class</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Clones the given entity to a new entity of the type &quot;dest_class&quot;.</span>
+<span class="sd">    Optionally, pass in values to kwargs to update values during cloning.&quot;&quot;&quot;</span>
+    <span class="n">vals</span> <span class="o">=</span> <span class="n">get_properties_as_dict</span><span class="p">(</span><span class="n">origin</span><span class="p">)</span>
+    <span class="n">vals</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">origin</span><span class="p">,</span> <span class="s">&#39;record_id&#39;</span><span class="p">):</span>
+        <span class="n">vals</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">record_id</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">record_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dest_class</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">origin</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="o">**</span><span class="n">vals</span><span class="p">)</span>
+
+<span class="c"># ==== Model classes =======================================================</span>
+
+<span class="c"># Every Person or Note entity belongs to a specific repository.  To partition</span>
+<span class="c"># the datastore, key names consist of the repo name, a colon, and then the</span>
+<span class="c"># record ID.  Each repository appears to be a separate instance of the app.</span>
+
+<span class="c"># Note that the repository name doesn&#39;t necessarily have to match the original</span>
+<span class="c"># repository domain in the record ID!  For example, a person record created at</span>
+<span class="c"># foo.person-finder.appspot.com would have a key name such as:</span>
+<span class="c">#</span>
+<span class="c">#     foo:foo.person-finder.appspot.com/person.234</span>
+<span class="c">#</span>
+<span class="c"># This record would be searchable only at foo.person-finder.appspot.com --</span>
+<span class="c"># each repository is independent.  Copying it to bar.person-finder.appspot.com</span>
+<span class="c"># would produce a clone record with the key name:</span>
+<span class="c">#</span>
+<span class="c">#     bar:foo.person-finder.appspot.com/person.234</span>
+<span class="c">#</span>
+<span class="c"># That is, the clone has the same record ID but a different repository name.</span>
+</div>
+<div class="viewcode-block" id="Repo"><a class="viewcode-back" href="../model.html#model.Repo">[docs]</a><span class="k">class</span> <span class="nc">Repo</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Identifier for a repository of Person and Note records.  This is a</span>
+<span class="sd">    top-level entity, with no parent, whose existence just indicates the</span>
+<span class="sd">    existence of a repository.  Key name: unique repository name.  In the UI,</span>
+<span class="sd">    each repository behaves like an independent instance of the application.&quot;&quot;&quot;</span>
+
+    <span class="c"># No properties for now; only the key_name is significant.  The repository</span>
+    <span class="c"># title and other settings are all in ConfigEntry entities (see config.py).</span>
+    <span class="c"># The per-repository &#39;deactivated&#39; setting blocks UI and API access to the</span>
+    <span class="c"># repository, replacing all its pages with a deactivation message.</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Repo.list"><a class="viewcode-back" href="../model.html#model.Repo.list">[docs]</a>    <span class="k">def</span> <span class="nf">list</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of all repository names.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">repo</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">repo</span> <span class="ow">in</span> <span class="n">cls</span><span class="o">.</span><span class="n">all</span><span class="p">()]</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Repo.list_active"><a class="viewcode-back" href="../model.html#model.Repo.list_active">[docs]</a>    <span class="k">def</span> <span class="nf">list_active</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of the active (non-deactivated) repository names.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">Repo</span><span class="o">.</span><span class="n">list</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">get_for_repo</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;deactivated&#39;</span><span class="p">)]</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Repo.list_launched"><a class="viewcode-back" href="../model.html#model.Repo.list_launched">[docs]</a>    <span class="k">def</span> <span class="nf">list_launched</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of the launched (listed in menu) repository names.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">Repo</span><span class="o">.</span><span class="n">list</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">get_for_repo</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;launched&#39;</span><span class="p">)</span> <span class="ow">and</span>
+                        <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">get_for_repo</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;deactivated&#39;</span><span class="p">)]</span>
+
+</div></div>
+<div class="viewcode-block" id="Base"><a class="viewcode-back" href="../model.html#model.Base">[docs]</a><span class="k">class</span> <span class="nc">Base</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class providing methods common to both Person and Note entities,</span>
+<span class="sd">    whose key names are partitioned using the repo name as a prefix.&quot;&quot;&quot;</span>
+
+    <span class="c"># max records to fetch in one go.</span>
+    <span class="n">FETCH_LIMIT</span> <span class="o">=</span> <span class="mi">200</span>
+
+    <span class="c"># Even though the repo is part of the key_name, it is also stored</span>
+    <span class="c"># redundantly as a separate property so it can be indexed and queried upon.</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># We can&#39;t use an inequality filter on expiry_date (together with other</span>
+    <span class="c"># inequality filters), so we use a periodic task to set the is_expired flag</span>
+    <span class="c"># on expired records, and filter using the flag.  A record&#39;s life cycle is:</span>
+    <span class="c">#</span>
+    <span class="c"># 1. Record is created with some expiry_date.</span>
+    <span class="c"># 2. expiry_date passes.</span>
+    <span class="c"># 3. tasks.DeleteExpired sets is_expired to True; record vanishes from UI.</span>
+    <span class="c"># 4. delete.EXPIRED_TTL_DAYS days pass.</span>
+    <span class="c"># 5. tasks.DeleteExpired wipes the record.</span>
+
+    <span class="c"># We set default=False to ensure all entities are indexed by is_expired.</span>
+    <span class="c"># NOTE: is_expired should ONLY be modified in Person.put_expiry_flags().</span>
+    <span class="n">is_expired</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Base.all"><a class="viewcode-back" href="../model.html#model.Base.all">[docs]</a>    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">keys_only</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a query for all records of this kind; by default this</span>
+<span class="sd">        filters out the records marked as expired.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          keys_only - If true, return only the keys.</span>
+<span class="sd">          filter_expired - If true, omit records with is_expired == True.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">          query - A Query object for the results.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Base</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">keys_only</span><span class="o">=</span><span class="n">keys_only</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filter_expired</span><span class="p">:</span>
+            <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;is_expired =&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">query</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Base.all_in_repo"><a class="viewcode-back" href="../model.html#model.Base.all_in_repo">[docs]</a>    <span class="k">def</span> <span class="nf">all_in_repo</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets a query for all entities in a given repository.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">filter_expired</span><span class="o">=</span><span class="n">filter_expired</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;repo =&#39;</span><span class="p">,</span> <span class="n">repo</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Base.get_record_id"><a class="viewcode-back" href="../model.html#model.Base.get_record_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_record_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the record ID of this record.&quot;&quot;&quot;</span>
+        <span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">record_id</span></div>
+    <span class="n">record_id</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">get_record_id</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Base.get_original_domain"><a class="viewcode-back" href="../model.html#model.Base.get_original_domain">[docs]</a>    <span class="k">def</span> <span class="nf">get_original_domain</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the domain name of this record&#39;s original repository.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+    <span class="n">original_domain</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">get_original_domain</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Base.is_original"><a class="viewcode-back" href="../model.html#model.Base.is_original">[docs]</a>    <span class="k">def</span> <span class="nf">is_original</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if this record was created in this repository.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">is_original</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_id</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Base.is_clone"><a class="viewcode-back" href="../model.html#model.Base.is_clone">[docs]</a>    <span class="k">def</span> <span class="nf">is_clone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns True if this record was copied from another repository.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_original</span><span class="p">()</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Base.get_key"><a class="viewcode-back" href="../model.html#model.Base.get_key">[docs]</a>    <span class="k">def</span> <span class="nf">get_key</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get entity key from its record id&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">kind</span><span class="p">(),</span> <span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">record_id</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Base.get_all"><a class="viewcode-back" href="../model.html#model.Base.get_all">[docs]</a>    <span class="k">def</span> <span class="nf">get_all</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">record_ids</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the entities with the given record_ids in a given repository.&quot;&quot;&quot;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">cls</span><span class="o">.</span><span class="n">get_key</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">record_ids</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">record</span> <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">]</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Base.get"><a class="viewcode-back" href="../model.html#model.Base.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the entity with the given record_id in a given repository.&quot;&quot;&quot;</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">record_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">record</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">filter_expired</span> <span class="ow">and</span> <span class="n">record</span><span class="o">.</span><span class="n">is_expired</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">record</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Base.create_original"><a class="viewcode-back" href="../model.html#model.Base.create_original">[docs]</a>    <span class="k">def</span> <span class="nf">create_original</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new original entity with the given field values.&quot;&quot;&quot;</span>
+        <span class="c"># TODO(ryok): Consider switching to URL-like record id format,</span>
+        <span class="c"># which is more consitent with repo id format.</span>
+        <span class="n">record_id</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">.</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">.</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">repo</span><span class="p">,</span> <span class="n">HOME_DOMAIN</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">UniqueId</span><span class="o">.</span><span class="n">create_id</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Base.create_clone"><a class="viewcode-back" href="../model.html#model.Base.create_clone">[docs]</a>    <span class="k">def</span> <span class="nf">create_clone</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new clone entity with the given field values.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">is_clone</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c"># TODO(kpy): Rename this function (maybe to create_with_record_id?).</span></div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Base.create_original_with_record_id"><a class="viewcode-back" href="../model.html#model.Base.create_original_with_record_id">[docs]</a>    <span class="k">def</span> <span class="nf">create_original_with_record_id</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an original entity with the given record_id and field</span>
+<span class="sd">        values, overwriting any existing entity with the same record_id.</span>
+<span class="sd">        This should be rarely used in practice (e.g. for an administrative</span>
+<span class="sd">        import into a home repository), hence the long method name.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<span class="c"># All fields are either required, or have a default value.  For property</span>
+<span class="c"># types that have a false value, the default is the false value.  For types</span>
+<span class="c"># with no false value, the default is None.</span>
+</div></div>
+<div class="viewcode-block" id="Person"><a class="viewcode-back" href="../model.html#model.Person">[docs]</a><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The datastore entity kind for storing a PFIF person record.  Never call</span>
+<span class="sd">    Person() directly; use Person.create_clone() or Person.create_original().</span>
+
+<span class="sd">    Methods that start with &quot;get_&quot; return actual values or lists of values;</span>
+<span class="sd">    other methods return queries or generators for values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># If you add any new fields, be sure they are handled in wipe_contents().</span>
+
+    <span class="c"># entry_date should update every time a record is created or re-imported.</span>
+    <span class="n">entry_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">expiry_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="n">author_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">multiline</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">author_email</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">author_phone</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="c"># the original date we saw this record; it should not change.</span>
+    <span class="n">original_creation_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># source_date is the date that the original repository last changed</span>
+    <span class="c"># any of the fields in the pfif record.</span>
+    <span class="n">source_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">()</span>
+
+    <span class="n">source_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">source_url</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="c"># TODO(ryok): consider marking this required.</span>
+    <span class="n">full_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">multiline</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">given_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">family_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">alternate_names</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">multiline</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">TextProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">sex</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">pfif</span><span class="o">.</span><span class="n">PERSON_SEX_VALUES</span><span class="p">)</span>
+    <span class="n">date_of_birth</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>  <span class="c"># YYYY, YYYY-MM, YYYY-MM-DD</span>
+    <span class="n">age</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>  <span class="c"># NN or NN-MM</span>
+    <span class="n">home_street</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">home_neighborhood</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">home_city</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">home_state</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">home_postal_code</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">home_country</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">photo_url</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">TextProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">profile_urls</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">TextProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="c"># This reference points to a locally stored Photo entity.  ONLY set this</span>
+    <span class="c"># property when storing a new Photo object that is owned by this Person</span>
+    <span class="c"># record and can be safely deleted when the Person is deleted.</span>
+    <span class="n">photo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">ReferenceProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+
+    <span class="c"># The following properties are not part of the PFIF data model; they are</span>
+    <span class="c"># cached on the Person for efficiency.</span>
+
+    <span class="c"># Value of the &#39;status&#39; and &#39;source_date&#39; properties on the Note</span>
+    <span class="c"># with the latest source_date with the &#39;status&#39; field present.</span>
+    <span class="n">latest_status</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">latest_status_source_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">()</span>
+    <span class="c"># Value of the &#39;author_made_contact&#39; and &#39;source_date&#39; properties on the</span>
+    <span class="c"># Note with the latest source_date with the &#39;author_made_contact&#39; field</span>
+    <span class="c"># present.</span>
+    <span class="n">latest_found</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+    <span class="n">latest_found_source_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">()</span>
+
+    <span class="c"># Last write time of this Person or any Notes on this Person.</span>
+    <span class="c"># This reflects any change to the Person page.</span>
+    <span class="n">last_modified</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># This flag is set to true only when the record author disabled</span>
+    <span class="c"># adding new notes to a record.</span>
+    <span class="n">notes_disabled</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="c"># attributes used by indexing.py</span>
+    <span class="n">names_prefixes</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringListProperty</span><span class="p">()</span>
+    <span class="c"># TODO(ryok): index address components.</span>
+    <span class="n">_fields_to_index_properties</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;given_name&#39;</span><span class="p">,</span> <span class="s">&#39;family_name&#39;</span><span class="p">,</span> <span class="s">&#39;full_name&#39;</span><span class="p">]</span>
+    <span class="n">_fields_to_index_by_prefix_properties</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;given_name&#39;</span><span class="p">,</span> <span class="s">&#39;family_name&#39;</span><span class="p">,</span>
+        <span class="s">&#39;full_name&#39;</span><span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Person.past_due_records"><a class="viewcode-back" href="../model.html#model.Person.past_due_records">[docs]</a>    <span class="k">def</span> <span class="nf">past_due_records</span><span class="p">(</span><span class="n">repo</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a query for all Person records with expiry_date in the past,</span>
+<span class="sd">        or None, regardless of their is_expired flags.&quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">utils</span>
+        <span class="k">return</span> <span class="n">Person</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">filter_expired</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="s">&#39;expiry_date &lt;=&#39;</span><span class="p">,</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_utcnow</span><span class="p">())</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="s">&#39;repo =&#39;</span><span class="p">,</span> <span class="n">repo</span><span class="p">)</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Person.potentially_expired_records"><a class="viewcode-back" href="../model.html#model.Person.potentially_expired_records">[docs]</a>    <span class="k">def</span> <span class="nf">potentially_expired_records</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span>
+                                    <span class="n">days_to_expire</span><span class="o">=</span><span class="n">DEFAULT_EXPIRATION_DAYS</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a query for all Person records with source date</span>
+<span class="sd">        older than days_to_expire (or empty source_date), regardless of</span>
+<span class="sd">        is_expired flags value.&quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">utils</span>
+        <span class="n">cutoff_date</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_utcnow</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days_to_expire</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Person</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">filter_expired</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="s">&#39;source_date &lt;=&#39;</span><span class="p">,</span><span class="n">cutoff_date</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="s">&#39;repo =&#39;</span><span class="p">,</span> <span class="n">repo</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">person_record_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">primary_full_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span> <span class="k">else</span> <span class="s">&#39;&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">full_name_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span> <span class="k">else</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">alternate_names_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alternate_names</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alternate_names</span> <span class="k">else</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">profile_urls_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_urls</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_urls</span> <span class="k">else</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">photo_url_no_scheme</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">utils</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">strip_url_scheme</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">photo_url</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Person.get_notes"><a class="viewcode-back" href="../model.html#model.Person.get_notes">[docs]</a>    <span class="k">def</span> <span class="nf">get_notes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of all the Notes on this Person, omitting expired</span>
+<span class="sd">        Notes by default.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Note</span><span class="o">.</span><span class="n">get_by_person_record_id</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_id</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="n">filter_expired</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Person.get_subscriptions"><a class="viewcode-back" href="../model.html#model.Person.get_subscriptions">[docs]</a>    <span class="k">def</span> <span class="nf">get_subscriptions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subscription_limit</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves a list of all the Subscriptions for this Person.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Subscription</span><span class="o">.</span><span class="n">get_by_person_record_id</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_id</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">subscription_limit</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Person.get_linked_person_ids"><a class="viewcode-back" href="../model.html#model.Person.get_linked_person_ids">[docs]</a>    <span class="k">def</span> <span class="nf">get_linked_person_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">note_limit</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves IDs of Persons marked as duplicates of this Person.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">note</span><span class="o">.</span><span class="n">linked_person_record_id</span>
+                <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">note_limit</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">note</span><span class="o">.</span><span class="n">linked_person_record_id</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="Person.get_linked_persons"><a class="viewcode-back" href="../model.html#model.Person.get_linked_persons">[docs]</a>    <span class="k">def</span> <span class="nf">get_linked_persons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">note_limit</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves Persons marked as duplicates of this Person.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Person</span><span class="o">.</span><span class="n">get_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">get_linked_person_ids</span><span class="p">(</span><span class="n">note_limit</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Person.get_all_linked_persons"><a class="viewcode-back" href="../model.html#model.Person.get_all_linked_persons">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_linked_persons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves all Persons transitively linked to this Person.&quot;&quot;&quot;</span>
+        <span class="n">linked_person_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">record_id</span><span class="p">])</span>
+        <span class="n">linked_persons</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># Maintain a list of ids of duplicate persons that have not</span>
+        <span class="c"># yet been processed.</span>
+        <span class="n">new_person_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_linked_person_ids</span><span class="p">())</span>
+        <span class="c"># Iteratively process all new_person_ids by retrieving linked</span>
+        <span class="c"># duplicates and storing those not yet processed.</span>
+        <span class="c"># Processed ids are stored in the linked_person_ids set, and</span>
+        <span class="c"># their corresponding records are in the linked_persons list.</span>
+        <span class="k">while</span> <span class="n">new_person_ids</span><span class="p">:</span>
+            <span class="n">linked_person_ids</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_person_ids</span><span class="p">)</span>
+            <span class="n">new_persons</span> <span class="o">=</span> <span class="n">Person</span><span class="o">.</span><span class="n">get_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">new_person_ids</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">new_persons</span><span class="p">:</span>
+                <span class="n">new_person_ids</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">get_linked_person_ids</span><span class="p">())</span>
+            <span class="n">linked_persons</span> <span class="o">+=</span> <span class="n">new_persons</span>
+            <span class="n">new_person_ids</span> <span class="o">-=</span> <span class="n">linked_person_ids</span>
+        <span class="k">return</span> <span class="n">linked_persons</span>
+</div>
+<div class="viewcode-block" id="Person.get_associated_emails"><a class="viewcode-back" href="../model.html#model.Person.get_associated_emails">[docs]</a>    <span class="k">def</span> <span class="nf">get_associated_emails</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets a set of all the e-mail addresses to notify when this record</span>
+<span class="sd">        is changed.&quot;&quot;&quot;</span>
+        <span class="n">email_addresses</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">note</span><span class="o">.</span><span class="n">author_email</span> <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_notes</span><span class="p">()</span>
+                               <span class="k">if</span> <span class="n">note</span><span class="o">.</span><span class="n">author_email</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">author_email</span><span class="p">:</span>
+            <span class="n">email_addresses</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">author_email</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">email_addresses</span>
+</div>
+<div class="viewcode-block" id="Person.get_effective_expiry_date"><a class="viewcode-back" href="../model.html#model.Person.get_effective_expiry_date">[docs]</a>    <span class="k">def</span> <span class="nf">get_effective_expiry_date</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the expiry_date, or if no expiry_date is present, returns the</span>
+<span class="sd">        source_date plus the configurable default_expiration_days interval.</span>
+
+<span class="sd">        If there&#39;s no source_date, we use original_creation_date.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">          A datetime date (not None).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expiry_date</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">expiry_date</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">expiration_days</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_for_repo</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="s">&#39;default_expiration_days&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">DEFAULT_EXPIRATION_DAYS</span><span class="p">)</span>
+            <span class="c"># in theory, we should always have original_creation_date, but since</span>
+            <span class="c"># it was only added recently, we might have legacy</span>
+            <span class="c"># records without it.</span>
+            <span class="n">start_date</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_date</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_creation_date</span> <span class="ow">or</span>
+                          <span class="n">utils</span><span class="o">.</span><span class="n">get_utcnow</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">start_date</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">expiration_days</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Person.put_expiry_flags"><a class="viewcode-back" href="../model.html#model.Person.put_expiry_flags">[docs]</a>    <span class="k">def</span> <span class="nf">put_expiry_flags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the is_expired flags on this Person and related Notes to</span>
+<span class="sd">        make them consistent with the effective_expiry_date() on this Person,</span>
+<span class="sd">        and commits the changes to the datastore.&quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">utils</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_utcnow</span><span class="p">()</span>
+        <span class="n">expired</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_effective_expiry_date</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">now</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_expired</span> <span class="o">!=</span> <span class="n">expired</span><span class="p">:</span>
+            <span class="c"># NOTE: This should be the ONLY code that modifies is_expired.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_expired</span> <span class="o">=</span> <span class="n">expired</span>
+
+            <span class="c"># if we neglected to capture the original_creation_date,</span>
+            <span class="c"># make a best effort to grab it now, for posterity.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_creation_date</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">original_creation_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_date</span>
+
+            <span class="c"># If the record is expiring (being replaced with a placeholder,</span>
+            <span class="c"># see http://zesty.ca/pfif/1.3/#data-expiry) or un-expiring (being</span>
+            <span class="c"># restored from deletion), we want the source_date and entry_date</span>
+            <span class="c"># updated so downstream clients will see this as the newest state.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">source_date</span> <span class="o">=</span> <span class="n">now</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">entry_date</span> <span class="o">=</span> <span class="n">now</span>
+
+            <span class="c"># All the Notes on the Person also expire or unexpire, to match.</span>
+            <span class="n">notes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">filter_expired</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">notes</span><span class="p">:</span>
+                <span class="n">note</span><span class="o">.</span><span class="n">is_expired</span> <span class="o">=</span> <span class="n">expired</span>
+
+            <span class="c"># Store these changes in the datastore.</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">notes</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="p">])</span>
+            <span class="c"># TODO(lschumacher): photos don&#39;t have expiration currently.</span>
+</div>
+<div class="viewcode-block" id="Person.wipe_contents"><a class="viewcode-back" href="../model.html#model.Person.wipe_contents">[docs]</a>    <span class="k">def</span> <span class="nf">wipe_contents</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets all the content fields to None (leaving timestamps and the</span>
+<span class="sd">        expiry flag untouched), stores the empty record, and permanently</span>
+<span class="sd">        deletes any related Notes and Photos.  Call this method ONLY on records</span>
+<span class="sd">        that have already expired.&quot;&quot;&quot;</span>
+        <span class="c"># We rely on put_expiry_flags to have properly set the source_date,</span>
+        <span class="c"># entry_date, and is_expired flags on Notes, as necessary.</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_expired</span>
+
+        <span class="c"># Permanently delete all related Photos and Notes, but not self.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delete_related_entities</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="nb">property</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c"># Leave the repo, is_expired flag, and timestamps untouched.</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;repo&#39;</span><span class="p">,</span> <span class="s">&#39;is_expired&#39;</span><span class="p">,</span> <span class="s">&#39;original_creation_date&#39;</span><span class="p">,</span>
+                            <span class="s">&#39;source_date&#39;</span><span class="p">,</span> <span class="s">&#39;entry_date&#39;</span><span class="p">,</span> <span class="s">&#39;expiry_date&#39;</span><span class="p">]:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">property</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>  <span class="c"># Store the empty placeholder record.</span>
+</div>
+<div class="viewcode-block" id="Person.delete_related_entities"><a class="viewcode-back" href="../model.html#model.Person.delete_related_entities">[docs]</a>    <span class="k">def</span> <span class="nf">delete_related_entities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delete_self</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Permanently delete all related Photos and Notes, and also self if</span>
+<span class="sd">        delete_self is True.&quot;&quot;&quot;</span>
+        <span class="c"># Delete all related Notes.</span>
+        <span class="n">notes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">filter_expired</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="c"># Delete the locally stored Photos.  We use get_value_for_datastore to</span>
+        <span class="c"># get just the keys and prevent auto-fetching the Photo data.</span>
+        <span class="n">photo</span> <span class="o">=</span> <span class="n">Person</span><span class="o">.</span><span class="n">photo</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">note_photos</span> <span class="o">=</span> <span class="p">[</span><span class="n">Note</span><span class="o">.</span><span class="n">photo</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">notes</span><span class="p">]</span>
+
+        <span class="n">entities_to_delete</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">notes</span> <span class="o">+</span> <span class="p">[</span><span class="n">photo</span><span class="p">]</span> <span class="o">+</span> <span class="n">note_photos</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">delete_self</span><span class="p">:</span>
+            <span class="n">entities_to_delete</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;enable_fulltext_search&#39;</span><span class="p">):</span>
+                <span class="n">full_text_search</span><span class="o">.</span><span class="n">delete_record_from_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">entities_to_delete</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Person.update_from_note"><a class="viewcode-back" href="../model.html#model.Person.update_from_note">[docs]</a>    <span class="k">def</span> <span class="nf">update_from_note</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">note</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates any necessary fields on the Person to reflect a new Note.&quot;&quot;&quot;</span>
+        <span class="c"># We want to transfer only the *non-empty, newer* values to the Person.</span>
+        <span class="k">if</span> <span class="n">note</span><span class="o">.</span><span class="n">author_made_contact</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>  <span class="c"># for boolean, None means</span>
+                                                  <span class="c"># unspecified</span>
+            <span class="c"># datetime stupidly refuses to compare to None, so check for None.</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">latest_found_source_date</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span>
+                <span class="n">note</span><span class="o">.</span><span class="n">source_date</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_found_source_date</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">latest_found</span> <span class="o">=</span> <span class="n">note</span><span class="o">.</span><span class="n">author_made_contact</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">latest_found_source_date</span> <span class="o">=</span> <span class="n">note</span><span class="o">.</span><span class="n">source_date</span>
+        <span class="k">if</span> <span class="n">note</span><span class="o">.</span><span class="n">status</span><span class="p">:</span>  <span class="c"># for string, &#39;&#39; means unspecified</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">latest_status_source_date</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span>
+                <span class="n">note</span><span class="o">.</span><span class="n">source_date</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_status_source_date</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">latest_status</span> <span class="o">=</span> <span class="n">note</span><span class="o">.</span><span class="n">status</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">latest_status_source_date</span> <span class="o">=</span> <span class="n">note</span><span class="o">.</span><span class="n">source_date</span>
+</div>
+<div class="viewcode-block" id="Person.update_index"><a class="viewcode-back" href="../model.html#model.Person.update_index">[docs]</a>    <span class="k">def</span> <span class="nf">update_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which_indexing</span><span class="p">):</span>
+        <span class="c">#setup new indexing</span>
+        <span class="k">if</span> <span class="s">&#39;new&#39;</span> <span class="ow">in</span> <span class="n">which_indexing</span><span class="p">:</span>
+            <span class="n">indexing</span><span class="o">.</span><span class="n">update_index_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;enable_fulltext_search&#39;</span><span class="p">):</span>
+                <span class="n">full_text_search</span><span class="o">.</span><span class="n">add_record_to_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c"># setup old indexing</span>
+        <span class="k">if</span> <span class="s">&#39;old&#39;</span> <span class="ow">in</span> <span class="n">which_indexing</span><span class="p">:</span>
+            <span class="n">prefix</span><span class="o">.</span><span class="n">update_prefix_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Person.update_latest_status"><a class="viewcode-back" href="../model.html#model.Person.update_latest_status">[docs]</a>    <span class="k">def</span> <span class="nf">update_latest_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">modified_note</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Scans all notes on this Person and fixes latest_status if needed.&quot;&quot;&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">status_source_date</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_notes</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">modified_note</span> <span class="ow">and</span> <span class="n">modified_note</span><span class="o">.</span><span class="n">note_record_id</span> <span class="o">==</span> <span class="n">note</span><span class="o">.</span><span class="n">record_id</span><span class="p">:</span>
+                <span class="n">note</span> <span class="o">=</span> <span class="n">modified_note</span>
+            <span class="k">if</span> <span class="n">note</span><span class="o">.</span><span class="n">status</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">note</span><span class="o">.</span><span class="n">hidden</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">note</span><span class="o">.</span><span class="n">status</span>
+                <span class="n">status_source_date</span> <span class="o">=</span> <span class="n">note</span><span class="o">.</span><span class="n">source_date</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_status</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latest_status</span> <span class="o">=</span> <span class="n">status</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latest_status_source_date</span> <span class="o">=</span> <span class="n">status_source_date</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+
+
+<span class="c"># Old indexing</span>
+<span class="c"># TODO(ryok): This is obsolete. Remove it.</span></div></div>
+<span class="n">prefix</span><span class="o">.</span><span class="n">add_prefix_properties</span><span class="p">(</span>
+    <span class="n">Person</span><span class="p">,</span> <span class="s">&#39;given_name&#39;</span><span class="p">,</span> <span class="s">&#39;family_name&#39;</span><span class="p">,</span> <span class="s">&#39;home_street&#39;</span><span class="p">,</span> <span class="s">&#39;home_neighborhood&#39;</span><span class="p">,</span>
+    <span class="s">&#39;home_city&#39;</span><span class="p">,</span> <span class="s">&#39;home_state&#39;</span><span class="p">,</span> <span class="s">&#39;home_postal_code&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Note"><a class="viewcode-back" href="../model.html#model.Note">[docs]</a><span class="k">class</span> <span class="nc">Note</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The datastore entity kind for storing a PFIF note record.  Never call</span>
+<span class="sd">    Note() directly; use Note.create_clone() or Note.create_original().&quot;&quot;&quot;</span>
+
+    <span class="c"># The entry_date should update every time a record is re-imported.</span>
+    <span class="n">entry_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="n">person_record_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># Use this field to store the person_record_id of a duplicate Person entry.</span>
+    <span class="n">linked_person_record_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="n">author_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">multiline</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">author_email</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">author_phone</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="c"># the original date we saw this record; it should not change.</span>
+    <span class="n">original_creation_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># source_date is the date that the original repository last changed</span>
+    <span class="c"># any of the fields in the pfif record.</span>
+    <span class="n">source_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">()</span>
+
+    <span class="n">status</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">pfif</span><span class="o">.</span><span class="n">NOTE_STATUS_VALUES</span><span class="p">)</span>
+    <span class="n">author_made_contact</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+    <span class="n">email_of_found_person</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">phone_of_found_person</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">last_known_location</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">multiline</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">TextProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">photo_url</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">TextProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="c"># This reference points to a locally stored Photo entity.  ONLY set this</span>
+    <span class="c"># property when storing a new Photo object that is owned by this Note</span>
+    <span class="c"># record and can be safely deleted when the Note is deleted.</span>
+    <span class="n">photo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">ReferenceProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+
+    <span class="c"># True if the note has been marked as spam. Will cause the note to be</span>
+    <span class="c"># initially hidden from display upon loading a record page.</span>
+    <span class="n">hidden</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="c"># True if the note has been reviewed for spam content at /admin/review.</span>
+    <span class="n">reviewed</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Note.get_note_record_id"><a class="viewcode-back" href="../model.html#model.Note.get_note_record_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_note_record_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_id</span></div>
+    <span class="n">note_record_id</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">get_note_record_id</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">photo_url_no_scheme</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">utils</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">strip_url_scheme</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">photo_url</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Note.get_by_person_record_id"><a class="viewcode-back" href="../model.html#model.Note.get_by_person_record_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_by_person_record_id</span><span class="p">(</span>
+        <span class="n">repo</span><span class="p">,</span> <span class="n">person_record_id</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets a list of all the Notes on a Person, ordered by source_date.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">Note</span><span class="o">.</span><span class="n">generate_by_person_record_id</span><span class="p">(</span>
+            <span class="n">repo</span><span class="p">,</span> <span class="n">person_record_id</span><span class="p">,</span> <span class="n">filter_expired</span><span class="p">))</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Note.generate_by_person_record_id"><a class="viewcode-back" href="../model.html#model.Note.generate_by_person_record_id">[docs]</a>    <span class="k">def</span> <span class="nf">generate_by_person_record_id</span><span class="p">(</span>
+        <span class="n">repo</span><span class="p">,</span> <span class="n">person_record_id</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generates all the Notes on a Person record ordered by source_date.&quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">Note</span><span class="o">.</span><span class="n">all_in_repo</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">filter_expired</span><span class="o">=</span><span class="n">filter_expired</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;person_record_id =&#39;</span><span class="p">,</span> <span class="n">person_record_id</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="s">&#39;source_date&#39;</span><span class="p">)</span>
+        <span class="n">notes</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">Note</span><span class="o">.</span><span class="n">FETCH_LIMIT</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">notes</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">notes</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">note</span>
+            <span class="n">query</span><span class="o">.</span><span class="n">with_cursor</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">cursor</span><span class="p">())</span>  <span class="c"># Continue where fetch left off.</span>
+            <span class="n">notes</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">Note</span><span class="o">.</span><span class="n">FETCH_LIMIT</span><span class="p">)</span>
+</div></div>
+<div class="viewcode-block" id="NoteWithBadWords"><a class="viewcode-back" href="../model.html#model.NoteWithBadWords">[docs]</a><span class="k">class</span> <span class="nc">NoteWithBadWords</span><span class="p">(</span><span class="n">Note</span><span class="p">):</span>
+    <span class="c"># Spam score given by SpamDetector</span>
+    <span class="n">spam_score</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">FloatProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c"># True is the note is confirmed by its author through email</span>
+    <span class="n">confirmed</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="c"># Once the note is confirmed, this field stores the copy of</span>
+    <span class="c"># this note in Note table. It will be useful if we want to</span>
+    <span class="c"># delete the notes with bad words, even when they are confirmed.</span>
+    <span class="n">confirmed_copy_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Photo"><a class="viewcode-back" href="../model.html#model.Photo">[docs]</a><span class="k">class</span> <span class="nc">Photo</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An uploaded image file.  Key name: repo + &#39;:&#39; + photo_id.&quot;&quot;&quot;</span>
+
+    <span class="c"># Even though the repo is part of the key_name, it is also stored</span>
+    <span class="c"># redundantly as a separate property so it can be indexed and queried upon.</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">image_data</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BlobProperty</span><span class="p">()</span>  <span class="c"># sanitized, resized image in PNG format</span>
+    <span class="n">upload_date</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Photo.create"><a class="viewcode-back" href="../model.html#model.Photo.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a Photo entity with the given field values.&quot;&quot;&quot;</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">UniqueId</span><span class="o">.</span><span class="n">create_id</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Photo</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="nb">id</span><span class="p">),</span> <span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Photo.get"><a class="viewcode-back" href="../model.html#model.Photo.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Photo</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="nb">id</span><span class="p">))</span>
+
+</div></div>
+<div class="viewcode-block" id="Authorization"><a class="viewcode-back" href="../model.html#model.Authorization">[docs]</a><span class="k">class</span> <span class="nc">Authorization</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Authorization keys.  Key name: repo + &#39;:&#39; + auth_key.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT_SETTINGS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">contact_name</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">contact_email</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                            <span class="n">organization_name</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">domain_write_permission</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                            <span class="n">read_permission</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">full_read_permission</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> 
+                            <span class="n">search_permission</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">subscribe_permission</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                            <span class="n">mark_notes_reviewed</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">is_valid</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="c"># Even though the repo is part of the key_name, it is also stored</span>
+    <span class="c"># redundantly as a separate property so it can be indexed and queried upon.</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># If this field is non-empty, this authorization token allows the client</span>
+    <span class="c"># to write records with this original domain.</span>
+    <span class="n">domain_write_permission</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="c"># If this flag is true, this authorization token allows the client to read</span>
+    <span class="c"># non-sensitive fields (i.e. filtered by utils.filter_sensitive_fields).</span>
+    <span class="n">read_permission</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+
+    <span class="c"># If this flag is true, this authorization token allows the client to read</span>
+    <span class="c"># all fields (i.e. not filtered by utils.filter_sensitive_fields).</span>
+    <span class="n">full_read_permission</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+
+    <span class="c"># If this flag is true, this authorization token allows the client to use</span>
+    <span class="c"># the search API and return non-sensitive fields (i.e. filtered</span>
+    <span class="c"># by utils.filter_sensitive_fields).</span>
+    <span class="n">search_permission</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+
+    <span class="c"># If this flag is true, this authorization token allows the client to use</span>
+    <span class="c"># the API to subscribe any e-mail address to updates on any person.</span>
+    <span class="n">subscribe_permission</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+
+    <span class="c"># If this flag is true, notes written with this authorization token are</span>
+    <span class="c"># marked as &quot;reviewed&quot; and won&#39;t show up in admin&#39;s review list.</span>
+    <span class="n">mark_notes_reviewed</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+
+    <span class="c"># If this flag is true, notes written with this authorization token are</span>
+    <span class="c"># allowed to have status == &#39;believed_dead&#39;.</span>
+    <span class="n">believed_dead_permission</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+
+    <span class="c"># If this flag is true, this key can be used to get overall statistics.</span>
+    <span class="n">stats_permission</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">()</span>
+
+    <span class="c"># If this flag is False, the API access with this key won&#39;t be</span>
+    <span class="c"># allowed.</span>
+    <span class="n">is_valid</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># Bookkeeping information for humans, not used programmatically.</span>
+    <span class="n">contact_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">contact_email</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">organization_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets a key value excluding the repo part. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_key</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Authorization.get"><a class="viewcode-back" href="../model.html#model.Authorization.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the Authorization entity for a given repository and key.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">key</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Authorization.create"><a class="viewcode-back" href="../model.html#model.Authorization.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an Authorization entity for a given repository and key.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">key</span><span class="p">,</span> <span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="ApiKeyManagementLog"><a class="viewcode-back" href="../model.html#model.ApiKeyManagementLog">[docs]</a><span class="k">class</span> <span class="nc">ApiKeyManagementLog</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Log management history for API keys.&quot;&quot;&quot;</span>
+    <span class="n">CREATE</span> <span class="o">=</span> <span class="s">&#39;create&#39;</span>
+    <span class="n">UPDATE</span> <span class="o">=</span> <span class="s">&#39;update&#39;</span>
+    <span class="n">DELETE</span> <span class="o">=</span> <span class="s">&#39;delete&#39;</span>
+    <span class="n">ACTIONS</span> <span class="o">=</span> <span class="p">[</span><span class="n">CREATE</span><span class="p">,</span> <span class="n">UPDATE</span><span class="p">,</span> <span class="n">DELETE</span><span class="p">]</span>
+
+    <span class="n">user</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">UserProperty</span><span class="p">(</span><span class="n">auto_current_user_add</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">api_key</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">ACTIONS</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">authorization</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Authorization</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Secret"><a class="viewcode-back" href="../model.html#model.Secret">[docs]</a><span class="k">class</span> <span class="nc">Secret</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A place to store application-level secrets in the database.&quot;&quot;&quot;</span>
+    <span class="n">secret</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BlobProperty</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="encode_count_name"><a class="viewcode-back" href="../model.html#model.encode_count_name">[docs]</a><span class="k">def</span> <span class="nf">encode_count_name</span><span class="p">(</span><span class="n">count_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Encode a name to printable ASCII characters so it can be safely</span>
+<span class="sd">    used as an attribute name for the datastore.&quot;&quot;&quot;</span>
+    <span class="n">encoded</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">append</span> <span class="o">=</span> <span class="n">encoded</span><span class="o">.</span><span class="n">append</span>
+    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span><span class="nb">ord</span><span class="p">,</span> <span class="n">count_name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ch</span> <span class="o">==</span> <span class="mi">92</span><span class="p">:</span>
+            <span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\\\\</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="mi">33</span> <span class="o">&lt;=</span> <span class="n">ch</span> <span class="o">&lt;=</span> <span class="mi">126</span><span class="p">:</span>
+            <span class="n">append</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="n">ch</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\\</span><span class="s">u</span><span class="si">%04x</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">ch</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ApiActionLog"><a class="viewcode-back" href="../model.html#model.ApiActionLog">[docs]</a><span class="k">class</span> <span class="nc">ApiActionLog</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Log of api key usage.&quot;&quot;&quot;</span>
+    <span class="c"># actions</span>
+    <span class="n">REPO</span> <span class="o">=</span> <span class="s">&#39;repo&#39;</span>
+    <span class="n">DELETE</span> <span class="o">=</span> <span class="s">&#39;delete&#39;</span>
+    <span class="n">READ</span> <span class="o">=</span> <span class="s">&#39;read&#39;</span>
+    <span class="n">SEARCH</span> <span class="o">=</span> <span class="s">&#39;search&#39;</span>
+    <span class="n">WRITE</span> <span class="o">=</span> <span class="s">&#39;write&#39;</span>
+    <span class="n">SUBSCRIBE</span> <span class="o">=</span> <span class="s">&#39;subscribe&#39;</span>
+    <span class="n">UNSUBSCRIBE</span> <span class="o">=</span> <span class="s">&#39;unsubscribe&#39;</span>
+    <span class="n">ACTIONS</span> <span class="o">=</span> <span class="p">[</span><span class="n">REPO</span><span class="p">,</span> <span class="n">DELETE</span><span class="p">,</span> <span class="n">READ</span><span class="p">,</span> <span class="n">SEARCH</span><span class="p">,</span> <span class="n">WRITE</span><span class="p">,</span> <span class="n">SUBSCRIBE</span><span class="p">,</span> <span class="n">UNSUBSCRIBE</span><span class="p">]</span>
+
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">api_key</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">ACTIONS</span><span class="p">)</span>
+    <span class="n">person_records</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">()</span>
+    <span class="n">note_records</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">()</span>
+    <span class="n">people_skipped</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">()</span> <span class="c"># write only</span>
+    <span class="n">notes_skipped</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">()</span> <span class="c"># write only</span>
+    <span class="n">user_agent</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">ip_address</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span> <span class="c"># client ip</span>
+    <span class="n">request_url</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span> <span class="c"># pfif version.</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="ApiActionLog.record_action"><a class="viewcode-back" href="../model.html#model.ApiActionLog.record_action">[docs]</a>    <span class="k">def</span> <span class="nf">record_action</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">person_records</span><span class="p">,</span>
+                      <span class="n">note_records</span><span class="p">,</span> <span class="n">people_skipped</span><span class="p">,</span> <span class="n">notes_skipped</span><span class="p">,</span> <span class="n">user_agent</span><span class="p">,</span>
+                      <span class="n">ip_address</span><span class="p">,</span> <span class="n">request_url</span><span class="p">,</span>
+                      <span class="n">timestamp</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">utils</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ApiActionLog</span><span class="p">(</span><span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span>
+                         <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
+                         <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span>
+                         <span class="n">person_records</span><span class="o">=</span><span class="n">person_records</span><span class="p">,</span>
+                         <span class="n">note_records</span><span class="o">=</span><span class="n">note_records</span><span class="p">,</span>
+                         <span class="n">people_skipped</span><span class="o">=</span><span class="n">people_skipped</span><span class="p">,</span>
+                         <span class="n">notes_skipped</span><span class="o">=</span><span class="n">notes_skipped</span><span class="p">,</span>
+                         <span class="n">user_agent</span><span class="o">=</span><span class="n">user_agent</span><span class="p">,</span>
+                         <span class="n">ip_address</span><span class="o">=</span><span class="n">ip_address</span><span class="p">,</span>
+                         <span class="n">request_url</span><span class="o">=</span><span class="n">request_url</span><span class="p">,</span>
+                         <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
+                         <span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span> <span class="ow">or</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_utcnow</span><span class="p">())</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c"># swallow anything to prevent the main action from failing.</span>
+            <span class="k">pass</span>
+</div></div>
+<div class="viewcode-block" id="Counter"><a class="viewcode-back" href="../model.html#model.Counter">[docs]</a><span class="k">class</span> <span class="nc">Counter</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Expando</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Counters hold partial and completed results for ongoing counting tasks.</span>
+<span class="sd">    To see how this is used, check out tasks.py.  A single Counter object can</span>
+<span class="sd">    contain several named accumulators.  Typical usage is to scan for entities</span>
+<span class="sd">    in order by __key__, update the accumulators for each entity, and save the</span>
+<span class="sd">    partial counts when the time limit for a request is reached.  The last</span>
+<span class="sd">    scanned key is saved in last_key so the next request can pick up the scan</span>
+<span class="sd">    where the last one left off.  A non-empty last_key means a scan is not</span>
+<span class="sd">    finished; when a scan is done, last_key should be set to &#39;&#39;.&quot;&quot;&quot;</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">scan_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">last_key</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>  <span class="c"># if non-empty, count is partial</span>
+
+    <span class="c"># Each Counter also has a dynamic property for each accumulator; all such</span>
+    <span class="c"># properties are named &quot;count_&quot; followed by a count_name.  The count_name</span>
+    <span class="c"># is encoded to ensure all its characters are printable ASCII.</span>
+<div class="viewcode-block" id="Counter.get"><a class="viewcode-back" href="../model.html#model.Counter.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the specified accumulator from this counter object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;count_&#39;</span> <span class="o">+</span> <span class="n">encode_count_name</span><span class="p">(</span><span class="n">count_name</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Counter.increment"><a class="viewcode-back" href="../model.html#model.Counter.increment">[docs]</a>    <span class="k">def</span> <span class="nf">increment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Increments the given accumulator on this Counter object.&quot;&quot;&quot;</span>
+        <span class="n">prop_name</span> <span class="o">=</span> <span class="s">&#39;count_&#39;</span> <span class="o">+</span> <span class="n">encode_count_name</span><span class="p">(</span><span class="n">count_name</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop_name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop_name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Counter.get_count"><a class="viewcode-back" href="../model.html#model.Counter.get_count">[docs]</a>    <span class="k">def</span> <span class="nf">get_count</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the latest finished count for the given repository and name.</span>
+<span class="sd">        &#39;name&#39; should be in the format scan_name + &#39;.&#39; + count_name.&quot;&quot;&quot;</span>
+        <span class="n">scan_name</span><span class="p">,</span> <span class="n">count_name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">count_name</span> <span class="o">=</span> <span class="n">encode_count_name</span><span class="p">(</span><span class="n">count_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">get_all_counts</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">count_name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Counter.get_all_counts"><a class="viewcode-back" href="../model.html#model.Counter.get_all_counts">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_counts</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets a dictionary of all the counts for the last completed scan</span>
+<span class="sd">        for the given repository and scan name.&quot;&quot;&quot;</span>
+        <span class="n">counter_key</span> <span class="o">=</span> <span class="n">repo</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">scan_name</span>
+
+        <span class="c"># Get the counts from memcache, loading from datastore if necessary.</span>
+        <span class="n">counter_dict</span> <span class="o">=</span> <span class="n">memcache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">counter_key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">counter_dict</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># Get the latest completed counter with this scan_name.</span>
+                <span class="n">counter</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;repo =&#39;</span><span class="p">,</span> <span class="n">repo</span>
+                                  <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;scan_name =&#39;</span><span class="p">,</span> <span class="n">scan_name</span>
+                                  <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;last_key =&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span>
+                                  <span class="p">)</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="s">&#39;-timestamp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">datastore_errors</span><span class="o">.</span><span class="n">NeedIndexError</span><span class="p">:</span>
+                <span class="c"># Absurdly, it can take App Engine up to an hour to build an</span>
+                <span class="c"># index for a kind that has zero entities, and during that time</span>
+                <span class="c"># all queries fail.  Catch this error so we don&#39;t get screwed.</span>
+                <span class="n">counter</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="n">counter_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">counter</span><span class="p">:</span>
+                <span class="c"># Cache the counter&#39;s contents in memcache for one minute.</span>
+                <span class="n">counter_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">name</span><span class="p">[</span><span class="mi">6</span><span class="p">:],</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+                                    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">counter</span><span class="o">.</span><span class="n">dynamic_properties</span><span class="p">()</span>
+                                    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;count_&#39;</span><span class="p">))</span>
+                <span class="n">memcache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">counter_key</span><span class="p">,</span> <span class="n">counter_dict</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+
+        <span class="c"># Return the dictionary of counts for this scan.</span>
+        <span class="k">return</span> <span class="n">counter_dict</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Counter.all_finished_counters"><a class="viewcode-back" href="../model.html#model.Counter.all_finished_counters">[docs]</a>    <span class="k">def</span> <span class="nf">all_finished_counters</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets a query for all finished counters for the specified scan.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;repo =&#39;</span><span class="p">,</span> <span class="n">repo</span>
+                       <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;scan_name =&#39;</span><span class="p">,</span> <span class="n">scan_name</span>
+                       <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;last_key =&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Counter.get_unfinished_or_create"><a class="viewcode-back" href="../model.html#model.Counter.get_unfinished_or_create">[docs]</a>    <span class="k">def</span> <span class="nf">get_unfinished_or_create</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">scan_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the latest unfinished Counter entity for the given repository</span>
+<span class="sd">        and scan_name.  If there is no unfinished Counter, create a new one.&quot;&quot;&quot;</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;repo =&#39;</span><span class="p">,</span> <span class="n">repo</span>
+                          <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;scan_name =&#39;</span><span class="p">,</span> <span class="n">scan_name</span>
+                          <span class="p">)</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="s">&#39;-timestamp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">counter</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">counter</span><span class="o">.</span><span class="n">last_key</span><span class="p">:</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">scan_name</span><span class="o">=</span><span class="n">scan_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">counter</span>
+
+</div></div>
+<div class="viewcode-block" id="Subscription"><a class="viewcode-back" href="../model.html#model.Subscription">[docs]</a><span class="k">class</span> <span class="nc">Subscription</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Subscription to notifications when a note is added to a person record&quot;&quot;&quot;</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">person_record_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">email</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">language</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Subscription.create"><a class="viewcode-back" href="../model.html#model.Subscription.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">language</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates a new Subscription&quot;&quot;&quot;</span>
+        <span class="n">key_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">email</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Subscription</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">key_name</span><span class="p">,</span> <span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span>
+                            <span class="n">person_record_id</span><span class="o">=</span><span class="n">record_id</span><span class="p">,</span>
+                            <span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">,</span> <span class="n">language</span><span class="o">=</span><span class="n">language</span><span class="p">)</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Subscription.get"><a class="viewcode-back" href="../model.html#model.Subscription.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the entity with the given record_id in a given repository.&quot;&quot;&quot;</span>
+        <span class="n">key_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">email</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Subscription</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="n">key_name</span><span class="p">)</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Subscription.get_by_person_record_id"><a class="viewcode-back" href="../model.html#model.Subscription.get_by_person_record_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_by_person_record_id</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">person_record_id</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve subscriptions for a person record.&quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">Subscription</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;repo =&#39;</span><span class="p">,</span> <span class="n">repo</span><span class="p">)</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;person_record_id =&#39;</span><span class="p">,</span> <span class="n">person_record_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">query</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="UserActionLog"><a class="viewcode-back" href="../model.html#model.UserActionLog">[docs]</a><span class="k">class</span> <span class="nc">UserActionLog</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Expando</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Logs user actions.&quot;&quot;&quot;</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span>
+        <span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="s">&#39;delete&#39;</span><span class="p">,</span> <span class="s">&#39;extend&#39;</span><span class="p">,</span> <span class="s">&#39;hide&#39;</span><span class="p">,</span> <span class="s">&#39;mark_dead&#39;</span><span class="p">,</span> <span class="s">&#39;mark_alive&#39;</span><span class="p">,</span>
+        <span class="s">&#39;restore&#39;</span><span class="p">,</span> <span class="s">&#39;unhide&#39;</span><span class="p">,</span> <span class="s">&#39;disable_notes&#39;</span><span class="p">,</span> <span class="s">&#39;enable_notes&#39;</span><span class="p">])</span>
+    <span class="n">entity_kind</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">entity_key_name</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">detail</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">TextProperty</span><span class="p">()</span>
+    <span class="n">ip_address</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="UserActionLog.put_new"><a class="viewcode-back" href="../model.html#model.UserActionLog.put_new">[docs]</a>    <span class="k">def</span> <span class="nf">put_new</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">entity</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">ip_address</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                <span class="n">copy_properties</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds an entry to the UserActionLog.  &#39;action&#39; is the action that</span>
+<span class="sd">        the user performed, &#39;entity&#39; is the entity that was operated on, and</span>
+<span class="sd">        &#39;detail&#39; is a string containing any other details.&quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">utils</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="n">entity</span><span class="o">.</span><span class="n">kind</span><span class="p">()</span>
+        <span class="n">entry</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span>
+            <span class="n">time</span><span class="o">=</span><span class="n">utils</span><span class="o">.</span><span class="n">get_utcnow</span><span class="p">(),</span> <span class="n">repo</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span>
+            <span class="n">entity_kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span> <span class="n">entity_key_name</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span>
+            <span class="n">detail</span><span class="o">=</span><span class="n">detail</span><span class="p">,</span> <span class="n">ip_address</span><span class="o">=</span><span class="n">ip_address</span><span class="p">)</span>
+        <span class="c"># copy the properties of the entity</span>
+        <span class="k">if</span> <span class="n">copy_properties</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">properties</span><span class="p">():</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">key</span><span class="p">()</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">kind</span> <span class="o">+</span> <span class="s">&#39;_&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="n">entry</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+
+</div></div>
+<div class="viewcode-block" id="UserAgentLog"><a class="viewcode-back" href="../model.html#model.UserAgentLog">[docs]</a><span class="k">class</span> <span class="nc">UserAgentLog</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Logs information about the user agent.&quot;&quot;&quot;</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">auto_now</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">user_agent</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">lang</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">accept_charset</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">ip_address</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">sample_rate</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">FloatProperty</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="StaticSiteMapInfo"><a class="viewcode-back" href="../model.html#model.StaticSiteMapInfo">[docs]</a><span class="k">class</span> <span class="nc">StaticSiteMapInfo</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Holds static sitemaps file info.&quot;&quot;&quot;</span>
+    <span class="n">static_sitemaps</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringListProperty</span><span class="p">()</span>
+    <span class="n">static_sitemaps_generation_time</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">shard_size_seconds</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="SiteMapPingStatus"><a class="viewcode-back" href="../model.html#model.SiteMapPingStatus">[docs]</a><span class="k">class</span> <span class="nc">SiteMapPingStatus</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tracks the last shard index that was pinged to the search engine.&quot;&quot;&quot;</span>
+    <span class="n">search_engine</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">shard_index</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="UniqueId"><a class="viewcode-back" href="../model.html#model.UniqueId">[docs]</a><span class="k">class</span> <span class="nc">UniqueId</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This entity is used just to generate unique numeric IDs.&quot;&quot;&quot;</span>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="UniqueId.create_id"><a class="viewcode-back" href="../model.html#model.UniqueId.create_id">[docs]</a>    <span class="k">def</span> <span class="nf">create_id</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Gets an integer ID that is guaranteed to be different from any ID</span>
+<span class="sd">        previously returned by this static method.&quot;&quot;&quot;</span>
+        <span class="n">unique_id</span> <span class="o">=</span> <span class="n">UniqueId</span><span class="p">()</span>
+        <span class="n">unique_id</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">unique_id</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">id</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

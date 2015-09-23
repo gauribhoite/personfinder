@@ -38,8 +38,71 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="indexing-module">
-<h1>indexing module<a class="headerlink" href="#indexing-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-indexing">
+<span id="indexing-module"></span><h1>indexing module<a class="headerlink" href="#module-indexing" title="Permalink to this headline">¶</a></h1>
+<p>Support for approximate string prefix queries.</p>
+<p>A hit is defined when the words entered in the query are all prefixes of one
+of the words in the given and family names on the record.  For example, a
+record with the fields:</p>
+<blockquote>
+<div>given_name: ABC 123
+family_name: DEF 456</div></blockquote>
+<dl class="docutils">
+<dt>will be retrieved by:</dt>
+<dd>&#8220;ABC 456&#8221;
+&#8220;45 ED&#8221;
+&#8220;123 ABC&#8221;
+&#8220;ABC 123 DEF&#8221;</dd>
+<dt>but will not be retrieved by:</dt>
+<dd>&#8220;ABC 1234&#8221;
+&#8220;ABC 123 DEF 456 789&#8221;</dd>
+</dl>
+<dl class="class">
+<dt id="indexing.CmpResults">
+<em class="property">class </em><code class="descclassname">indexing.</code><code class="descname">CmpResults</code><span class="sig-paren">(</span><em>query</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/indexing.html#CmpResults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#indexing.CmpResults" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="indexing.CmpResults.rank">
+<code class="descname">rank</code><span class="sig-paren">(</span><em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/indexing.html#CmpResults.rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#indexing.CmpResults.rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="indexing.CmpResults.set_ranking_attr">
+<code class="descname">set_ranking_attr</code><span class="sig-paren">(</span><em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/indexing.html#CmpResults.set_ranking_attr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#indexing.CmpResults.set_ranking_attr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Consider save these into to db</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="indexing.get_alternate_name_tokens">
+<code class="descclassname">indexing.</code><code class="descname">get_alternate_name_tokens</code><span class="sig-paren">(</span><em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/indexing.html#get_alternate_name_tokens"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#indexing.get_alternate_name_tokens" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns alternate name tokens and their variations.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="indexing.rank_and_order">
+<code class="descclassname">indexing.</code><code class="descname">rank_and_order</code><span class="sig-paren">(</span><em>results</em>, <em>query</em>, <em>max_results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/indexing.html#rank_and_order"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#indexing.rank_and_order" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="indexing.search">
+<code class="descclassname">indexing.</code><code class="descname">search</code><span class="sig-paren">(</span><em>repo</em>, <em>query_obj</em>, <em>max_results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/indexing.html#search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#indexing.search" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="indexing.sort_query_words">
+<code class="descclassname">indexing.</code><code class="descname">sort_query_words</code><span class="sig-paren">(</span><em>query_words</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/indexing.html#sort_query_words"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#indexing.sort_query_words" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort query_words so that the query filters created from query_words are
+more effective and consistent when truncated due to NeedIndexError, and
+return the sorted list.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="indexing.update_index_properties">
+<code class="descclassname">indexing.</code><code class="descname">update_index_properties</code><span class="sig-paren">(</span><em>entity</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/indexing.html#update_index_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#indexing.update_index_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds and updates all prefix-related properties on the given entity.</p>
+</dd></dl>
+
 </div>
 
 

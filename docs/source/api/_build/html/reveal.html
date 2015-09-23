@@ -38,8 +38,63 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="reveal-module">
-<h1>reveal module<a class="headerlink" href="#reveal-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-reveal">
+<span id="reveal-module"></span><h1>reveal module<a class="headerlink" href="#module-reveal" title="Permalink to this headline">¶</a></h1>
+<p>Handler for a Turing test page, and utility functions for other pages,
+to guard the display of sensitive information.</p>
+<dl class="class">
+<dt id="reveal.Handler">
+<em class="property">class </em><code class="descclassname">reveal.</code><code class="descname">Handler</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#Handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.Handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<dl class="method">
+<dt id="reveal.Handler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#Handler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.Handler.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="reveal.Handler.post">
+<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#Handler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.Handler.post" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="reveal.hmac">
+<code class="descclassname">reveal.</code><code class="descname">hmac</code><span class="sig-paren">(</span><em>key</em>, <em>data</em>, <em>hash=&lt;function sha1_hash&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#hmac"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.hmac" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produces an HMAC for the given data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="reveal.make_reveal_url">
+<code class="descclassname">reveal.</code><code class="descname">make_reveal_url</code><span class="sig-paren">(</span><em>handler</em>, <em>content_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#make_reveal_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.make_reveal_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produces a link to this reveal handler that, on success, redirects back
+to the given &#8216;target&#8217; URL with a signature for the given &#8216;content_id&#8217;.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="reveal.sha1_hash">
+<code class="descclassname">reveal.</code><code class="descname">sha1_hash</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#sha1_hash"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.sha1_hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the SHA-1 hash of the given string.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="reveal.sign">
+<code class="descclassname">reveal.</code><code class="descname">sign</code><span class="sig-paren">(</span><em>data</em>, <em>lifetime=600</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#sign"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.sign" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produces a limited-time signature for the given data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="reveal.verify">
+<code class="descclassname">reveal.</code><code class="descname">verify</code><span class="sig-paren">(</span><em>data</em>, <em>signature</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#verify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.verify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks that a signature matches the given data and hasn&#8217;t yet expired.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="reveal.xor">
+<code class="descclassname">reveal.</code><code class="descname">xor</code><span class="sig-paren">(</span><em>string</em>, <em>byte</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/reveal.html#xor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reveal.xor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exclusive-ors each character in a string with the given byte.</p>
+</dd></dl>
+
 </div>
 
 

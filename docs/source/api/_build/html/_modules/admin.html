@@ -1,0 +1,325 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>admin &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for admin</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2011 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">simplejson</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">const</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">model</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">const</span>
+<span class="kn">import</span> <span class="nn">reveal</span>
+<span class="kn">import</span> <span class="nn">tasks</span>
+
+<div class="viewcode-block" id="Handler"><a class="viewcode-back" href="../admin.html#admin.Handler">[docs]</a><span class="k">class</span> <span class="nc">Handler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="c"># After a repository is deactivated, we still need the admin page to be</span>
+    <span class="c"># accessible so we can edit its settings.</span>
+    <span class="n">ignore_deactivation</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="c"># We show global admin page, if a repo is not specified.</span>
+    <span class="n">repo_required</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="n">admin_required</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="Handler.get"><a class="viewcode-back" href="../admin.html#admin.Handler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">users</span><span class="o">.</span><span class="n">get_current_user</span><span class="p">()</span>
+        <span class="n">simplejson</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">FLOAT_REPR</span> <span class="o">=</span> <span class="nb">str</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="p">(</span><span class="n">ensure_ascii</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">view_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__model_config_to_view_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">view_config_json</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">view_config</span><span class="o">.</span><span class="n">iteritems</span><span class="p">())</span>
+        <span class="n">all_view_config_json</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">view_config</span><span class="p">)</span>
+        <span class="c">#sorts languages by exonym; to sort by code, remove the key argument</span>
+        <span class="n">sorted_exonyms</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">const</span><span class="o">.</span><span class="n">LANGUAGE_EXONYMS</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span>
+                                <span class="n">key</span><span class="o">=</span> <span class="k">lambda</span> <span class="n">lang</span><span class="p">:</span> <span class="n">lang</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">sorted_exonyms</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">elem</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;code&#39;</span> <span class="p">:</span> <span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                           <span class="s">&#39;exonym&#39;</span> <span class="p">:</span> <span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]},</span> <span class="n">sorted_exonyms</span><span class="p">)</span>
+        <span class="n">sorted_exonyms_json</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">sorted_exonyms</span><span class="p">)</span>
+        <span class="n">repo_options</span> <span class="o">=</span> <span class="p">[</span><span class="n">Struct</span><span class="p">(</span><span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/admin&#39;</span><span class="p">,</span> <span class="n">repo</span><span class="p">))</span>
+                        <span class="k">for</span> <span class="n">repo</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">Repo</span><span class="o">.</span><span class="n">list</span><span class="p">())]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;admin.html&#39;</span><span class="p">,</span>
+                    <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
+                    <span class="n">repo_options</span><span class="o">=</span><span class="n">repo_options</span><span class="p">,</span>
+                    <span class="n">view_config</span><span class="o">=</span><span class="n">view_config</span><span class="p">,</span>
+                    <span class="n">view_config_json</span><span class="o">=</span><span class="n">view_config_json</span><span class="p">,</span>
+                    <span class="n">all_view_config_json</span><span class="o">=</span><span class="n">all_view_config_json</span><span class="p">,</span>
+                    <span class="n">login_url</span><span class="o">=</span><span class="n">users</span><span class="o">.</span><span class="n">create_login_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">),</span>
+                    <span class="n">logout_url</span><span class="o">=</span><span class="n">users</span><span class="o">.</span><span class="n">create_logout_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">),</span>
+                    <span class="n">language_exonyms_json</span><span class="o">=</span><span class="n">sorted_exonyms_json</span><span class="p">,</span>
+                    <span class="n">onload_function</span><span class="o">=</span><span class="s">&quot;add_initial_languages()&quot;</span><span class="p">,</span>
+                    <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">domain</span> <span class="o">+</span> <span class="s">&#39;/person.&#39;</span><span class="p">,</span>
+                    <span class="n">test_mode_min_age_hours</span><span class="o">=</span>
+                        <span class="n">tasks</span><span class="o">.</span><span class="n">CleanUpInTestMode</span><span class="o">.</span><span class="n">DELETION_AGE_SECONDS</span> <span class="o">/</span> <span class="mf">3600.0</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.post"><a class="viewcode-back" href="../admin.html#admin.Handler.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;delete&#39;</span><span class="p">:</span>
+            <span class="c"># Redirect to the deletion handler with a valid signature.</span>
+            <span class="n">action</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;delete&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="s">&#39;/delete&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                          <span class="n">signature</span><span class="o">=</span><span class="n">reveal</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">action</span><span class="p">))</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;create_repo&#39;</span><span class="p">:</span>
+            <span class="n">new_repo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">new_repo</span>
+            <span class="n">Repo</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">new_repo</span><span class="p">)</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">set_for_repo</span><span class="p">(</span>  <span class="c"># Provide some defaults.</span>
+                <span class="n">new_repo</span><span class="p">,</span>
+                <span class="n">language_menu_options</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;en&#39;</span><span class="p">,</span> <span class="s">&#39;fr&#39;</span><span class="p">],</span>
+                <span class="n">repo_titles</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;en&#39;</span><span class="p">:</span> <span class="s">&#39;Earthquake&#39;</span><span class="p">,</span> <span class="s">&#39;fr&#39;</span><span class="p">:</span> <span class="s">u&#39;S</span><span class="se">\xe9</span><span class="s">isme&#39;</span><span class="p">},</span>
+                <span class="n">keywords</span><span class="o">=</span><span class="s">&#39;person finder, people finder, person, people, &#39;</span> <span class="o">+</span>
+                    <span class="s">&#39;crisis, survivor, family&#39;</span><span class="p">,</span>
+                <span class="n">use_family_name</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">use_alternate_names</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">use_postal_code</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">allow_believed_dead_via_ui</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">min_query_word_length</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="n">show_profile_entry</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">profile_websites</span><span class="o">=</span><span class="n">DEFAULT_PROFILE_WEBSITES</span><span class="p">,</span>
+                <span class="n">map_default_zoom</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                <span class="n">map_default_center</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="n">map_size_pixels</span><span class="o">=</span><span class="p">[</span><span class="mi">400</span><span class="p">,</span> <span class="mi">280</span><span class="p">],</span>
+                <span class="n">read_auth_key_required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">search_auth_key_required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">deactivated</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">launched</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">deactivation_message_html</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                <span class="n">start_page_custom_htmls</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;en&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;fr&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">},</span>
+                <span class="n">results_page_custom_htmls</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;en&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;fr&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">},</span>
+                <span class="n">view_page_custom_htmls</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;en&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;fr&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">},</span>
+                <span class="n">seek_query_form_custom_htmls</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;en&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;fr&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">},</span>
+                <span class="n">footer_custom_htmls</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;en&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;fr&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">},</span>
+                <span class="n">bad_words</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                <span class="n">published_date</span><span class="o">=</span><span class="n">get_utcnow_timestamp</span><span class="p">(),</span>
+                <span class="n">updated_date</span><span class="o">=</span><span class="n">get_utcnow_timestamp</span><span class="p">(),</span>
+                <span class="n">test_mode</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">force_https</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="s">&#39;/admin&#39;</span><span class="p">,</span> <span class="n">new_repo</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;save_repo&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="s">&#39;/admin&#39;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__update_config</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span>
+                    <span class="c"># These settings are all entered in JSON.</span>
+                    <span class="n">json_config_names</span><span class="o">=</span><span class="p">[</span>
+                        <span class="s">&#39;allow_believed_dead_via_ui&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;family_name_first&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;footer_custom_htmls&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;force_https&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;language_menu_options&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;map_default_center&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;map_default_zoom&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;map_size_pixels&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;min_query_word_length&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;profile_websites&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;read_auth_key_required&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;repo_titles&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;results_page_custom_htmls&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;search_auth_key_required&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;seek_query_form_custom_htmls&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;show_profile_entry&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;start_page_custom_htmls&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;test_mode&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;use_alternate_names&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;use_family_name&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;use_postal_code&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;view_page_custom_htmls&#39;</span><span class="p">,</span>
+                    <span class="p">],</span>
+                    <span class="c"># These settings are literal strings (not JSON).</span>
+                    <span class="n">literal_config_names</span><span class="o">=</span><span class="p">[</span>
+                        <span class="s">&#39;bad_words&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;deactivation_message_html&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;keywords&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;launch_status&#39;</span><span class="p">,</span>
+                    <span class="p">],</span>
+                    <span class="c"># Update updated_date if any of the following settings are</span>
+                    <span class="c"># changed.</span>
+                    <span class="n">updating_config_names</span><span class="o">=</span><span class="p">[</span>
+                        <span class="s">&#39;launch_status&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;test_mode&#39;</span><span class="p">,</span>
+                    <span class="p">]):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="s">&#39;/admin&#39;</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;save_global&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__update_config</span><span class="p">(</span>
+                    <span class="s">&#39;*&#39;</span><span class="p">,</span>
+                    <span class="c"># These settings are all entered in JSON.</span>
+                    <span class="n">json_config_names</span><span class="o">=</span><span class="p">[</span>
+                        <span class="s">&#39;sms_number_to_repo&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;repo_aliases&#39;</span><span class="p">,</span>
+                    <span class="p">],</span>
+                    <span class="c"># These settings are literal strings (not JSON).</span>
+                    <span class="n">literal_config_names</span><span class="o">=</span><span class="p">[</span>
+                    <span class="p">]):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="s">&#39;/admin&#39;</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">__update_config</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">repo</span><span class="p">,</span>
+            <span class="n">json_config_names</span><span class="p">,</span>
+            <span class="n">literal_config_names</span><span class="p">,</span>
+            <span class="n">updating_config_names</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">json_config_names</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="mi">400</span><span class="p">,</span> <span class="s">&#39;The setting for </span><span class="si">%s</span><span class="s"> was not valid JSON.&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">literal_config_names</span><span class="p">:</span>
+            <span class="n">values</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">orig_view_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__model_config_to_view_config</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">Configuration</span><span class="p">(</span><span class="n">repo</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">updating_config_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">orig_view_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="n">values</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                <span class="n">values</span><span class="p">[</span><span class="s">&#39;updated_date&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_utcnow_timestamp</span><span class="p">()</span>
+                <span class="k">break</span>
+
+        <span class="n">config</span><span class="o">.</span><span class="n">set_for_repo</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">__view_config_to_model_config</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__model_config_to_view_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_config</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts the config in the database to the config for admin page</span>
+<span class="sd">        rendering.&quot;&quot;&quot;</span>
+        <span class="n">view_config</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">model_config</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;deactivated&#39;</span><span class="p">,</span> <span class="s">&#39;launched&#39;</span><span class="p">]:</span>
+                <span class="n">view_config</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">deactivated</span><span class="p">:</span>
+            <span class="n">view_config</span><span class="p">[</span><span class="s">&#39;launch_status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;deactivated&#39;</span>
+        <span class="k">elif</span> <span class="n">model_config</span><span class="o">.</span><span class="n">launched</span><span class="p">:</span>
+            <span class="n">view_config</span><span class="p">[</span><span class="s">&#39;launch_status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;activated&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">view_config</span><span class="p">[</span><span class="s">&#39;launch_status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;staging&#39;</span>
+
+        <span class="k">return</span> <span class="n">view_config</span>
+
+    <span class="k">def</span> <span class="nf">__view_config_to_model_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view_config</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts the config for admin page rendering to the config in the</span>
+<span class="sd">        database.&quot;&quot;&quot;</span>
+        <span class="n">model_config</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">view_config</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s">&#39;launch_status&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;staging&#39;</span><span class="p">:</span>
+                    <span class="n">model_config</span><span class="p">[</span><span class="s">&#39;deactivated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="n">model_config</span><span class="p">[</span><span class="s">&#39;launched&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">elif</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;activated&#39;</span><span class="p">:</span>
+                    <span class="n">model_config</span><span class="p">[</span><span class="s">&#39;deactivated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="n">model_config</span><span class="p">[</span><span class="s">&#39;launched&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">elif</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;deactivated&#39;</span><span class="p">:</span>
+                    <span class="n">model_config</span><span class="p">[</span><span class="s">&#39;deactivated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="n">model_config</span><span class="p">[</span><span class="s">&#39;launched&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                            <span class="s">&#39;Invalid value for config.launch_status: %p&#39;</span>
+                            <span class="o">%</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">model_config</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">model_config</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

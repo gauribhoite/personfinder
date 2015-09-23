@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>photo &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for photo</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Handler for retrieving uploaded photos for display.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">model</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+
+<span class="kn">from</span> <span class="nn">django.utils.translation</span> <span class="kn">import</span> <span class="n">ugettext_lazy</span> <span class="k">as</span> <span class="n">_</span>
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">images</span>
+<span class="kn">from</span> <span class="nn">google.appengine.runtime.apiproxy_errors</span> <span class="kn">import</span> <span class="n">RequestTooLargeError</span>
+
+<span class="n">MAX_IMAGE_DIMENSION</span> <span class="o">=</span> <span class="mi">300</span>
+
+<div class="viewcode-block" id="PhotoError"><a class="viewcode-back" href="../photo.html#photo.PhotoError">[docs]</a><span class="k">class</span> <span class="nc">PhotoError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;There was a problem processing the image.  &#39;</span>
+                <span class="s">&#39;Please try a different image.&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="FormatUnrecognizedError"><a class="viewcode-back" href="../photo.html#photo.FormatUnrecognizedError">[docs]</a><span class="k">class</span> <span class="nc">FormatUnrecognizedError</span><span class="p">(</span><span class="n">PhotoError</span><span class="p">):</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;Photo uploaded is in an unrecognized format.  &#39;</span>
+                <span class="s">&#39;Please go back and try again.&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="SizeTooLargeError"><a class="viewcode-back" href="../photo.html#photo.SizeTooLargeError">[docs]</a><span class="k">class</span> <span class="nc">SizeTooLargeError</span><span class="p">(</span><span class="n">PhotoError</span><span class="p">):</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">_</span><span class="p">(</span><span class="s">&#39;The provided image is too large.  &#39;</span>
+                <span class="s">&#39;Please upload a smaller one.&#39;</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="create_photo"><a class="viewcode-back" href="../photo.html#photo.create_photo">[docs]</a><span class="k">def</span> <span class="nf">create_photo</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates a new Photo entity for the provided image of type images.Image</span>
+<span class="sd">    after resizing it and converting to PNG.  It may throw a PhotoError on</span>
+<span class="sd">    failure, which comes with a localized error message appropriate for</span>
+<span class="sd">    display.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>  <span class="c"># False means it wasn&#39;t valid (see validate_image)</span>
+        <span class="k">raise</span> <span class="n">FormatUnrecognizedError</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">height</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">MAX_IMAGE_DIMENSION</span><span class="p">:</span>
+        <span class="c"># No resize needed.  Keep the same size but add a transformation to</span>
+        <span class="c"># force re-encoding.</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">height</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">image</span><span class="o">.</span><span class="n">width</span> <span class="o">&gt;</span> <span class="n">image</span><span class="o">.</span><span class="n">height</span><span class="p">:</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">MAX_IMAGE_DIMENSION</span><span class="p">,</span>
+                     <span class="n">image</span><span class="o">.</span><span class="n">height</span> <span class="o">*</span> <span class="n">MAX_IMAGE_DIMENSION</span> <span class="o">/</span> <span class="n">image</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">width</span> <span class="o">*</span> <span class="n">MAX_IMAGE_DIMENSION</span> <span class="o">/</span> <span class="n">image</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+                     <span class="n">MAX_IMAGE_DIMENSION</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">image_data</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">execute_transforms</span><span class="p">(</span><span class="n">output_encoding</span><span class="o">=</span><span class="n">images</span><span class="o">.</span><span class="n">PNG</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">RequestTooLargeError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SizeTooLargeError</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="c"># There are various images.Error exceptions that can be raised, as well</span>
+        <span class="c"># as e.g. IOError if the image is corrupt.</span>
+        <span class="k">raise</span> <span class="n">PhotoError</span><span class="p">()</span>
+
+    <span class="n">photo</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Photo</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">handler</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">image_data</span><span class="o">=</span><span class="n">image_data</span><span class="p">)</span>
+    <span class="n">photo_url</span> <span class="o">=</span> <span class="n">get_photo_url</span><span class="p">(</span><span class="n">photo</span><span class="p">,</span> <span class="n">handler</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">photo</span><span class="p">,</span> <span class="n">photo_url</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="get_photo_url"><a class="viewcode-back" href="../photo.html#photo.get_photo_url">[docs]</a><span class="k">def</span> <span class="nf">get_photo_url</span><span class="p">(</span><span class="n">photo</span><span class="p">,</span> <span class="n">handler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the URL where this app is serving a hosted Photo object.&quot;&quot;&quot;</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">photo</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">handler</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;/photo&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Handler"><a class="viewcode-back" href="../photo.html#photo.Handler">[docs]</a><span class="k">class</span> <span class="nc">Handler</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">BaseHandler</span><span class="p">):</span>
+<div class="viewcode-block" id="Handler.get"><a class="viewcode-back" href="../photo.html#photo.Handler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s">&#39;Photo id is unspecified or invalid.&#39;</span><span class="p">)</span>
+        <span class="n">photo</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Photo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">photo</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s">&#39;There is no photo for the specified id.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Content-Type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;image/png&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">photo</span><span class="o">.</span><span class="n">image_data</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -38,8 +38,38 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="sitemap-module">
-<h1>sitemap module<a class="headerlink" href="#sitemap-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-sitemap">
+<span id="sitemap-module"></span><h1>sitemap module<a class="headerlink" href="#module-sitemap" title="Permalink to this headline">¶</a></h1>
+<p>Exports the URLs of all person entries to a sitemap.xml file.</p>
+<dl class="class">
+<dt id="sitemap.SiteMap">
+<em class="property">class </em><code class="descclassname">sitemap.</code><code class="descname">SiteMap</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sitemap.html#SiteMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sitemap.SiteMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<dl class="method">
+<dt id="sitemap.SiteMap.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sitemap.html#SiteMap.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sitemap.SiteMap.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="sitemap.SiteMapPing">
+<em class="property">class </em><code class="descclassname">sitemap.</code><code class="descname">SiteMapPing</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sitemap.html#SiteMapPing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sitemap.SiteMapPing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<p>Pings the index server with sitemap files that are new since last ping</p>
+<dl class="method">
+<dt id="sitemap.SiteMapPing.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sitemap.html#SiteMapPing.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sitemap.SiteMapPing.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="sitemap.SiteMapPing.ping_indexer">
+<code class="descname">ping_indexer</code><span class="sig-paren">(</span><em>start_index</em>, <em>end_index</em>, <em>search_engine</em>, <em>status</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sitemap.html#SiteMapPing.ping_indexer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#sitemap.SiteMapPing.ping_indexer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pings the server with sitemap updates; returns True if all succeed</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

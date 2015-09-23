@@ -38,8 +38,40 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="post-flagged-note-module">
-<h1>post_flagged_note module<a class="headerlink" href="#post-flagged-note-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-post_flagged_note">
+<span id="post-flagged-note-module"></span><h1>post_flagged_note module<a class="headerlink" href="#module-post_flagged_note" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="post_flagged_note.Handler">
+<em class="property">class </em><code class="descclassname">post_flagged_note.</code><code class="descname">Handler</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/post_flagged_note.html#Handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#post_flagged_note.Handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<p>This handler tells the note author that we can not post the note 
+without an email confirmation.</p>
+<dl class="method">
+<dt id="post_flagged_note.Handler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/post_flagged_note.html#Handler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#post_flagged_note.Handler.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="post_flagged_note.Handler.post">
+<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/post_flagged_note.html#Handler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#post_flagged_note.Handler.post" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="post_flagged_note.PostNoteWithBadWordsError">
+<em class="property">exception </em><code class="descclassname">post_flagged_note.</code><code class="descname">PostNoteWithBadWordsError</code><a class="reference internal" href="_modules/post_flagged_note.html#PostNoteWithBadWordsError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#post_flagged_note.PostNoteWithBadWordsError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+<p>Container for user-facing error messages when a note is
+detected as having spam words and the note author is asked
+to provide email confirmation to post the note.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="post_flagged_note.get_confirm_post_note_with_bad_words_url">
+<code class="descclassname">post_flagged_note.</code><code class="descname">get_confirm_post_note_with_bad_words_url</code><span class="sig-paren">(</span><em>handler</em>, <em>note</em>, <em>ttl=259200</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/post_flagged_note.html#get_confirm_post_note_with_bad_words_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#post_flagged_note.get_confirm_post_note_with_bad_words_url" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 
 

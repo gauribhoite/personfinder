@@ -38,8 +38,33 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="disable-notes-module">
-<h1>disable_notes module<a class="headerlink" href="#disable-notes-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-disable_notes">
+<span id="disable-notes-module"></span><h1>disable_notes module<a class="headerlink" href="#module-disable_notes" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="disable_notes.Handler">
+<em class="property">class </em><code class="descclassname">disable_notes.</code><code class="descname">Handler</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/disable_notes.html#Handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#disable_notes.Handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<p>Handles an author request to disable notes to a person record.</p>
+<dl class="method">
+<dt id="disable_notes.Handler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/disable_notes.html#Handler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#disable_notes.Handler.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prompts the user with a CAPTCHA before proceeding the request.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="disable_notes.Handler.post">
+<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/disable_notes.html#Handler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#disable_notes.Handler.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the user passed the CAPTCHA, send the confirmation email.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="disable_notes.get_disable_notes_url">
+<code class="descclassname">disable_notes.</code><code class="descname">get_disable_notes_url</code><span class="sig-paren">(</span><em>handler</em>, <em>person</em>, <em>ttl=259200</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/disable_notes.html#get_disable_notes_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#disable_notes.get_disable_notes_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a URL to be used for disabling notes to a person record.</p>
+</dd></dl>
+
 </div>
 
 
