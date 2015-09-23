@@ -42,7 +42,6 @@ Personfinder API documentation!
     photo
     post_flagged_note
     prefix
-    pytz
     query
     recaptcha
     resources
