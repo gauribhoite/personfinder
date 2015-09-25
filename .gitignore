@@ -4,3 +4,4 @@ app/locale/*/LC_MESSAGES/django.mo
 docs/source/api/_build
 docs/source/api/_static
 docs/source/api/_templates
+requirements.txt
