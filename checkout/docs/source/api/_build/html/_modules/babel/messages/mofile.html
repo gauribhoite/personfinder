@@ -1,0 +1,295 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>babel.messages.mofile &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for babel.messages.mofile</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    babel.messages.mofile</span>
+<span class="sd">    ~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="sd">    Writing of files in the ``gettext`` MO (machine object) format.</span>
+
+<span class="sd">    :copyright: (c) 2013 by the Babel Team.</span>
+<span class="sd">    :license: BSD, see LICENSE for more details.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">array</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+
+<span class="kn">from</span> <span class="nn">babel.messages.catalog</span> <span class="kn">import</span> <span class="n">Catalog</span><span class="p">,</span> <span class="n">Message</span>
+<span class="kn">from</span> <span class="nn">babel._compat</span> <span class="kn">import</span> <span class="n">range_type</span><span class="p">,</span> <span class="n">array_tobytes</span>
+
+
+<span class="n">LE_MAGIC</span> <span class="o">=</span> <span class="mh">0x950412de</span>
+<span class="n">BE_MAGIC</span> <span class="o">=</span> <span class="mh">0xde120495</span>
+
+
+<div class="viewcode-block" id="read_mo"><a class="viewcode-back" href="../../../babel.messages.html#babel.messages.mofile.read_mo">[docs]</a><span class="k">def</span> <span class="nf">read_mo</span><span class="p">(</span><span class="n">fileobj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Read a binary MO file from the given file-like object and return a</span>
+<span class="sd">    corresponding `Catalog` object.</span>
+
+<span class="sd">    :param fileobj: the file-like object to read the MO file from</span>
+
+<span class="sd">    :note: The implementation of this function is heavily based on the</span>
+<span class="sd">           ``GNUTranslations._parse`` method of the ``gettext`` module in the</span>
+<span class="sd">           standard library.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">catalog</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">()</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">buflen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+    <span class="n">unpack</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span>
+
+    <span class="c"># Parse the .mo file header, which consists of 5 little endian 32</span>
+    <span class="c"># bit words.</span>
+    <span class="n">magic</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;I&#39;</span><span class="p">,</span> <span class="n">buf</span><span class="p">[:</span><span class="mi">4</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># Are we big endian or little endian?</span>
+    <span class="k">if</span> <span class="n">magic</span> <span class="o">==</span> <span class="n">LE_MAGIC</span><span class="p">:</span>
+        <span class="n">version</span><span class="p">,</span> <span class="n">msgcount</span><span class="p">,</span> <span class="n">origidx</span><span class="p">,</span> <span class="n">transidx</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;4I&#39;</span><span class="p">,</span> <span class="n">buf</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">20</span><span class="p">])</span>
+        <span class="n">ii</span> <span class="o">=</span> <span class="s">&#39;&lt;II&#39;</span>
+    <span class="k">elif</span> <span class="n">magic</span> <span class="o">==</span> <span class="n">BE_MAGIC</span><span class="p">:</span>
+        <span class="n">version</span><span class="p">,</span> <span class="n">msgcount</span><span class="p">,</span> <span class="n">origidx</span><span class="p">,</span> <span class="n">transidx</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&gt;4I&#39;</span><span class="p">,</span> <span class="n">buf</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">20</span><span class="p">])</span>
+        <span class="n">ii</span> <span class="o">=</span> <span class="s">&#39;&gt;II&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">&#39;Bad magic number&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+    <span class="c"># Now put all messages from the .mo file buffer into the catalog</span>
+    <span class="c"># dictionary</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">range_type</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">msgcount</span><span class="p">):</span>
+        <span class="n">mlen</span><span class="p">,</span> <span class="n">moff</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">buf</span><span class="p">[</span><span class="n">origidx</span><span class="p">:</span><span class="n">origidx</span> <span class="o">+</span> <span class="mi">8</span><span class="p">])</span>
+        <span class="n">mend</span> <span class="o">=</span> <span class="n">moff</span> <span class="o">+</span> <span class="n">mlen</span>
+        <span class="n">tlen</span><span class="p">,</span> <span class="n">toff</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">buf</span><span class="p">[</span><span class="n">transidx</span><span class="p">:</span><span class="n">transidx</span> <span class="o">+</span> <span class="mi">8</span><span class="p">])</span>
+        <span class="n">tend</span> <span class="o">=</span> <span class="n">toff</span> <span class="o">+</span> <span class="n">tlen</span>
+        <span class="k">if</span> <span class="n">mend</span> <span class="o">&lt;</span> <span class="n">buflen</span> <span class="ow">and</span> <span class="n">tend</span> <span class="o">&lt;</span> <span class="n">buflen</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">buf</span><span class="p">[</span><span class="n">moff</span><span class="p">:</span><span class="n">mend</span><span class="p">]</span>
+            <span class="n">tmsg</span> <span class="o">=</span> <span class="n">buf</span><span class="p">[</span><span class="n">toff</span><span class="p">:</span><span class="n">tend</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">&#39;File is corrupt&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+        <span class="c"># See if we&#39;re looking at GNU .mo conventions for metadata</span>
+        <span class="k">if</span> <span class="n">mlen</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># Catalog description</span>
+            <span class="n">lastkey</span> <span class="o">=</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">tmsg</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">item</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">b</span><span class="s">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+                    <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">lastkey</span> <span class="o">=</span> <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="n">headers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">lastkey</span><span class="p">:</span>
+                    <span class="n">headers</span><span class="p">[</span><span class="n">lastkey</span><span class="p">]</span> <span class="o">+=</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="n">item</span>
+
+        <span class="k">if</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\x04</span><span class="s">&#39;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span> <span class="c"># context</span>
+            <span class="n">ctxt</span><span class="p">,</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;</span><span class="se">\x04</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ctxt</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\x00</span><span class="s">&#39;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span> <span class="c"># plural forms</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;</span><span class="se">\x00</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="n">tmsg</span> <span class="o">=</span> <span class="n">tmsg</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">b</span><span class="s">&#39;</span><span class="se">\x00</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">]</span>
+                <span class="n">tmsg</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tmsg</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+                <span class="n">tmsg</span> <span class="o">=</span> <span class="n">tmsg</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+        <span class="n">catalog</span><span class="p">[</span><span class="n">msg</span><span class="p">]</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">tmsg</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctxt</span><span class="p">)</span>
+
+        <span class="c"># advance to next entry in the seek tables</span>
+        <span class="n">origidx</span> <span class="o">+=</span> <span class="mi">8</span>
+        <span class="n">transidx</span> <span class="o">+=</span> <span class="mi">8</span>
+
+    <span class="n">catalog</span><span class="o">.</span><span class="n">mime_headers</span> <span class="o">=</span> <span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">catalog</span>
+
+</div>
+<div class="viewcode-block" id="write_mo"><a class="viewcode-back" href="../../../babel.messages.html#babel.messages.mofile.write_mo">[docs]</a><span class="k">def</span> <span class="nf">write_mo</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">catalog</span><span class="p">,</span> <span class="n">use_fuzzy</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Write a catalog to the specified file-like object using the GNU MO file</span>
+<span class="sd">    format.</span>
+
+<span class="sd">    &gt;&gt;&gt; from babel.messages import Catalog</span>
+<span class="sd">    &gt;&gt;&gt; from gettext import GNUTranslations</span>
+<span class="sd">    &gt;&gt;&gt; from StringIO import StringIO</span>
+
+<span class="sd">    &gt;&gt;&gt; catalog = Catalog(locale=&#39;en_US&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; catalog.add(&#39;foo&#39;, &#39;Voh&#39;)</span>
+<span class="sd">    &lt;Message ...&gt;</span>
+<span class="sd">    &gt;&gt;&gt; catalog.add((u&#39;bar&#39;, u&#39;baz&#39;), (u&#39;Bahr&#39;, u&#39;Batz&#39;))</span>
+<span class="sd">    &lt;Message ...&gt;</span>
+<span class="sd">    &gt;&gt;&gt; catalog.add(&#39;fuz&#39;, &#39;Futz&#39;, flags=[&#39;fuzzy&#39;])</span>
+<span class="sd">    &lt;Message ...&gt;</span>
+<span class="sd">    &gt;&gt;&gt; catalog.add(&#39;Fizz&#39;, &#39;&#39;)</span>
+<span class="sd">    &lt;Message ...&gt;</span>
+<span class="sd">    &gt;&gt;&gt; catalog.add((&#39;Fuzz&#39;, &#39;Fuzzes&#39;), (&#39;&#39;, &#39;&#39;))</span>
+<span class="sd">    &lt;Message ...&gt;</span>
+<span class="sd">    &gt;&gt;&gt; buf = StringIO()</span>
+
+<span class="sd">    &gt;&gt;&gt; write_mo(buf, catalog)</span>
+<span class="sd">    &gt;&gt;&gt; buf.seek(0)</span>
+<span class="sd">    &gt;&gt;&gt; translations = GNUTranslations(fp=buf)</span>
+<span class="sd">    &gt;&gt;&gt; translations.ugettext(&#39;foo&#39;)</span>
+<span class="sd">    u&#39;Voh&#39;</span>
+<span class="sd">    &gt;&gt;&gt; translations.ungettext(&#39;bar&#39;, &#39;baz&#39;, 1)</span>
+<span class="sd">    u&#39;Bahr&#39;</span>
+<span class="sd">    &gt;&gt;&gt; translations.ungettext(&#39;bar&#39;, &#39;baz&#39;, 2)</span>
+<span class="sd">    u&#39;Batz&#39;</span>
+<span class="sd">    &gt;&gt;&gt; translations.ugettext(&#39;fuz&#39;)</span>
+<span class="sd">    u&#39;fuz&#39;</span>
+<span class="sd">    &gt;&gt;&gt; translations.ugettext(&#39;Fizz&#39;)</span>
+<span class="sd">    u&#39;Fizz&#39;</span>
+<span class="sd">    &gt;&gt;&gt; translations.ugettext(&#39;Fuzz&#39;)</span>
+<span class="sd">    u&#39;Fuzz&#39;</span>
+<span class="sd">    &gt;&gt;&gt; translations.ugettext(&#39;Fuzzes&#39;)</span>
+<span class="sd">    u&#39;Fuzzes&#39;</span>
+
+<span class="sd">    :param fileobj: the file-like object to write to</span>
+<span class="sd">    :param catalog: the `Catalog` instance</span>
+<span class="sd">    :param use_fuzzy: whether translations marked as &quot;fuzzy&quot; should be included</span>
+<span class="sd">                      in the output</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">messages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">catalog</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">use_fuzzy</span><span class="p">:</span>
+        <span class="n">messages</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">fuzzy</span><span class="p">]</span>
+    <span class="n">messages</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+    <span class="n">ids</span> <span class="o">=</span> <span class="n">strs</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;&#39;</span>
+    <span class="n">offsets</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+        <span class="c"># For each string, we need size and file offset.  Each string is NUL</span>
+        <span class="c"># terminated; the NUL does not count into the size.</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">pluralizable</span><span class="p">:</span>
+            <span class="n">msgid</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\x00</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+                <span class="n">msgid</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span> <span class="k">for</span> <span class="n">msgid</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">id</span>
+            <span class="p">])</span>
+            <span class="n">msgstrs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">string</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">string</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">string</span><span class="p">:</span>
+                    <span class="n">msgstrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="mi">1</span><span class="p">)])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">msgstrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+            <span class="n">msgstr</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\x00</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+                <span class="n">msgstr</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span> <span class="k">for</span> <span class="n">msgstr</span> <span class="ow">in</span> <span class="n">msgstrs</span>
+            <span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msgid</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">message</span><span class="o">.</span><span class="n">string</span><span class="p">:</span>
+                <span class="n">msgstr</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msgstr</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
+            <span class="n">msgid</span> <span class="o">=</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\x04</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">message</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">catalog</span><span class="o">.</span><span class="n">charset</span><span class="p">),</span>
+                                 <span class="n">msgid</span><span class="p">])</span>
+        <span class="n">offsets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">msgid</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">strs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">msgstr</span><span class="p">)))</span>
+        <span class="n">ids</span> <span class="o">+=</span> <span class="n">msgid</span> <span class="o">+</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\x00</span><span class="s">&#39;</span>
+        <span class="n">strs</span> <span class="o">+=</span> <span class="n">msgstr</span> <span class="o">+</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\x00</span><span class="s">&#39;</span>
+
+    <span class="c"># The header is 7 32-bit unsigned integers.  We don&#39;t use hash tables, so</span>
+    <span class="c"># the keys start right after the index tables.</span>
+    <span class="n">keystart</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">+</span> <span class="mi">16</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+    <span class="n">valuestart</span> <span class="o">=</span> <span class="n">keystart</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+
+    <span class="c"># The string table first has the list of keys, then the list of values.</span>
+    <span class="c"># Each entry has first the size of the string, then the file offset.</span>
+    <span class="n">koffsets</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">voffsets</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">o1</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">o2</span><span class="p">,</span> <span class="n">l2</span> <span class="ow">in</span> <span class="n">offsets</span><span class="p">:</span>
+        <span class="n">koffsets</span> <span class="o">+=</span> <span class="p">[</span><span class="n">l1</span><span class="p">,</span> <span class="n">o1</span> <span class="o">+</span> <span class="n">keystart</span><span class="p">]</span>
+        <span class="n">voffsets</span> <span class="o">+=</span> <span class="p">[</span><span class="n">l2</span><span class="p">,</span> <span class="n">o2</span> <span class="o">+</span> <span class="n">valuestart</span><span class="p">]</span>
+    <span class="n">offsets</span> <span class="o">=</span> <span class="n">koffsets</span> <span class="o">+</span> <span class="n">voffsets</span>
+
+    <span class="n">fileobj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">&#39;Iiiiiii&#39;</span><span class="p">,</span>
+        <span class="n">LE_MAGIC</span><span class="p">,</span>                   <span class="c"># magic</span>
+        <span class="mi">0</span><span class="p">,</span>                          <span class="c"># version</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">),</span>              <span class="c"># number of entries</span>
+        <span class="mi">7</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span>                      <span class="c"># start of key index</span>
+        <span class="mi">7</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>  <span class="c"># start of value index</span>
+        <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>                        <span class="c"># size and offset of hash table</span>
+    <span class="p">)</span> <span class="o">+</span> <span class="n">array_tobytes</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="s">&quot;i&quot;</span><span class="p">,</span> <span class="n">offsets</span><span class="p">))</span> <span class="o">+</span> <span class="n">ids</span> <span class="o">+</span> <span class="n">strs</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

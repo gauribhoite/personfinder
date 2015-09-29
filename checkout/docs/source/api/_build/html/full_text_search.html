@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>full_text_search module &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="index.html" />
+    <link rel="next" title="gadget module" href="gadget.html" />
+    <link rel="prev" title="flag_note module" href="flag_note.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-full_text_search">
+<span id="full-text-search-module"></span><h1>full_text_search module<a class="headerlink" href="#module-full_text_search" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="full_text_search.add_record_to_index">
+<code class="descclassname">full_text_search.</code><code class="descname">add_record_to_index</code><span class="sig-paren">(</span><em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/full_text_search.html#add_record_to_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#full_text_search.add_record_to_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds person record to index.
+Raises:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>search.Error: An error occurred when the document could not be indexed</dt>
+<dd>or the query has a syntax error.</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="full_text_search.create_document">
+<code class="descclassname">full_text_search.</code><code class="descname">create_document</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/full_text_search.html#create_document"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#full_text_search.create_document" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates document for full text search.
+It should be called in add_record_to_index method.model.Person.get_by_key_name(repo + &#8216;:&#8217; + id</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="full_text_search.delete_record_from_index">
+<code class="descclassname">full_text_search.</code><code class="descname">delete_record_from_index</code><span class="sig-paren">(</span><em>person</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/full_text_search.html#delete_record_from_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#full_text_search.delete_record_from_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes person record from index.
+Args:</p>
+<blockquote>
+<div>person: Person who should be removed</div></blockquote>
+<dl class="docutils">
+<dt>Raises:</dt>
+<dd><dl class="first last docutils">
+<dt>search.Error: An error occurred when the index name is unknown</dt>
+<dd>or the query has a syntax error.</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="full_text_search.enclose_in_double_quotes">
+<code class="descclassname">full_text_search.</code><code class="descname">enclose_in_double_quotes</code><span class="sig-paren">(</span><em>query_txt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/full_text_search.html#enclose_in_double_quotes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#full_text_search.enclose_in_double_quotes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encloses each word in query_txt in double quotes.
+Args:</p>
+<blockquote>
+<div>query_txt: Search query</div></blockquote>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>&#8216;&#8220;query_word1&#8221; &#8220;query_word2&#8221; ...&#8217;</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="full_text_search.make_or_regexp">
+<code class="descclassname">full_text_search.</code><code class="descname">make_or_regexp</code><span class="sig-paren">(</span><em>query_txt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/full_text_search.html#make_or_regexp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#full_text_search.make_or_regexp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates compiled regular expression for OR search.
+Args:</p>
+<blockquote>
+<div>query_txt: Search query</div></blockquote>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>query_word | query_word | ...</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="full_text_search.search">
+<code class="descclassname">full_text_search.</code><code class="descname">search</code><span class="sig-paren">(</span><em>repo</em>, <em>query_txt</em>, <em>max_results</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/full_text_search.html#search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#full_text_search.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches person with index.
+Query_txt must match at least a part of person name.
+(It&#8217;s not allowed to search only by location.)
+Args:</p>
+<blockquote>
+<div>repo: The name of repository
+query_txt: Search query
+max_results: The max number of results you want.(Maximum: 1000)</div></blockquote>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>Array of &lt;model.Person&gt; in datastore</li>
+<li>[]: If query_txt doesn&#8217;t contain a part of person name</li>
+</ul>
+</dd>
+<dt>Raises:</dt>
+<dd><dl class="first last docutils">
+<dt>search.Error: An error occurred when the index name is unknown</dt>
+<dd>or the query has syntax error.</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="flag_note.html" title="previous chapter">flag_note module</a></li>
+      <li>Next: <a href="gadget.html" title="next chapter">gadget module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/full_text_search.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/full_text_search.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

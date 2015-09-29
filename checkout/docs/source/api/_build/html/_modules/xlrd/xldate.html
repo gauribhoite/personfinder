@@ -1,0 +1,301 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>xlrd.xldate &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../../index.html" />
+    <link rel="up" title="xlrd" href="../xlrd.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for xlrd.xldate</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: cp1252 -*-</span>
+
+<span class="c"># No part of the content of this file was derived from the works of David Giffin.</span>
+
+<span class="c">##</span>
+<span class="c"># &lt;p&gt;Copyright © 2005-2008 Stephen John Machin, Lingfo Pty Ltd&lt;/p&gt;</span>
+<span class="c"># &lt;p&gt;This module is part of the xlrd package, which is released under a BSD-style licence.&lt;/p&gt;</span>
+<span class="c">#</span>
+<span class="c"># &lt;p&gt;Provides function(s) for dealing with Microsoft Excel ™ dates.&lt;/p&gt;</span>
+<span class="c">##</span>
+
+<span class="c"># 2008-10-18 SJM Fix bug in xldate_from_date_tuple (affected some years after 2099)</span>
+
+<span class="c"># The conversion from days to (year, month, day) starts with</span>
+<span class="c"># an integral &quot;julian day number&quot; aka JDN.</span>
+<span class="c"># FWIW, JDN 0 corresponds to noon on Monday November 24 in Gregorian year -4713.</span>
+<span class="c"># More importantly:</span>
+<span class="c">#    Noon on Gregorian 1900-03-01 (day 61 in the 1900-based system) is JDN 2415080.0</span>
+<span class="c">#    Noon on Gregorian 1904-01-02 (day  1 in the 1904-based system) is JDN 2416482.0</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="n">_JDN_delta</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2415080</span> <span class="o">-</span> <span class="mi">61</span><span class="p">,</span> <span class="mi">2416482</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">_JDN_delta</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">_JDN_delta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1462</span>
+
+<span class="c"># Pre-calculate the datetime epochs for efficiency.</span>
+<span class="n">epoch_1904</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">1904</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">epoch_1900</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">1899</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">31</span><span class="p">)</span>
+<span class="n">epoch_1900_minus_1</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">1899</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+
+<div class="viewcode-block" id="XLDateError"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.XLDateError">[docs]</a><span class="k">class</span> <span class="nc">XLDateError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span> <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="XLDateNegative"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.XLDateNegative">[docs]</a><span class="k">class</span> <span class="nc">XLDateNegative</span><span class="p">(</span><span class="n">XLDateError</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="XLDateAmbiguous"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.XLDateAmbiguous">[docs]</a><span class="k">class</span> <span class="nc">XLDateAmbiguous</span><span class="p">(</span><span class="n">XLDateError</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="XLDateTooLarge"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.XLDateTooLarge">[docs]</a><span class="k">class</span> <span class="nc">XLDateTooLarge</span><span class="p">(</span><span class="n">XLDateError</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="XLDateBadDatemode"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.XLDateBadDatemode">[docs]</a><span class="k">class</span> <span class="nc">XLDateBadDatemode</span><span class="p">(</span><span class="n">XLDateError</span><span class="p">):</span> <span class="k">pass</span></div>
+<div class="viewcode-block" id="XLDateBadTuple"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.XLDateBadTuple">[docs]</a><span class="k">class</span> <span class="nc">XLDateBadTuple</span><span class="p">(</span><span class="n">XLDateError</span><span class="p">):</span> <span class="k">pass</span>
+</div>
+<span class="n">_XLDAYS_TOO_LARGE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2958466</span><span class="p">,</span> <span class="mi">2958466</span> <span class="o">-</span> <span class="mi">1462</span><span class="p">)</span> <span class="c"># This is equivalent to 10000-01-01</span>
+
+<span class="c">##</span>
+<span class="c"># Convert an Excel number (presumed to represent a date, a datetime or a time) into</span>
+<span class="c"># a tuple suitable for feeding to datetime or mx.DateTime constructors.</span>
+<span class="c"># @param xldate The Excel number</span>
+<span class="c"># @param datemode 0: 1900-based, 1: 1904-based.</span>
+<span class="c"># &lt;br&gt;WARNING: when using this function to</span>
+<span class="c"># interpret the contents of a workbook, you should pass in the Book.datemode</span>
+<span class="c"># attribute of that workbook. Whether</span>
+<span class="c"># the workbook has ever been anywhere near a Macintosh is irrelevant.</span>
+<span class="c"># @return Gregorian (year, month, day, hour, minute, nearest_second).</span>
+<span class="c"># &lt;br&gt;Special case: if 0.0 &lt;= xldate &lt; 1.0, it is assumed to represent a time;</span>
+<span class="c"># (0, 0, 0, hour, minute, second) will be returned.</span>
+<span class="c"># &lt;br&gt;Note: 1904-01-01 is not regarded as a valid date in the datemode 1 system; its &quot;serial number&quot;</span>
+<span class="c"># is zero.</span>
+<span class="c"># @throws XLDateNegative xldate &lt; 0.00</span>
+<span class="c"># @throws XLDateAmbiguous The 1900 leap-year problem (datemode == 0 and 1.0 &lt;= xldate &lt; 61.0)</span>
+<span class="c"># @throws XLDateTooLarge Gregorian year 10000 or later</span>
+<span class="c"># @throws XLDateBadDatemode datemode arg is neither 0 nor 1</span>
+<span class="c"># @throws XLDateError Covers the 4 specific errors</span>
+
+<div class="viewcode-block" id="xldate_as_tuple"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.xldate_as_tuple">[docs]</a><span class="k">def</span> <span class="nf">xldate_as_tuple</span><span class="p">(</span><span class="n">xldate</span><span class="p">,</span> <span class="n">datemode</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">datemode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">XLDateBadDatemode</span><span class="p">(</span><span class="n">datemode</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">xldate</span> <span class="o">==</span> <span class="mf">0.00</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">xldate</span> <span class="o">&lt;</span> <span class="mf">0.00</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">XLDateNegative</span><span class="p">(</span><span class="n">xldate</span><span class="p">)</span>
+    <span class="n">xldays</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xldate</span><span class="p">)</span>
+    <span class="n">frac</span> <span class="o">=</span> <span class="n">xldate</span> <span class="o">-</span> <span class="n">xldays</span>
+    <span class="n">seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">frac</span> <span class="o">*</span> <span class="mf">86400.0</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">seconds</span> <span class="o">&lt;=</span> <span class="mi">86400</span>
+    <span class="k">if</span> <span class="n">seconds</span> <span class="o">==</span> <span class="mi">86400</span><span class="p">:</span>
+        <span class="n">hour</span> <span class="o">=</span> <span class="n">minute</span> <span class="o">=</span> <span class="n">second</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">xldays</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># second = seconds % 60; minutes = seconds // 60</span>
+        <span class="n">minutes</span><span class="p">,</span> <span class="n">second</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="c"># minute = minutes % 60; hour    = minutes // 60</span>
+        <span class="n">hour</span><span class="p">,</span> <span class="n">minute</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">minutes</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">xldays</span> <span class="o">&gt;=</span> <span class="n">_XLDAYS_TOO_LARGE</span><span class="p">[</span><span class="n">datemode</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="n">XLDateTooLarge</span><span class="p">(</span><span class="n">xldate</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">xldays</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">xldays</span> <span class="o">&lt;</span> <span class="mi">61</span> <span class="ow">and</span> <span class="n">datemode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">XLDateAmbiguous</span><span class="p">(</span><span class="n">xldate</span><span class="p">)</span>
+
+    <span class="n">jdn</span> <span class="o">=</span> <span class="n">xldays</span> <span class="o">+</span> <span class="n">_JDN_delta</span><span class="p">[</span><span class="n">datemode</span><span class="p">]</span>
+    <span class="n">yreg</span> <span class="o">=</span> <span class="p">((((</span><span class="n">jdn</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">+</span> <span class="mi">274277</span><span class="p">)</span> <span class="o">//</span> <span class="mi">146097</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">//</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="n">jdn</span> <span class="o">+</span> <span class="mi">1363</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">+</span> <span class="mi">3</span>
+    <span class="n">mp</span> <span class="o">=</span> <span class="p">((</span><span class="n">yreg</span> <span class="o">%</span> <span class="mi">1461</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="mi">535</span> <span class="o">+</span> <span class="mi">333</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="p">((</span><span class="n">mp</span> <span class="o">%</span> <span class="mi">16384</span><span class="p">)</span> <span class="o">//</span> <span class="mi">535</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="c"># mp /= 16384</span>
+    <span class="n">mp</span> <span class="o">&gt;&gt;=</span> <span class="mi">14</span>
+    <span class="k">if</span> <span class="n">mp</span> <span class="o">&gt;=</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">((</span><span class="n">yreg</span> <span class="o">//</span> <span class="mi">1461</span><span class="p">)</span> <span class="o">-</span> <span class="mi">4715</span><span class="p">,</span> <span class="n">mp</span> <span class="o">-</span> <span class="mi">9</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">((</span><span class="n">yreg</span> <span class="o">//</span> <span class="mi">1461</span><span class="p">)</span> <span class="o">-</span> <span class="mi">4716</span><span class="p">,</span> <span class="n">mp</span> <span class="o">+</span> <span class="mi">3</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+
+
+<span class="c">##</span>
+<span class="c"># Convert an Excel date/time number into a datetime.datetime object.</span>
+<span class="c">#</span>
+<span class="c"># @param xldate The Excel number</span>
+<span class="c"># @param datemode 0: 1900-based, 1: 1904-based.</span>
+<span class="c">#</span>
+<span class="c"># @return a datetime.datetime() object.</span>
+<span class="c">#</span></div>
+<div class="viewcode-block" id="xldate_as_datetime"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.xldate_as_datetime">[docs]</a><span class="k">def</span> <span class="nf">xldate_as_datetime</span><span class="p">(</span><span class="n">xldate</span><span class="p">,</span> <span class="n">datemode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert an Excel date/time number into a datetime.datetime object.&quot;&quot;&quot;</span>
+
+    <span class="c"># Set the epoch based on the 1900/1904 datemode.</span>
+    <span class="k">if</span> <span class="n">datemode</span><span class="p">:</span>
+        <span class="n">epoch</span> <span class="o">=</span> <span class="n">epoch_1904</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">xldate</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">:</span>
+            <span class="n">epoch</span> <span class="o">=</span> <span class="n">epoch_1900</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Workaround Excel 1900 leap year bug by adjusting the epoch.</span>
+            <span class="n">epoch</span> <span class="o">=</span> <span class="n">epoch_1900_minus_1</span>
+
+    <span class="c"># The integer part of the Excel date stores the number of days since</span>
+    <span class="c"># the epoch and the fractional part stores the percentage of the day.</span>
+    <span class="n">days</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xldate</span><span class="p">)</span>
+    <span class="n">fraction</span> <span class="o">=</span> <span class="n">xldate</span> <span class="o">-</span> <span class="n">days</span>
+
+    <span class="c"># Get the the integer and decimal seconds in Excel&#39;s millisecond resolution.</span>
+    <span class="n">seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">fraction</span> <span class="o">*</span> <span class="mf">86400000.0</span><span class="p">))</span>
+    <span class="n">seconds</span><span class="p">,</span> <span class="n">milliseconds</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">epoch</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="p">,</span> <span class="n">seconds</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">milliseconds</span><span class="p">)</span>
+
+
+<span class="c"># === conversions from date/time to xl numbers</span>
+</div>
+<span class="k">def</span> <span class="nf">_leap</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">y</span> <span class="o">%</span> <span class="mi">4</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">y</span> <span class="o">%</span> <span class="mi">100</span><span class="p">:</span> <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">y</span> <span class="o">%</span> <span class="mi">400</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="mi">1</span>
+
+<span class="n">_days_in_month</span> <span class="o">=</span> <span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">31</span><span class="p">)</span>
+
+<span class="c">##</span>
+<span class="c"># Convert a date tuple (year, month, day) to an Excel date.</span>
+<span class="c"># @param year Gregorian year.</span>
+<span class="c"># @param month 1 &lt;= month &lt;= 12</span>
+<span class="c"># @param day 1 &lt;= day &lt;= last day of that (year, month)</span>
+<span class="c"># @param datemode 0: 1900-based, 1: 1904-based.</span>
+<span class="c"># @throws XLDateAmbiguous The 1900 leap-year problem (datemode == 0 and 1.0 &lt;= xldate &lt; 61.0)</span>
+<span class="c"># @throws XLDateBadDatemode datemode arg is neither 0 nor 1</span>
+<span class="c"># @throws XLDateBadTuple (year, month, day) is too early/late or has invalid component(s)</span>
+<span class="c"># @throws XLDateError Covers the specific errors</span>
+
+<div class="viewcode-block" id="xldate_from_date_tuple"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.xldate_from_date_tuple">[docs]</a><span class="k">def</span> <span class="nf">xldate_from_date_tuple</span><span class="p">(</span><span class="n">date_tuple</span><span class="p">,</span> <span class="n">datemode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create an excel date from a tuple of (year, month, day)&quot;&quot;&quot;</span>
+    <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span> <span class="o">=</span> <span class="n">date_tuple</span>
+
+    <span class="k">if</span> <span class="n">datemode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">XLDateBadDatemode</span><span class="p">(</span><span class="n">datemode</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">year</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">month</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">day</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.00</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">1900</span> <span class="o">&lt;=</span> <span class="n">year</span> <span class="o">&lt;=</span> <span class="mi">9999</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">XLDateBadTuple</span><span class="p">(</span><span class="s">&quot;Invalid year: </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">((</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">),))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">month</span> <span class="o">&lt;=</span> <span class="mi">12</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">XLDateBadTuple</span><span class="p">(</span><span class="s">&quot;Invalid month: </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">((</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">),))</span>
+    <span class="k">if</span>  <span class="n">day</span> <span class="o">&lt;</span> <span class="mi">1</span> \
+    <span class="ow">or</span> <span class="p">(</span><span class="n">day</span> <span class="o">&gt;</span> <span class="n">_days_in_month</span><span class="p">[</span><span class="n">month</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span><span class="p">(</span><span class="n">day</span> <span class="o">==</span> <span class="mi">29</span> <span class="ow">and</span> <span class="n">month</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">_leap</span><span class="p">(</span><span class="n">year</span><span class="p">))):</span>
+        <span class="k">raise</span> <span class="n">XLDateBadTuple</span><span class="p">(</span><span class="s">&quot;Invalid day: </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">((</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">),))</span>
+
+    <span class="n">Yp</span> <span class="o">=</span> <span class="n">year</span> <span class="o">+</span> <span class="mi">4716</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">month</span>
+    <span class="k">if</span> <span class="n">M</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">Yp</span> <span class="o">=</span> <span class="n">Yp</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">Mp</span> <span class="o">=</span> <span class="n">M</span> <span class="o">+</span> <span class="mi">9</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Mp</span> <span class="o">=</span> <span class="n">M</span> <span class="o">-</span> <span class="mi">3</span>
+    <span class="n">jdn</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1461</span> <span class="o">*</span> <span class="n">Yp</span> <span class="o">//</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="mi">979</span> <span class="o">*</span> <span class="n">Mp</span> <span class="o">+</span> <span class="mi">16</span><span class="p">)</span> <span class="o">//</span> <span class="mi">32</span><span class="p">)</span> <span class="o">+</span> \
+        <span class="n">day</span> <span class="o">-</span> <span class="mi">1364</span> <span class="o">-</span> <span class="p">(((</span><span class="n">Yp</span> <span class="o">+</span> <span class="mi">184</span><span class="p">)</span> <span class="o">//</span> <span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">//</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="n">xldays</span> <span class="o">=</span> <span class="n">jdn</span> <span class="o">-</span> <span class="n">_JDN_delta</span><span class="p">[</span><span class="n">datemode</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">xldays</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">XLDateBadTuple</span><span class="p">(</span><span class="s">&quot;Invalid (year, month, day): </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">((</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">),))</span>
+    <span class="k">if</span> <span class="n">xldays</span> <span class="o">&lt;</span> <span class="mi">61</span> <span class="ow">and</span> <span class="n">datemode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">XLDateAmbiguous</span><span class="p">(</span><span class="s">&quot;Before 1900-03-01: </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">((</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">),))</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">xldays</span><span class="p">)</span>
+
+<span class="c">##</span>
+<span class="c"># Convert a time tuple (hour, minute, second) to an Excel &quot;date&quot; value (fraction of a day).</span>
+<span class="c"># @param hour 0 &lt;= hour &lt; 24</span>
+<span class="c"># @param minute 0 &lt;= minute &lt; 60</span>
+<span class="c"># @param second 0 &lt;= second &lt; 60</span>
+<span class="c"># @throws XLDateBadTuple Out-of-range hour, minute, or second</span>
+</div>
+<div class="viewcode-block" id="xldate_from_time_tuple"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.xldate_from_time_tuple">[docs]</a><span class="k">def</span> <span class="nf">xldate_from_time_tuple</span><span class="p">(</span><span class="n">time_tuple</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create an excel date from a tuple of (hour, minute, second)&quot;&quot;&quot;</span>
+    <span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span> <span class="n">second</span> <span class="o">=</span> <span class="n">time_tuple</span>
+    <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">hour</span> <span class="o">&lt;</span> <span class="mi">24</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">minute</span> <span class="o">&lt;</span> <span class="mi">60</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">second</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">((</span><span class="n">second</span> <span class="o">/</span> <span class="mf">60.0</span> <span class="o">+</span> <span class="n">minute</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.0</span> <span class="o">+</span> <span class="n">hour</span><span class="p">)</span> <span class="o">/</span> <span class="mf">24.0</span>
+    <span class="k">raise</span> <span class="n">XLDateBadTuple</span><span class="p">(</span><span class="s">&quot;Invalid (hour, minute, second): </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">((</span><span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span> <span class="n">second</span><span class="p">),))</span>
+
+<span class="c">##</span>
+<span class="c"># Convert a datetime tuple (year, month, day, hour, minute, second) to an Excel date value.</span>
+<span class="c"># For more details, refer to other xldate_from_*_tuple functions.</span>
+<span class="c"># @param datetime_tuple (year, month, day, hour, minute, second)</span>
+<span class="c"># @param datemode 0: 1900-based, 1: 1904-based.</span>
+</div>
+<div class="viewcode-block" id="xldate_from_datetime_tuple"><a class="viewcode-back" href="../../xlrd.html#xlrd.xldate.xldate_from_datetime_tuple">[docs]</a><span class="k">def</span> <span class="nf">xldate_from_datetime_tuple</span><span class="p">(</span><span class="n">datetime_tuple</span><span class="p">,</span> <span class="n">datemode</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">xldate_from_date_tuple</span><span class="p">(</span><span class="n">datetime_tuple</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span> <span class="n">datemode</span><span class="p">)</span>
+        <span class="o">+</span>
+        <span class="n">xldate_from_time_tuple</span><span class="p">(</span><span class="n">datetime_tuple</span><span class="p">[</span><span class="mi">3</span><span class="p">:])</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../xlrd.html">xlrd</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>feeds module &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="index.html" />
+    <link rel="next" title="flag_note module" href="flag_note.html" />
+    <link rel="prev" title="external_search module" href="external_search.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-feeds">
+<span id="feeds-module"></span><h1>feeds module<a class="headerlink" href="#module-feeds" title="Permalink to this headline">¶</a></h1>
+<p>Handler for Atom PFIF 1.2 person and note feeds.</p>
+<dl class="class">
+<dt id="feeds.Note">
+<em class="property">class </em><code class="descclassname">feeds.</code><code class="descname">Note</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Note"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Note" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<dl class="method">
+<dt id="feeds.Note.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Note.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Note.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Note.https_required">
+<code class="descname">https_required</code><em class="property"> = False</em><a class="headerlink" href="#feeds.Note.https_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feeds.Person">
+<em class="property">class </em><code class="descclassname">feeds.</code><code class="descname">Person</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Person"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Person" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<dl class="method">
+<dt id="feeds.Person.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Person.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Person.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Person.https_required">
+<code class="descname">https_required</code><em class="property"> = True</em><a class="headerlink" href="#feeds.Person.https_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feeds.Repo">
+<em class="property">class </em><code class="descclassname">feeds.</code><code class="descname">Repo</code><span class="sig-paren">(</span><em>request</em>, <em>response</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Repo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Repo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="utils.html#utils.BaseHandler" title="utils.BaseHandler"><code class="xref py py-class docutils literal"><span class="pre">utils.BaseHandler</span></code></a></p>
+<dl class="attribute">
+<dt id="feeds.Repo.TITLE">
+<code class="descname">TITLE</code><em class="property"> = 'Person Finder Repository Feed'</em><a class="headerlink" href="#feeds.Repo.TITLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="feeds.Repo.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#Repo.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.Repo.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Repo.https_required">
+<code class="descname">https_required</code><em class="property"> = False</em><a class="headerlink" href="#feeds.Repo.https_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Repo.ignore_deactivation">
+<code class="descname">ignore_deactivation</code><em class="property"> = True</em><a class="headerlink" href="#feeds.Repo.ignore_deactivation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="feeds.Repo.repo_required">
+<code class="descname">repo_required</code><em class="property"> = False</em><a class="headerlink" href="#feeds.Repo.repo_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="feeds.get_latest_entry_date">
+<code class="descclassname">feeds.</code><code class="descname">get_latest_entry_date</code><span class="sig-paren">(</span><em>entities</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#get_latest_entry_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.get_latest_entry_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="feeds.get_latest_repo_updated_date">
+<code class="descclassname">feeds.</code><code class="descname">get_latest_repo_updated_date</code><span class="sig-paren">(</span><em>repos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#get_latest_repo_updated_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.get_latest_repo_updated_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="feeds.make_hidden_notes_blank">
+<code class="descclassname">feeds.</code><code class="descname">make_hidden_notes_blank</code><span class="sig-paren">(</span><em>notes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feeds.html#make_hidden_notes_blank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feeds.make_hidden_notes_blank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="external_search.html" title="previous chapter">external_search module</a></li>
+      <li>Next: <a href="flag_note.html" title="next chapter">flag_note module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/feeds.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/feeds.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

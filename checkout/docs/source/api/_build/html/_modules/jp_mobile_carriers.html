@@ -1,0 +1,279 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>jp_mobile_carriers &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for jp_mobile_carriers</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2011 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">unicodedata</span>
+<span class="kn">import</span> <span class="nn">urllib</span>
+<span class="kn">import</span> <span class="nn">urllib2</span>
+
+<span class="n">DOCOMO_URL</span> <span class="o">=</span> <span class="s">&#39;http://dengon.docomo.ne.jp/inoticelist.cgi&#39;</span>
+<span class="n">DOCOMO_HIDDEN_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">r&#39;\&lt;INPUT TYPE\=\&quot;HIDDEN\&quot; NAME\=\&quot;ep\&quot; VALUE\=\&quot;(\w+)\&quot;\&gt;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+
+<span class="n">NUMBER_SEPARATOR_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">ur&#39;[\(\)\.\-\s\u2010-\u2015\u2212\u301c\u30fc\ufe58\ufe63\uff0d]&#39;</span><span class="p">)</span>
+<span class="n">PHONE_NUMBER_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;^\+?(01181|81)?(\d{9,11})$&#39;</span><span class="p">)</span>
+<span class="n">MOBILE_NUMBER_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;^0(7|8|9)0\d{8}$&#39;</span><span class="p">)</span>
+<span class="n">AU_URL_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">r&#39;\&lt;a href\=\&quot;(http:\/\/dengon\.ezweb\.ne\.jp\/[^\&quot;]+)&quot;\&gt;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+<span class="n">DOCOMO_URL_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">r&#39;\&lt;a href\=\&quot;(http:\/\/dengon\.docomo\.ne\.jp\/[^\&quot;]+)&quot;\&gt;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+<span class="n">SOFT_BANK_URL_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">r&#39;\&lt;a href\=\&quot;(http:\/\/dengon\.softbank\.ne\.jp\/[^\&quot;]+)&quot;\&gt;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+<span class="n">WILLCOM_URL_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">r&#39;\&lt;a href\=\&quot;(http:\/\/dengon\.willcom\-inc\.com\/[^\&quot;]+)&quot;\&gt;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+<span class="n">EMOBILE_URL_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">r&#39;\&lt;a href\=\&quot;(http:\/\/dengon\.emnet\.ne\.jp\/[^\&quot;]+)&quot;\&gt;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+<span class="n">WEB171_URL_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">r&#39;&lt;a href=&quot;(https://www\.web171\.jp/[^&quot;]+)&quot;&gt;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+
+<span class="c"># An re for an actual message stored at Docomo</span>
+<span class="n">DOCOMO_MESSAGE_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="s">r&#39;\&lt;a href\=\&quot;(http:\/\/dengon\.docomo\.ne\.jp\/&#39;</span> <span class="o">+</span>
+    <span class="s">r&#39;inoticelist\.cgi\?[^\&quot;]+)&quot;.*\&gt;&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_phone_number"><a class="viewcode-back" href="../jp_mobile_carriers.html#jp_mobile_carriers.get_phone_number">[docs]</a><span class="k">def</span> <span class="nf">get_phone_number</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Normalize the given string, which may be a phone number, and returns</span>
+<span class="sd">    a normalized phone number if the string is a phone number, or None</span>
+<span class="sd">    otherwise. Gets rid of separator characters, converts unicode characters to</span>
+<span class="sd">    ascii chars, and if the phone number contains the country code for Japan</span>
+<span class="sd">    (81), strips of the code and prepend &#39;0&#39;.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        string: unicode string to normalize.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A normalized phone number if the input string is phone number, or</span>
+<span class="sd">        None otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">normalized</span> <span class="o">=</span> <span class="n">NUMBER_SEPARATOR_RE</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+        <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s">&#39;NFKC&#39;</span><span class="p">,</span> <span class="n">string</span><span class="p">))</span>
+    <span class="n">number_match</span> <span class="o">=</span> <span class="n">PHONE_NUMBER_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">number_match</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">number_match</span><span class="o">.</span><span class="n">groups</span><span class="p">()[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="s">&#39;0&#39;</span> <span class="o">+</span> <span class="n">number_match</span><span class="o">.</span><span class="n">groups</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">number_match</span><span class="o">.</span><span class="n">groups</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="is_mobile_number"><a class="viewcode-back" href="../jp_mobile_carriers.html#jp_mobile_carriers.is_mobile_number">[docs]</a><span class="k">def</span> <span class="nf">is_mobile_number</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tests the given string matches the pattern for the Japanese mobile phone</span>
+<span class="sd">    number.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        string: unicode string that is stripped of phone number separators such</span>
+<span class="sd">        as &#39;(&#39;, &#39;)&#39;, and &#39;-&#39; and converted into ascii numeric characters.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        True if the string is a Jp mobile phone number, and False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">MOBILE_NUMBER_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">string</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="extract_redirect_url"><a class="viewcode-back" href="../jp_mobile_carriers.html#jp_mobile_carriers.extract_redirect_url">[docs]</a><span class="k">def</span> <span class="nf">extract_redirect_url</span><span class="p">(</span><span class="n">scrape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tries to extract a further redirect URL for the correct mobile carrier</span>
+<span class="sd">    page from the given page scraped from Docomo. If finds a further redirect</span>
+<span class="sd">    url to other carrier&#39;s page, returns that final destination url, otherwise</span>
+<span class="sd">    returns None.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        scrape: the scraped content from the url.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        url for further redirect to an appropriate mobile carrier&#39;s message</span>
+<span class="sd">        board page if it&#39;s found, otherwise None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">au_urls</span> <span class="o">=</span> <span class="n">AU_URL_RE</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">scrape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">au_urls</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">au_urls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">soft_bank_urls</span> <span class="o">=</span> <span class="n">SOFT_BANK_URL_RE</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">scrape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">soft_bank_urls</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">soft_bank_urls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">willcom_urls</span> <span class="o">=</span> <span class="n">WILLCOM_URL_RE</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">scrape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">willcom_urls</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">willcom_urls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">emobile_urls</span> <span class="o">=</span> <span class="n">EMOBILE_URL_RE</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">scrape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">emobile_urls</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">emobile_urls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">web171_urls</span> <span class="o">=</span> <span class="n">WEB171_URL_RE</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">scrape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">web171_urls</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">web171_urls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="docomo_has_messages"><a class="viewcode-back" href="../jp_mobile_carriers.html#jp_mobile_carriers.docomo_has_messages">[docs]</a><span class="k">def</span> <span class="nf">docomo_has_messages</span><span class="p">(</span><span class="n">scrape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Checks if Docomo has messages for a number being inquired in its own</span>
+<span class="sd">    system, that is, the given scrape contains urls for the stored messages.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        scrape: the scraped content from Docomo.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        True if Docomo has messaes, and False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">DOCOMO_MESSAGE_RE</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">scrape</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="get_docomo_post_data"><a class="viewcode-back" href="../jp_mobile_carriers.html#jp_mobile_carriers.get_docomo_post_data">[docs]</a><span class="k">def</span> <span class="nf">get_docomo_post_data</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">hidden_param</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a mapping for POST data to Docomo&#39;s url to inquire for messages</span>
+<span class="sd">    for the given number.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        number: a normalized mobile number.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        a mapping for the POST data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s">&#39;es&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s">&#39;si&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s">&#39;bi1&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s">&#39;ep&#39;</span><span class="p">:</span> <span class="n">hidden_param</span><span class="p">,</span>
+            <span class="s">&#39;sm&#39;</span><span class="p">:</span> <span class="n">number</span><span class="p">}</span>
+</div>
+<div class="viewcode-block" id="look_up_number"><a class="viewcode-back" href="../jp_mobile_carriers.html#jp_mobile_carriers.look_up_number">[docs]</a><span class="k">def</span> <span class="nf">look_up_number</span><span class="p">(</span><span class="n">number</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Look up messages for the number, registered in the Japanese mobile</span>
+<span class="sd">    carriers-provided emergency message board services. The five Japanese mobile</span>
+<span class="sd">    carriers maintain separate message indices, but their systems can talk to</span>
+<span class="sd">    one another when they don&#39;t find messages for the given number in their own</span>
+<span class="sd">    indices. This function first talks to Docomo&#39;s system as a main entry point.</span>
+<span class="sd">    Docomo returns urls of registered messages if it finds ones in its system.</span>
+<span class="sd">    If it doesn&#39;t, Docomo&#39;s system talks to the other 4 carriers&#39; and returns an</span>
+<span class="sd">    url for an appropriate carrier if messages are found. If no messages are</span>
+<span class="sd">    found registered for the number, Docomo&#39;s system simply indicates so.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        number: A mobile phone number.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A url for messages found registered to some carrier (including Docomo)</span>
+<span class="sd">        or None if no are found.</span>
+<span class="sd">    Throws:</span>
+<span class="sd">        Exception when failed to scrape.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Scrape Docomo&#39;s gateway page and get a hidden time stamp param.</span>
+    <span class="n">scrape</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">DOCOMO_URL</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">hidden_param</span> <span class="o">=</span> <span class="n">DOCOMO_HIDDEN_RE</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">scrape</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c"># Encode the number and the above param as POST data</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">get_docomo_post_data</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">hidden_param</span><span class="p">)</span>
+    <span class="n">encoded_data</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlencode</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="c"># Scrape Docomo&#39;s answer on the number</span>
+    <span class="n">scrape</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">DOCOMO_URL</span><span class="p">,</span> <span class="n">encoded_data</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="c"># Extract a further redirect url, if any.</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="n">extract_redirect_url</span><span class="p">(</span><span class="n">scrape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">url</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">url</span>
+    <span class="k">elif</span> <span class="n">docomo_has_messages</span><span class="p">(</span><span class="n">scrape</span><span class="p">):</span>
+        <span class="c"># Checks if Docomo has messages for the number, and returns the url</span>
+        <span class="c"># for Docomo if it does.</span>
+        <span class="k">return</span> <span class="n">DOCOMO_URL</span> <span class="o">+</span> <span class="s">&#39;?&#39;</span> <span class="o">+</span> <span class="n">encoded_data</span>
+</div>
+<div class="viewcode-block" id="handle_phone_number"><a class="viewcode-back" href="../jp_mobile_carriers.html#jp_mobile_carriers.handle_phone_number">[docs]</a><span class="k">def</span> <span class="nf">handle_phone_number</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handles a phone number query. If the query is a mobile phone number,</span>
+<span class="sd">    looks up the number for registered messages in the mobile carriers-provided</span>
+<span class="sd">    message board services and redirects to the results page. If the query is a</span>
+<span class="sd">    non-mobile phone number, shows a 171 suggestion.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        handler: a request handler for this request.</span>
+<span class="sd">        query: a query string to the Person Finder query page.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        True if the query string is a phone number and has been properly</span>
+<span class="sd">        handled, and False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">phone_number</span> <span class="o">=</span> <span class="n">get_phone_number</span><span class="p">(</span><span class="nb">unicode</span><span class="p">(</span><span class="n">query</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">phone_number</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_mobile_number</span><span class="p">(</span><span class="n">phone_number</span><span class="p">):</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">look_up_number</span><span class="p">(</span><span class="n">phone_number</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">url</span><span class="p">:</span>
+                <span class="n">handler</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">handler</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;results.html&#39;</span><span class="p">,</span>
+                               <span class="n">results</span><span class="o">=</span><span class="p">[],</span> <span class="n">jp_phone_number_query</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">handler</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;query.html&#39;</span><span class="p">,</span>
+                           <span class="n">show_jp_171_suggestion</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="bp">False</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,600 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pfif &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pfif</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;PFIF 1.1 - 1.4 parsing and serialization (see http://zesty.ca/pfif/).</span>
+
+<span class="sd">This module converts between PFIF XML documents (PFIF 1.1, 1.2, 1.3, or 1.4) and</span>
+<span class="sd">plain Python dictionaries that have PFIF 1.4 field names as keys (always 1.4)</span>
+<span class="sd">and Unicode strings as values.  Some useful constants are also defined here</span>
+<span class="sd">according to the PFIF specification.  Use parse() to parse PFIF 1.1, 1.2, 1.3,</span>
+<span class="sd">or 1.4; use PFIF_1_1, PFIF_1_2, PFIF_1_3, or PFIF_1_4 to serialize to the</span>
+<span class="sd">desired version.&quot;&quot;&quot;</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;kpy@google.com (Ka-Ping Yee) and many other Googlers&#39;</span>
+
+<span class="kn">import</span> <span class="nn">StringIO</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">xml.sax</span>
+<span class="kn">import</span> <span class="nn">xml.sax.handler</span>
+
+<span class="c"># Possible values for the &#39;sex&#39; field on a person record.</span>
+<span class="n">PERSON_SEX_VALUES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&#39;&#39;</span><span class="p">,</span>  <span class="c"># unspecified</span>
+    <span class="s">&#39;female&#39;</span><span class="p">,</span>
+    <span class="s">&#39;male&#39;</span><span class="p">,</span>
+    <span class="s">&#39;other&#39;</span>
+<span class="p">]</span>
+
+<span class="c"># Possible values for the &#39;status&#39; field on a note record.</span>
+<span class="n">NOTE_STATUS_VALUES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&#39;&#39;</span><span class="p">,</span>  <span class="c"># unspecified</span>
+    <span class="s">&#39;information_sought&#39;</span><span class="p">,</span>
+    <span class="s">&#39;is_note_author&#39;</span><span class="p">,</span>
+    <span class="s">&#39;believed_alive&#39;</span><span class="p">,</span>
+    <span class="s">&#39;believed_missing&#39;</span><span class="p">,</span>
+    <span class="s">&#39;believed_dead&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c"># Fields to preserve in a placeholder for an expired record.</span>
+<span class="n">PLACEHOLDER_FIELDS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&#39;person_record_id&#39;</span><span class="p">,</span>
+    <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+    <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+    <span class="s">&#39;expiry_date&#39;</span>
+<span class="p">]</span>
+
+<span class="c"># A dict mapping old field names to the new field names in PFIF 1.4,</span>
+<span class="c"># for backward compatibility with older PFIF versions.</span>
+<span class="n">RENAMED_FIELDS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;home_zip&#39;</span><span class="p">:</span> <span class="s">&#39;home_postal_code&#39;</span><span class="p">,</span>  <span class="c"># Renamed in PFIF 1.2</span>
+    <span class="s">&#39;first_name&#39;</span><span class="p">:</span> <span class="s">&#39;given_name&#39;</span><span class="p">,</span>      <span class="c"># Renamed in PFIF 1.4</span>
+    <span class="s">&#39;last_name&#39;</span><span class="p">:</span> <span class="s">&#39;family_name&#39;</span><span class="p">,</span>      <span class="c"># Renamed in PFIF 1.4</span>
+    <span class="s">&#39;found&#39;</span><span class="p">:</span> <span class="s">&#39;author_made_contact&#39;</span><span class="p">,</span>  <span class="c"># Renamed in PFIF 1.4</span>
+    <span class="s">&#39;other&#39;</span><span class="p">:</span> <span class="s">&#39;description&#39;</span><span class="p">,</span>          <span class="c"># Renamed in PFIF 1.4</span>
+<span class="p">}</span>
+
+<span class="n">DESCRIPTION_FIELD_LABEL</span> <span class="o">=</span> <span class="s">&#39;description:&#39;</span>
+
+<div class="viewcode-block" id="xml_escape"><a class="viewcode-back" href="../pfif.html#pfif.xml_escape">[docs]</a><span class="k">def</span> <span class="nf">xml_escape</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="c"># XML may only contain the following characters (even after entity</span>
+    <span class="c"># references are expanded).  See: http://www.w3.org/TR/REC-xml/#charsets</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">ur&#39;&#39;&#39;[^\x09\x0a\x0d\x20-\ud7ff\ue000-\ufffd]&#39;&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&amp;&#39;</span><span class="p">,</span><span class="s">&#39;&amp;amp;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&lt;&#39;</span><span class="p">,</span><span class="s">&#39;&amp;lt;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&gt;&#39;</span><span class="p">,</span><span class="s">&#39;&amp;gt;&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="convert_description_to_other"><a class="viewcode-back" href="../pfif.html#pfif.convert_description_to_other">[docs]</a><span class="k">def</span> <span class="nf">convert_description_to_other</span><span class="p">(</span><span class="n">desc</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts &#39;description&#39; in PFIF 1.4 to &#39;other&#39; in older versions.&quot;&quot;&quot;</span>
+    <span class="n">INDENT_DEPTH</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="c"># Do not add description label if it&#39;s already there, so when exporting and</span>
+    <span class="c"># importing the same person record, we don&#39;t duplicate the label.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">desc</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="n">desc</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">DESCRIPTION_FIELD_LABEL</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">desc</span>
+    <span class="c"># Indent the text and prepend the description label.</span>
+    <span class="k">return</span> <span class="n">DESCRIPTION_FIELD_LABEL</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">*</span> <span class="n">INDENT_DEPTH</span> <span class="o">+</span> \
+        <span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">*</span> <span class="n">INDENT_DEPTH</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">desc</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="maybe_convert_other_to_description"><a class="viewcode-back" href="../pfif.html#pfif.maybe_convert_other_to_description">[docs]</a><span class="k">def</span> <span class="nf">maybe_convert_other_to_description</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts &#39;other&#39; in PFIF 1.3 and earlier to &#39;description&#39; in PFIF 1.4 if</span>
+<span class="sd">    &#39;other&#39; has only &#39;description&#39; field. Otherwise it returns &#39;other&#39; without</span>
+<span class="sd">    modifying it, so we don&#39;t lose any information.&quot;&quot;&quot;</span>
+    <span class="n">description_lines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">has_description_field</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">DESCRIPTION_FIELD_LABEL</span><span class="p">):</span>
+            <span class="n">has_description_field</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">DESCRIPTION_FIELD_LABEL</span><span class="p">):]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">r&#39;\S+:&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">other</span>
+        <span class="n">description_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39; </span><span class="se">\t</span><span class="s">&#39;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">has_description_field</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">other</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">description_lines</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="PfifVersion"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion">[docs]</a><span class="k">class</span> <span class="nc">PfifVersion</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">ns</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">mandatory_fields</span><span class="p">,</span> <span class="n">serializers</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ns</span> <span class="o">=</span> <span class="n">ns</span>
+        <span class="c"># A dict mapping each record type to a list of its fields in order.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="n">fields</span>
+        <span class="c"># A dict mapping each record type to a list of its mandatory fields.</span>
+        <span class="c"># TODO(ryok): we should validate that imported records have these</span>
+        <span class="c"># mandatory fields populated.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_fields</span> <span class="o">=</span> <span class="n">mandatory_fields</span>
+        <span class="c"># A dict mapping field names to serializer functions.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serializers</span> <span class="o">=</span> <span class="n">serializers</span>
+
+<div class="viewcode-block" id="PfifVersion.check_tag"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion.check_tag">[docs]</a>    <span class="k">def</span> <span class="nf">check_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">local</span><span class="p">),</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Given a namespace-qualified tag and its parent, returns the PFIF</span>
+<span class="sd">        type or field name if the tag is valid, or None if the tag is not</span>
+<span class="sd">        recognized.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ns</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">parent</span> <span class="ow">or</span> <span class="n">local</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">parent</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">local</span>
+</div>
+<div class="viewcode-block" id="PfifVersion.write_fields"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion.write_fields">[docs]</a>    <span class="k">def</span> <span class="nf">write_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">record</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes PFIF tags for a record&#39;s fields.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="nb">type</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="ow">or</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_fields</span><span class="p">[</span><span class="nb">type</span><span class="p">]:</span>
+                <span class="n">escaped_value</span> <span class="o">=</span> <span class="n">xml_escape</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">))</span>
+                <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="s">&#39;&lt;pfif:</span><span class="si">%s</span><span class="s">&gt;</span><span class="si">%s</span><span class="s">&lt;/pfif:</span><span class="si">%s</span><span class="s">&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span>
+                           <span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">escaped_value</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">),</span> <span class="n">field</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="PfifVersion.write_person"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion.write_person">[docs]</a>    <span class="k">def</span> <span class="nf">write_person</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">notes</span><span class="o">=</span><span class="p">[],</span> <span class="n">indent</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes PFIF for a person record and a list of its note records.&quot;&quot;&quot;</span>
+        <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="s">&#39;&lt;pfif:person&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_fields</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="s">&#39;person&#39;</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">indent</span> <span class="o">+</span> <span class="s">&#39;  &#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="n">notes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_note</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">note</span><span class="p">,</span> <span class="n">indent</span> <span class="o">+</span> <span class="s">&#39;  &#39;</span><span class="p">)</span>
+        <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="s">&#39;&lt;/pfif:person&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="PfifVersion.write_note"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion.write_note">[docs]</a>    <span class="k">def</span> <span class="nf">write_note</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">note</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes PFIF for a note record.&quot;&quot;&quot;</span>
+        <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="s">&#39;&lt;pfif:note&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_fields</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="s">&#39;note&#39;</span><span class="p">,</span> <span class="n">note</span><span class="p">,</span> <span class="n">indent</span> <span class="o">+</span> <span class="s">&#39;  &#39;</span><span class="p">)</span>
+        <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="s">&#39;&lt;/pfif:note&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="PfifVersion.write_file"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion.write_file">[docs]</a>    <span class="k">def</span> <span class="nf">write_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">persons</span><span class="p">,</span> <span class="n">get_notes_for_person</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="p">[]):</span>
+        <span class="sd">&quot;&quot;&quot;Takes a list of person records and a function that gets the list</span>
+<span class="sd">        of note records for each person, and writes PFIF to the given file</span>
+<span class="sd">        object.  Each record is a plain dictionary of strings.&quot;&quot;&quot;</span>
+        <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;pfif:pfif xmlns:pfif=&quot;</span><span class="si">%s</span><span class="s">&quot;&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ns</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">persons</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_person</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">person</span><span class="p">,</span> <span class="n">get_notes_for_person</span><span class="p">(</span><span class="n">person</span><span class="p">),</span> <span class="s">&#39;  &#39;</span><span class="p">)</span>
+        <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;/pfif:pfif&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="PfifVersion.entity_to_dict"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion.entity_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">entity_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts a person or note record from a Python object (with PFIF 1.4</span>
+<span class="sd">        field names as attributes) to a Python dictionary (with the given field</span>
+<span class="sd">        names as keys, and Unicode strings as values).&quot;&quot;&quot;</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="n">maybe_renamed_field</span> <span class="o">=</span> <span class="n">field</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+                <span class="n">maybe_renamed_field</span> <span class="o">=</span> <span class="n">RENAMED_FIELDS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">maybe_renamed_field</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+                <span class="c"># For backward compatibility with PFIF 1.3 and earlier.</span>
+                <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s">&#39;other&#39;</span> <span class="ow">and</span> <span class="n">maybe_renamed_field</span> <span class="o">==</span> <span class="s">&#39;description&#39;</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">convert_description_to_other</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">record</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serializers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">nop</span><span class="p">)(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">record</span>
+</div>
+<div class="viewcode-block" id="PfifVersion.person_to_dict"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion.person_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">person_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">,</span> <span class="n">expired</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="nb">dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entity_to_dict</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="s">&#39;person&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">expired</span><span class="p">:</span>  <span class="c"># Clear all fields except those needed for the placeholder.</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">PLACEHOLDER_FIELDS</span><span class="p">):</span>
+                <span class="k">del</span> <span class="nb">dict</span><span class="p">[</span><span class="n">field</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">dict</span>
+</div>
+<div class="viewcode-block" id="PfifVersion.note_to_dict"><a class="viewcode-back" href="../pfif.html#pfif.PfifVersion.note_to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">note_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entity_to_dict</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="s">&#39;note&#39;</span><span class="p">])</span>
+
+
+<span class="c"># Serializers that convert Python values to PFIF strings.</span></div></div>
+<div class="viewcode-block" id="nop"><a class="viewcode-back" href="../pfif.html#pfif.nop">[docs]</a><span class="k">def</span> <span class="nf">nop</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="format_boolean"><a class="viewcode-back" href="../pfif.html#pfif.format_boolean">[docs]</a><span class="k">def</span> <span class="nf">format_boolean</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="ow">and</span> <span class="s">&#39;true&#39;</span> <span class="ow">or</span> <span class="s">&#39;false&#39;</span>
+</div>
+<div class="viewcode-block" id="format_utc_datetime"><a class="viewcode-back" href="../pfif.html#pfif.format_utc_datetime">[docs]</a><span class="k">def</span> <span class="nf">format_utc_datetime</span><span class="p">(</span><span class="n">dt</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">dt</span> <span class="ow">and</span> <span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#39;Z&#39;</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span>
+</div>
+<span class="n">SERIALIZERS</span> <span class="o">=</span> <span class="p">{</span>  <span class="c"># Serialization functions (for fields that need conversion).</span>
+    <span class="s">&#39;found&#39;</span><span class="p">:</span> <span class="n">format_boolean</span><span class="p">,</span>
+    <span class="s">&#39;author_made_contact&#39;</span><span class="p">:</span> <span class="n">format_boolean</span><span class="p">,</span>
+    <span class="s">&#39;source_date&#39;</span><span class="p">:</span> <span class="n">format_utc_datetime</span><span class="p">,</span>
+    <span class="s">&#39;entry_date&#39;</span><span class="p">:</span> <span class="n">format_utc_datetime</span><span class="p">,</span>
+    <span class="s">&#39;expiry_date&#39;</span><span class="p">:</span> <span class="n">format_utc_datetime</span>
+<span class="p">}</span>
+
+<span class="n">PFIF_1_1</span> <span class="o">=</span> <span class="n">PfifVersion</span><span class="p">(</span>
+    <span class="s">&#39;1.1&#39;</span><span class="p">,</span>
+    <span class="s">&#39;http://zesty.ca/pfif/1.1&#39;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s">&#39;person&#39;</span><span class="p">:</span> <span class="p">[</span>  <span class="c"># Fields of a &lt;person&gt; element, in PFIF 1.1 standard order.</span>
+            <span class="s">&#39;person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_email&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_phone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_url&#39;</span><span class="p">,</span>
+            <span class="s">&#39;first_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;last_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_city&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_state&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_neighborhood&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_street&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_zip&#39;</span><span class="p">,</span>
+            <span class="s">&#39;photo_url&#39;</span><span class="p">,</span>
+            <span class="s">&#39;other&#39;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s">&#39;note&#39;</span><span class="p">:</span> <span class="p">[</span>  <span class="c"># Fields of a &lt;note&gt; element, in PFIF 1.1 standard order.</span>
+            <span class="s">&#39;note_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_email&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_phone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;found&#39;</span><span class="p">,</span>
+            <span class="s">&#39;email_of_found_person&#39;</span><span class="p">,</span>
+            <span class="s">&#39;phone_of_found_person&#39;</span><span class="p">,</span>
+            <span class="s">&#39;last_known_location&#39;</span><span class="p">,</span>
+            <span class="s">&#39;text&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>  <span class="c"># Mandatory fields in &lt;person&gt; and &lt;note&gt; elements.</span>
+        <span class="s">&#39;person&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;person_record_id&#39;</span><span class="p">,</span> <span class="s">&#39;first_name&#39;</span><span class="p">,</span> <span class="s">&#39;last_name&#39;</span><span class="p">],</span>
+        <span class="s">&#39;note&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;note_record_id&#39;</span><span class="p">,</span> <span class="s">&#39;author_name&#39;</span><span class="p">,</span> <span class="s">&#39;source_date&#39;</span><span class="p">,</span> <span class="s">&#39;text&#39;</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">SERIALIZERS</span><span class="p">)</span>
+
+<span class="n">PFIF_1_2</span> <span class="o">=</span> <span class="n">PfifVersion</span><span class="p">(</span>
+    <span class="s">&#39;1.2&#39;</span><span class="p">,</span>
+    <span class="s">&#39;http://zesty.ca/pfif/1.2&#39;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s">&#39;person&#39;</span><span class="p">:</span> <span class="p">[</span>  <span class="c"># Fields of a &lt;person&gt; element in PFIF 1.2.</span>
+            <span class="s">&#39;person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_email&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_phone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_url&#39;</span><span class="p">,</span>
+            <span class="s">&#39;first_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;last_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;sex&#39;</span><span class="p">,</span>
+            <span class="s">&#39;date_of_birth&#39;</span><span class="p">,</span>
+            <span class="s">&#39;age&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_street&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_neighborhood&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_city&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_state&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_postal_code&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_country&#39;</span><span class="p">,</span>
+            <span class="s">&#39;photo_url&#39;</span><span class="p">,</span>
+            <span class="s">&#39;other&#39;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s">&#39;note&#39;</span><span class="p">:</span> <span class="p">[</span>  <span class="c"># Fields of a &lt;note&gt; element in PFIF 1.2.</span>
+            <span class="s">&#39;note_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;linked_person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_email&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_phone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;found&#39;</span><span class="p">,</span>
+            <span class="s">&#39;status&#39;</span><span class="p">,</span>
+            <span class="s">&#39;email_of_found_person&#39;</span><span class="p">,</span>
+            <span class="s">&#39;phone_of_found_person&#39;</span><span class="p">,</span>
+            <span class="s">&#39;last_known_location&#39;</span><span class="p">,</span>
+            <span class="s">&#39;text&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>  <span class="c"># Mandatory fields in &lt;person&gt; and &lt;note&gt; elements.</span>
+        <span class="s">&#39;person&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;person_record_id&#39;</span><span class="p">,</span> <span class="s">&#39;first_name&#39;</span><span class="p">,</span> <span class="s">&#39;last_name&#39;</span><span class="p">],</span>
+        <span class="s">&#39;note&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;note_record_id&#39;</span><span class="p">,</span> <span class="s">&#39;author_name&#39;</span><span class="p">,</span> <span class="s">&#39;source_date&#39;</span><span class="p">,</span> <span class="s">&#39;text&#39;</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">SERIALIZERS</span><span class="p">)</span>
+
+<span class="n">PFIF_1_3</span> <span class="o">=</span> <span class="n">PfifVersion</span><span class="p">(</span>
+    <span class="s">&#39;1.3&#39;</span><span class="p">,</span>
+    <span class="s">&#39;http://zesty.ca/pfif/1.3&#39;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s">&#39;person&#39;</span><span class="p">:</span> <span class="p">[</span>  <span class="c"># Fields of a &lt;person&gt; element in PFIF 1.3.</span>
+            <span class="s">&#39;person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;expiry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_email&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_phone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_url&#39;</span><span class="p">,</span>
+            <span class="s">&#39;full_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;first_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;last_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;sex&#39;</span><span class="p">,</span>
+            <span class="s">&#39;date_of_birth&#39;</span><span class="p">,</span>
+            <span class="s">&#39;age&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_street&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_neighborhood&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_city&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_state&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_postal_code&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_country&#39;</span><span class="p">,</span>
+            <span class="s">&#39;photo_url&#39;</span><span class="p">,</span>
+            <span class="s">&#39;other&#39;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s">&#39;note&#39;</span><span class="p">:</span> <span class="p">[</span>  <span class="c"># Fields of a &lt;note&gt; element in PFIF 1.3.</span>
+            <span class="s">&#39;note_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;linked_person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_email&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_phone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;found&#39;</span><span class="p">,</span>
+            <span class="s">&#39;status&#39;</span><span class="p">,</span>
+            <span class="s">&#39;email_of_found_person&#39;</span><span class="p">,</span>
+            <span class="s">&#39;phone_of_found_person&#39;</span><span class="p">,</span>
+            <span class="s">&#39;last_known_location&#39;</span><span class="p">,</span>
+            <span class="s">&#39;text&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>  <span class="c"># Mandatory fields in &lt;person&gt; and &lt;note&gt; elements.</span>
+        <span class="s">&#39;person&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;person_record_id&#39;</span><span class="p">,</span> <span class="s">&#39;source_date&#39;</span><span class="p">,</span> <span class="s">&#39;full_name&#39;</span><span class="p">],</span>
+        <span class="s">&#39;note&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;note_record_id&#39;</span><span class="p">,</span> <span class="s">&#39;author_name&#39;</span><span class="p">,</span> <span class="s">&#39;source_date&#39;</span><span class="p">,</span> <span class="s">&#39;text&#39;</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">SERIALIZERS</span><span class="p">)</span>
+
+<span class="n">PFIF_1_4</span> <span class="o">=</span> <span class="n">PfifVersion</span><span class="p">(</span>
+    <span class="s">&#39;1.4&#39;</span><span class="p">,</span>
+    <span class="s">&#39;http://zesty.ca/pfif/1.4&#39;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s">&#39;person&#39;</span><span class="p">:</span> <span class="p">[</span>  <span class="c"># Fields of a &lt;person&gt; element in PFIF 1.4.</span>
+            <span class="s">&#39;person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;expiry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_email&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_phone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_url&#39;</span><span class="p">,</span>
+            <span class="s">&#39;full_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;given_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;family_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;alternate_names&#39;</span><span class="p">,</span>
+            <span class="s">&#39;description&#39;</span><span class="p">,</span>
+            <span class="s">&#39;sex&#39;</span><span class="p">,</span>
+            <span class="s">&#39;date_of_birth&#39;</span><span class="p">,</span>
+            <span class="s">&#39;age&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_street&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_neighborhood&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_city&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_state&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_postal_code&#39;</span><span class="p">,</span>
+            <span class="s">&#39;home_country&#39;</span><span class="p">,</span>
+            <span class="s">&#39;photo_url&#39;</span><span class="p">,</span>
+            <span class="s">&#39;profile_urls&#39;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s">&#39;note&#39;</span><span class="p">:</span> <span class="p">[</span>  <span class="c"># Fields of a &lt;note&gt; element in PFIF 1.4.</span>
+            <span class="s">&#39;note_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;linked_person_record_id&#39;</span><span class="p">,</span>
+            <span class="s">&#39;entry_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_name&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_email&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_phone&#39;</span><span class="p">,</span>
+            <span class="s">&#39;source_date&#39;</span><span class="p">,</span>
+            <span class="s">&#39;author_made_contact&#39;</span><span class="p">,</span>
+            <span class="s">&#39;status&#39;</span><span class="p">,</span>
+            <span class="s">&#39;email_of_found_person&#39;</span><span class="p">,</span>
+            <span class="s">&#39;phone_of_found_person&#39;</span><span class="p">,</span>
+            <span class="s">&#39;last_known_location&#39;</span><span class="p">,</span>
+            <span class="s">&#39;text&#39;</span><span class="p">,</span>
+            <span class="s">&#39;photo_url&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>  <span class="c"># Mandatory fields in &lt;person&gt; and &lt;note&gt; elements.</span>
+        <span class="s">&#39;person&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;person_record_id&#39;</span><span class="p">,</span> <span class="s">&#39;source_date&#39;</span><span class="p">,</span> <span class="s">&#39;full_name&#39;</span><span class="p">],</span>
+        <span class="s">&#39;note&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;note_record_id&#39;</span><span class="p">,</span> <span class="s">&#39;author_name&#39;</span><span class="p">,</span> <span class="s">&#39;source_date&#39;</span><span class="p">,</span> <span class="s">&#39;text&#39;</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">SERIALIZERS</span><span class="p">)</span>
+
+<span class="n">PFIF_VERSIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;1.1&#39;</span><span class="p">:</span> <span class="n">PFIF_1_1</span><span class="p">,</span>
+    <span class="s">&#39;1.2&#39;</span><span class="p">:</span> <span class="n">PFIF_1_2</span><span class="p">,</span>
+    <span class="s">&#39;1.3&#39;</span><span class="p">:</span> <span class="n">PFIF_1_3</span><span class="p">,</span>
+    <span class="s">&#39;1.4&#39;</span><span class="p">:</span> <span class="n">PFIF_1_4</span>
+<span class="p">}</span>
+
+<span class="n">PFIF_DEFAULT_VERSION</span> <span class="o">=</span> <span class="s">&#39;1.4&#39;</span>
+
+<span class="k">assert</span> <span class="n">PFIF_DEFAULT_VERSION</span> <span class="ow">in</span> <span class="n">PFIF_VERSIONS</span>
+
+<div class="viewcode-block" id="check_pfif_tag"><a class="viewcode-back" href="../pfif.html#pfif.check_pfif_tag">[docs]</a><span class="k">def</span> <span class="nf">check_pfif_tag</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Recognizes a PFIF XML tag from any version of PFIF.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">PFIF_1_4</span><span class="o">.</span><span class="n">check_tag</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span> <span class="ow">or</span> \
+        <span class="n">PFIF_1_3</span><span class="o">.</span><span class="n">check_tag</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span> <span class="ow">or</span> \
+        <span class="n">PFIF_1_2</span><span class="o">.</span><span class="n">check_tag</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span> <span class="ow">or</span> \
+        <span class="n">PFIF_1_1</span><span class="o">.</span><span class="n">check_tag</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Handler"><a class="viewcode-back" href="../pfif.html#pfif.Handler">[docs]</a><span class="k">class</span> <span class="nc">Handler</span><span class="p">(</span><span class="n">xml</span><span class="o">.</span><span class="n">sax</span><span class="o">.</span><span class="n">handler</span><span class="o">.</span><span class="n">ContentHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;SAX event handler for parsing PFIF documents.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rename_fields</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="c"># Wether to attempt to rename fields based on RENAMED_FIELDS.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rename_fields</span> <span class="o">=</span> <span class="n">rename_fields</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">person</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">note</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enclosed_notes</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># Notes enclosed by the current &lt;person&gt;.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">person_records</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">note_records</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Handler.startElementNS"><a class="viewcode-back" href="../pfif.html#pfif.Handler.startElementNS">[docs]</a>    <span class="k">def</span> <span class="nf">startElementNS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">qname</span><span class="p">,</span> <span class="n">attrs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">check_pfif_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;person&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">person</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enclosed_notes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="n">check_pfif_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;note&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">note</span> <span class="o">=</span> <span class="p">{}</span>
+</div>
+<div class="viewcode-block" id="Handler.endElementNS"><a class="viewcode-back" href="../pfif.html#pfif.Handler.endElementNS">[docs]</a>    <span class="k">def</span> <span class="nf">endElementNS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">qname</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="o">==</span> <span class="n">tag</span>
+        <span class="k">if</span> <span class="n">check_pfif_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;person&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">person_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">person</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;person_record_id&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">person</span><span class="p">:</span>
+                <span class="c"># Copy the person&#39;s person_record_id to any enclosed notes.</span>
+                <span class="k">for</span> <span class="n">note</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enclosed_notes</span><span class="p">:</span>
+                    <span class="n">note</span><span class="p">[</span><span class="s">&#39;person_record_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">person</span><span class="p">[</span><span class="s">&#39;person_record_id&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">check_pfif_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;note&#39;</span><span class="p">:</span>
+            <span class="c"># Save all parsed notes (whether or not enclosed in &lt;person&gt;).</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">note_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enclosed_notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.append_to_field"><a class="viewcode-back" href="../pfif.html#pfif.Handler.append_to_field">[docs]</a>    <span class="k">def</span> <span class="nf">append_to_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">check_pfif_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">field</span><span class="p">:</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s">u&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">content</span>
+        <span class="k">elif</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;ignored tag </span><span class="si">%r</span><span class="s"> with content </span><span class="si">%r</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.characters"><a class="viewcode-back" href="../pfif.html#pfif.Handler.characters">[docs]</a>    <span class="k">def</span> <span class="nf">characters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">content</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">parent</span><span class="p">,</span> <span class="n">tag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">check_pfif_tag</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;person&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append_to_field</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">person</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="s">&#39;person&#39;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">check_pfif_tag</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;note&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append_to_field</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="s">&#39;note&#39;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="rename_fields_to_latest"><a class="viewcode-back" href="../pfif.html#pfif.rename_fields_to_latest">[docs]</a><span class="k">def</span> <span class="nf">rename_fields_to_latest</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Renames fields in PFIF 1.3 and earlier to PFIF 1.4, and also does a</span>
+<span class="sd">    special conversion for other -&gt; description.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">RENAMED_FIELDS</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">old</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">new</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="n">old</span><span class="p">]</span>
+            <span class="c"># For backward-compatibility with PFIF 1.3 and earlier.</span>
+            <span class="k">if</span> <span class="n">old</span> <span class="o">==</span> <span class="s">&#39;other&#39;</span> <span class="ow">and</span> <span class="n">new</span> <span class="o">==</span><span class="s">&#39;description&#39;</span><span class="p">:</span>
+                <span class="n">record</span><span class="p">[</span><span class="n">new</span><span class="p">]</span> <span class="o">=</span> <span class="n">maybe_convert_other_to_description</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">old</span><span class="p">])</span>
+            <span class="k">del</span> <span class="n">record</span><span class="p">[</span><span class="n">old</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="parse_file"><a class="viewcode-back" href="../pfif.html#pfif.parse_file">[docs]</a><span class="k">def</span> <span class="nf">parse_file</span><span class="p">(</span><span class="n">pfif_utf8_file</span><span class="p">,</span> <span class="n">rename_fields</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Reads a UTF-8-encoded PFIF file to give a list of person records and a</span>
+<span class="sd">    list of note records.  Each record is a plain dictionary of strings,</span>
+<span class="sd">    with PFIF 1.4 field names as keys if rename_fields is True; otherwise,</span>
+<span class="sd">    the field names are kept as is in the input XML file.&quot;&quot;&quot;</span>
+    <span class="n">handler</span> <span class="o">=</span> <span class="n">Handler</span><span class="p">(</span><span class="n">rename_fields</span><span class="p">)</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">xml</span><span class="o">.</span><span class="n">sax</span><span class="o">.</span><span class="n">make_parser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">setFeature</span><span class="p">(</span><span class="n">xml</span><span class="o">.</span><span class="n">sax</span><span class="o">.</span><span class="n">handler</span><span class="o">.</span><span class="n">feature_namespaces</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="c"># Below two are to avoid XML External Entity attacks:</span>
+    <span class="c"># https://www.owasp.org/index.php/XML_External_Entity_(XXE)_Processing</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">setFeature</span><span class="p">(</span><span class="n">xml</span><span class="o">.</span><span class="n">sax</span><span class="o">.</span><span class="n">handler</span><span class="o">.</span><span class="n">feature_external_pes</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">setFeature</span><span class="p">(</span><span class="n">xml</span><span class="o">.</span><span class="n">sax</span><span class="o">.</span><span class="n">handler</span><span class="o">.</span><span class="n">feature_external_ges</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">setContentHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">pfif_utf8_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rename_fields</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">handler</span><span class="o">.</span><span class="n">person_records</span> <span class="o">+</span> <span class="n">handler</span><span class="o">.</span><span class="n">note_records</span><span class="p">:</span>
+            <span class="n">rename_fields_to_latest</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">handler</span><span class="o">.</span><span class="n">person_records</span><span class="p">,</span> <span class="n">handler</span><span class="o">.</span><span class="n">note_records</span>
+</div>
+<div class="viewcode-block" id="parse"><a class="viewcode-back" href="../pfif.html#pfif.parse">[docs]</a><span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="n">pfif_text</span><span class="p">,</span> <span class="n">rename_fields</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Takes the text of a PFIF document, as a Unicode string or UTF-8 string,</span>
+<span class="sd">    and returns a list of person records and a list of note records.  Each</span>
+<span class="sd">    record is a plain dictionary of strings, with PFIF 1.4 field names as keys</span>
+<span class="sd">    if rename_fields is True; otherwise, the field names are kept as is in the</span>
+<span class="sd">    input XML file.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pfif_text</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">):</span>
+        <span class="n">pfif_text</span> <span class="o">=</span> <span class="n">pfif_text</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parse_file</span><span class="p">(</span><span class="n">StringIO</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">pfif_text</span><span class="p">),</span> <span class="n">rename_fields</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

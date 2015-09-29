@@ -1,0 +1,1267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>babel.dates &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for babel.dates</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    babel.dates</span>
+<span class="sd">    ~~~~~~~~~~~</span>
+
+<span class="sd">    Locale dependent formatting and parsing of dates and times.</span>
+
+<span class="sd">    The default locale for the functions in this module is determined by the</span>
+<span class="sd">    following environment variables, in that order:</span>
+
+<span class="sd">     * ``LC_TIME``,</span>
+<span class="sd">     * ``LC_ALL``, and</span>
+<span class="sd">     * ``LANG``</span>
+
+<span class="sd">    :copyright: (c) 2013 by the Babel Team.</span>
+<span class="sd">    :license: BSD, see LICENSE for more details.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">pytz</span> <span class="kn">as</span> <span class="nn">_pytz</span>
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">bisect</span> <span class="kn">import</span> <span class="n">bisect_right</span>
+
+<span class="kn">from</span> <span class="nn">babel.core</span> <span class="kn">import</span> <span class="n">default_locale</span><span class="p">,</span> <span class="n">get_global</span><span class="p">,</span> <span class="n">Locale</span>
+<span class="kn">from</span> <span class="nn">babel.util</span> <span class="kn">import</span> <span class="n">UTC</span><span class="p">,</span> <span class="n">LOCALTZ</span>
+<span class="kn">from</span> <span class="nn">babel._compat</span> <span class="kn">import</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">integer_types</span><span class="p">,</span> <span class="n">number_types</span>
+
+
+<span class="n">LC_TIME</span> <span class="o">=</span> <span class="n">default_locale</span><span class="p">(</span><span class="s">&#39;LC_TIME&#39;</span><span class="p">)</span>
+
+<span class="c"># Aliases for use in scopes where the modules are shadowed by local variables</span>
+<span class="n">date_</span> <span class="o">=</span> <span class="n">date</span>
+<span class="n">datetime_</span> <span class="o">=</span> <span class="n">datetime</span>
+<span class="n">time_</span> <span class="o">=</span> <span class="n">time</span>
+
+
+<div class="viewcode-block" id="get_timezone"><a class="viewcode-back" href="../../babel.html#babel.dates.get_timezone">[docs]</a><span class="k">def</span> <span class="nf">get_timezone</span><span class="p">(</span><span class="n">zone</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Looks up a timezone by name and returns it.  The timezone object</span>
+<span class="sd">    returned comes from ``pytz`` and corresponds to the `tzinfo` interface and</span>
+<span class="sd">    can be used with all of the functions of Babel that operate with dates.</span>
+
+<span class="sd">    If a timezone is not known a :exc:`LookupError` is raised.  If `zone`</span>
+<span class="sd">    is ``None`` a local zone object is returned.</span>
+
+<span class="sd">    :param zone: the name of the timezone to look up.  If a timezone object</span>
+<span class="sd">                 itself is passed in, mit&#39;s returned unchanged.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">zone</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">LOCALTZ</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">zone</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_pytz</span><span class="o">.</span><span class="n">timezone</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">_pytz</span><span class="o">.</span><span class="n">UnknownTimeZoneError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">LookupError</span><span class="p">(</span><span class="s">&#39;Unknown timezone </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">zone</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="get_next_timezone_transition"><a class="viewcode-back" href="../../babel.html#babel.dates.get_next_timezone_transition">[docs]</a><span class="k">def</span> <span class="nf">get_next_timezone_transition</span><span class="p">(</span><span class="n">zone</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Given a timezone it will return a :class:`TimezoneTransition` object</span>
+<span class="sd">    that holds the information about the next timezone transition that&#39;s going</span>
+<span class="sd">    to happen.  For instance this can be used to detect when the next DST</span>
+<span class="sd">    change is going to happen and how it looks like.</span>
+
+<span class="sd">    The transition is calculated relative to the given datetime object.  The</span>
+<span class="sd">    next transition that follows the date is used.  If a transition cannot</span>
+<span class="sd">    be found the return value will be `None`.</span>
+
+<span class="sd">    Transition information can only be provided for timezones returned by</span>
+<span class="sd">    the :func:`get_timezone` function.</span>
+
+<span class="sd">    :param zone: the timezone for which the transition should be looked up.</span>
+<span class="sd">                 If not provided the local timezone is used.</span>
+<span class="sd">    :param dt: the date after which the next transition should be found.</span>
+<span class="sd">               If not given the current time is assumed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">zone</span> <span class="o">=</span> <span class="n">get_timezone</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="s">&#39;_utc_transition_times&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Given timezone does not have UTC transition &#39;</span>
+                        <span class="s">&#39;times.  This can happen because the operating &#39;</span>
+                        <span class="s">&#39;system fallback local timezone is used or a &#39;</span>
+                        <span class="s">&#39;custom timezone object&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bisect_right</span><span class="p">(</span><span class="n">zone</span><span class="o">.</span><span class="n">_utc_transition_times</span><span class="p">,</span> <span class="n">dt</span><span class="p">))</span>
+        <span class="n">old_trans</span> <span class="o">=</span> <span class="n">zone</span><span class="o">.</span><span class="n">_transition_info</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">new_trans</span> <span class="o">=</span> <span class="n">zone</span><span class="o">.</span><span class="n">_transition_info</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">old_tz</span> <span class="o">=</span> <span class="n">zone</span><span class="o">.</span><span class="n">_tzinfos</span><span class="p">[</span><span class="n">old_trans</span><span class="p">]</span>
+        <span class="n">new_tz</span> <span class="o">=</span> <span class="n">zone</span><span class="o">.</span><span class="n">_tzinfos</span><span class="p">[</span><span class="n">new_trans</span><span class="p">]</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">LookupError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="n">TimezoneTransition</span><span class="p">(</span>
+        <span class="n">activates</span><span class="o">=</span><span class="n">zone</span><span class="o">.</span><span class="n">_utc_transition_times</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+        <span class="n">from_tzinfo</span><span class="o">=</span><span class="n">old_tz</span><span class="p">,</span>
+        <span class="n">to_tzinfo</span><span class="o">=</span><span class="n">new_tz</span><span class="p">,</span>
+        <span class="n">reference_date</span><span class="o">=</span><span class="n">dt</span>
+    <span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="TimezoneTransition"><a class="viewcode-back" href="../../babel.html#babel.dates.TimezoneTransition">[docs]</a><span class="k">class</span> <span class="nc">TimezoneTransition</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A helper object that represents the return value from</span>
+<span class="sd">    :func:`get_next_timezone_transition`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">activates</span><span class="p">,</span> <span class="n">from_tzinfo</span><span class="p">,</span> <span class="n">to_tzinfo</span><span class="p">,</span> <span class="n">reference_date</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c">#: the time of the activation of the timezone transition in UTC.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activates</span> <span class="o">=</span> <span class="n">activates</span>
+        <span class="c">#: the timezone from where the transition starts.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">from_tzinfo</span> <span class="o">=</span> <span class="n">from_tzinfo</span>
+        <span class="c">#: the timezone for after the transition.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_tzinfo</span> <span class="o">=</span> <span class="n">to_tzinfo</span>
+        <span class="c">#: the reference date that was provided.  This is the `dt` parameter</span>
+        <span class="c">#: to the :func:`get_next_timezone_transition`.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reference_date</span> <span class="o">=</span> <span class="n">reference_date</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">from_tz</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The name of the timezone before the transition.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_tzinfo</span><span class="o">.</span><span class="n">_tzname</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">to_tz</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The name of the timezone after the transition.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_tzinfo</span><span class="o">.</span><span class="n">_tzname</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">from_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The UTC offset in seconds before the transition.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_tzinfo</span><span class="o">.</span><span class="n">_utcoffset</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">to_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The UTC offset in seconds after the transition.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_tzinfo</span><span class="o">.</span><span class="n">_utcoffset</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;TimezoneTransition </span><span class="si">%s</span><span class="s"> -&gt; </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">)&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">from_tz</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_tz</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activates</span><span class="p">,</span>
+        <span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="get_period_names"><a class="viewcode-back" href="../../babel.html#babel.dates.get_period_names">[docs]</a><span class="k">def</span> <span class="nf">get_period_names</span><span class="p">(</span><span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the names for day periods (AM/PM) used by the locale.</span>
+
+<span class="sd">    &gt;&gt;&gt; get_period_names(locale=&#39;en_US&#39;)[&#39;am&#39;]</span>
+<span class="sd">    u&#39;AM&#39;</span>
+
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">periods</span>
+
+</div>
+<div class="viewcode-block" id="get_day_names"><a class="viewcode-back" href="../../babel.html#babel.dates.get_day_names">[docs]</a><span class="k">def</span> <span class="nf">get_day_names</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="s">&#39;wide&#39;</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s">&#39;format&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the day names used by the locale for the specified format.</span>
+
+<span class="sd">    &gt;&gt;&gt; get_day_names(&#39;wide&#39;, locale=&#39;en_US&#39;)[1]</span>
+<span class="sd">    u&#39;Tuesday&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_day_names(&#39;abbreviated&#39;, locale=&#39;es&#39;)[1]</span>
+<span class="sd">    u&#39;mar&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_day_names(&#39;narrow&#39;, context=&#39;stand-alone&#39;, locale=&#39;de_DE&#39;)[1]</span>
+<span class="sd">    u&#39;D&#39;</span>
+
+<span class="sd">    :param width: the width to use, one of &quot;wide&quot;, &quot;abbreviated&quot;, or &quot;narrow&quot;</span>
+<span class="sd">    :param context: the context, either &quot;format&quot; or &quot;stand-alone&quot;</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">days</span><span class="p">[</span><span class="n">context</span><span class="p">][</span><span class="n">width</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="get_month_names"><a class="viewcode-back" href="../../babel.html#babel.dates.get_month_names">[docs]</a><span class="k">def</span> <span class="nf">get_month_names</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="s">&#39;wide&#39;</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s">&#39;format&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the month names used by the locale for the specified format.</span>
+
+<span class="sd">    &gt;&gt;&gt; get_month_names(&#39;wide&#39;, locale=&#39;en_US&#39;)[1]</span>
+<span class="sd">    u&#39;January&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_month_names(&#39;abbreviated&#39;, locale=&#39;es&#39;)[1]</span>
+<span class="sd">    u&#39;ene&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_month_names(&#39;narrow&#39;, context=&#39;stand-alone&#39;, locale=&#39;de_DE&#39;)[1]</span>
+<span class="sd">    u&#39;J&#39;</span>
+
+<span class="sd">    :param width: the width to use, one of &quot;wide&quot;, &quot;abbreviated&quot;, or &quot;narrow&quot;</span>
+<span class="sd">    :param context: the context, either &quot;format&quot; or &quot;stand-alone&quot;</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">months</span><span class="p">[</span><span class="n">context</span><span class="p">][</span><span class="n">width</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="get_quarter_names"><a class="viewcode-back" href="../../babel.html#babel.dates.get_quarter_names">[docs]</a><span class="k">def</span> <span class="nf">get_quarter_names</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="s">&#39;wide&#39;</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s">&#39;format&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the quarter names used by the locale for the specified format.</span>
+
+<span class="sd">    &gt;&gt;&gt; get_quarter_names(&#39;wide&#39;, locale=&#39;en_US&#39;)[1]</span>
+<span class="sd">    u&#39;1st quarter&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_quarter_names(&#39;abbreviated&#39;, locale=&#39;de_DE&#39;)[1]</span>
+<span class="sd">    u&#39;Q1&#39;</span>
+
+<span class="sd">    :param width: the width to use, one of &quot;wide&quot;, &quot;abbreviated&quot;, or &quot;narrow&quot;</span>
+<span class="sd">    :param context: the context, either &quot;format&quot; or &quot;stand-alone&quot;</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">quarters</span><span class="p">[</span><span class="n">context</span><span class="p">][</span><span class="n">width</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="get_era_names"><a class="viewcode-back" href="../../babel.html#babel.dates.get_era_names">[docs]</a><span class="k">def</span> <span class="nf">get_era_names</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="s">&#39;wide&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the era names used by the locale for the specified format.</span>
+
+<span class="sd">    &gt;&gt;&gt; get_era_names(&#39;wide&#39;, locale=&#39;en_US&#39;)[1]</span>
+<span class="sd">    u&#39;Anno Domini&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_era_names(&#39;abbreviated&#39;, locale=&#39;de_DE&#39;)[1]</span>
+<span class="sd">    u&#39;n. Chr.&#39;</span>
+
+<span class="sd">    :param width: the width to use, either &quot;wide&quot;, &quot;abbreviated&quot;, or &quot;narrow&quot;</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">eras</span><span class="p">[</span><span class="n">width</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="get_date_format"><a class="viewcode-back" href="../../babel.html#babel.dates.get_date_format">[docs]</a><span class="k">def</span> <span class="nf">get_date_format</span><span class="p">(</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the date formatting patterns used by the locale for the specified</span>
+<span class="sd">    format.</span>
+
+<span class="sd">    &gt;&gt;&gt; get_date_format(locale=&#39;en_US&#39;)</span>
+<span class="sd">    &lt;DateTimePattern u&#39;MMM d, y&#39;&gt;</span>
+<span class="sd">    &gt;&gt;&gt; get_date_format(&#39;full&#39;, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    &lt;DateTimePattern u&#39;EEEE, d. MMMM y&#39;&gt;</span>
+
+<span class="sd">    :param format: the format to use, one of &quot;full&quot;, &quot;long&quot;, &quot;medium&quot;, or</span>
+<span class="sd">                   &quot;short&quot;</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">date_formats</span><span class="p">[</span><span class="n">format</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="get_datetime_format"><a class="viewcode-back" href="../../babel.html#babel.dates.get_datetime_format">[docs]</a><span class="k">def</span> <span class="nf">get_datetime_format</span><span class="p">(</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the datetime formatting patterns used by the locale for the</span>
+<span class="sd">    specified format.</span>
+
+<span class="sd">    &gt;&gt;&gt; get_datetime_format(locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;{1}, {0}&#39;</span>
+
+<span class="sd">    :param format: the format to use, one of &quot;full&quot;, &quot;long&quot;, &quot;medium&quot;, or</span>
+<span class="sd">                   &quot;short&quot;</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">patterns</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">datetime_formats</span>
+    <span class="k">if</span> <span class="n">format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+        <span class="n">format</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">return</span> <span class="n">patterns</span><span class="p">[</span><span class="n">format</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="get_time_format"><a class="viewcode-back" href="../../babel.html#babel.dates.get_time_format">[docs]</a><span class="k">def</span> <span class="nf">get_time_format</span><span class="p">(</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the time formatting patterns used by the locale for the specified</span>
+<span class="sd">    format.</span>
+
+<span class="sd">    &gt;&gt;&gt; get_time_format(locale=&#39;en_US&#39;)</span>
+<span class="sd">    &lt;DateTimePattern u&#39;h:mm:ss a&#39;&gt;</span>
+<span class="sd">    &gt;&gt;&gt; get_time_format(&#39;full&#39;, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    &lt;DateTimePattern u&#39;HH:mm:ss zzzz&#39;&gt;</span>
+
+<span class="sd">    :param format: the format to use, one of &quot;full&quot;, &quot;long&quot;, &quot;medium&quot;, or</span>
+<span class="sd">                   &quot;short&quot;</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">time_formats</span><span class="p">[</span><span class="n">format</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="get_timezone_gmt"><a class="viewcode-back" href="../../babel.html#babel.dates.get_timezone_gmt">[docs]</a><span class="k">def</span> <span class="nf">get_timezone_gmt</span><span class="p">(</span><span class="n">datetime</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s">&#39;long&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the timezone associated with the given `datetime` object formatted</span>
+<span class="sd">    as string indicating the offset from GMT.</span>
+
+<span class="sd">    &gt;&gt;&gt; dt = datetime(2007, 4, 1, 15, 30)</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_gmt(dt, locale=&#39;en&#39;)</span>
+<span class="sd">    u&#39;GMT+00:00&#39;</span>
+
+<span class="sd">    &gt;&gt;&gt; tz = get_timezone(&#39;America/Los_Angeles&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; dt = tz.localize(datetime(2007, 4, 1, 15, 30))</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_gmt(dt, locale=&#39;en&#39;)</span>
+<span class="sd">    u&#39;GMT-07:00&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_gmt(dt, &#39;short&#39;, locale=&#39;en&#39;)</span>
+<span class="sd">    u&#39;-0700&#39;</span>
+
+<span class="sd">    The long format depends on the locale, for example in France the acronym</span>
+<span class="sd">    UTC string is used instead of GMT:</span>
+
+<span class="sd">    &gt;&gt;&gt; get_timezone_gmt(dt, &#39;long&#39;, locale=&#39;fr_FR&#39;)</span>
+<span class="sd">    u&#39;UTC-07:00&#39;</span>
+
+<span class="sd">    .. versionadded:: 0.9</span>
+
+<span class="sd">    :param datetime: the ``datetime`` object; if `None`, the current date and</span>
+<span class="sd">                     time in UTC is used</span>
+<span class="sd">    :param width: either &quot;long&quot; or &quot;short&quot;</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">datetime</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">datetime</span> <span class="o">=</span> <span class="n">datetime_</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">integer_types</span><span class="p">):</span>
+        <span class="n">datetime</span> <span class="o">=</span> <span class="n">datetime_</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">datetime</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+    <span class="n">locale</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span>
+
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">tzinfo</span><span class="o">.</span><span class="n">utcoffset</span><span class="p">(</span><span class="n">datetime</span><span class="p">)</span>
+    <span class="n">seconds</span> <span class="o">=</span> <span class="n">offset</span><span class="o">.</span><span class="n">days</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">offset</span><span class="o">.</span><span class="n">seconds</span>
+    <span class="n">hours</span><span class="p">,</span> <span class="n">seconds</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">width</span> <span class="o">==</span> <span class="s">&#39;short&#39;</span><span class="p">:</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="s">u&#39;</span><span class="si">%+03d%02d</span><span class="s">&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">zone_formats</span><span class="p">[</span><span class="s">&#39;gmt&#39;</span><span class="p">]</span> <span class="o">%</span> <span class="s">&#39;</span><span class="si">%+03d</span><span class="s">:</span><span class="si">%02d</span><span class="s">&#39;</span>
+    <span class="k">return</span> <span class="n">pattern</span> <span class="o">%</span> <span class="p">(</span><span class="n">hours</span><span class="p">,</span> <span class="n">seconds</span> <span class="o">//</span> <span class="mi">60</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="get_timezone_location"><a class="viewcode-back" href="../../babel.html#babel.dates.get_timezone_location">[docs]</a><span class="k">def</span> <span class="nf">get_timezone_location</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a representation of the given timezone using &quot;location format&quot;.</span>
+
+<span class="sd">    The result depends on both the local display name of the country and the</span>
+<span class="sd">    city associated with the time zone:</span>
+
+<span class="sd">    &gt;&gt;&gt; tz = get_timezone(&#39;America/St_Johns&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_location(tz, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    u&quot;Kanada (St. John&#39;s) Zeit&quot;</span>
+<span class="sd">    &gt;&gt;&gt; tz = get_timezone(&#39;America/Mexico_City&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_location(tz, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    u&#39;Mexiko (Mexiko-Stadt) Zeit&#39;</span>
+
+<span class="sd">    If the timezone is associated with a country that uses only a single</span>
+<span class="sd">    timezone, just the localized country name is returned:</span>
+
+<span class="sd">    &gt;&gt;&gt; tz = get_timezone(&#39;Europe/Berlin&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_name(tz, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    u&#39;Mitteleurop\\xe4ische Zeit&#39;</span>
+
+<span class="sd">    .. versionadded:: 0.9</span>
+
+<span class="sd">    :param dt_or_tzinfo: the ``datetime`` or ``tzinfo`` object that determines</span>
+<span class="sd">                         the timezone; if `None`, the current date and time in</span>
+<span class="sd">                         UTC is assumed</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    :return: the localized timezone name using location format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dt_or_tzinfo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">LOCALTZ</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">get_timezone</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">,</span> <span class="n">integer_types</span><span class="p">):</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">UTC</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">,</span> <span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">time</span><span class="p">)):</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">dt_or_tzinfo</span>
+        <span class="k">if</span> <span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">UTC</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">dt_or_tzinfo</span>
+    <span class="n">locale</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tzinfo</span><span class="p">,</span> <span class="s">&#39;zone&#39;</span><span class="p">):</span>
+        <span class="n">zone</span> <span class="o">=</span> <span class="n">tzinfo</span><span class="o">.</span><span class="n">zone</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">zone</span> <span class="o">=</span> <span class="n">tzinfo</span><span class="o">.</span><span class="n">tzname</span><span class="p">(</span><span class="n">dt</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">())</span>
+
+    <span class="c"># Get the canonical time-zone code</span>
+    <span class="n">zone</span> <span class="o">=</span> <span class="n">get_global</span><span class="p">(</span><span class="s">&#39;zone_aliases&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="n">zone</span><span class="p">)</span>
+
+    <span class="n">info</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">time_zones</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="c"># Otherwise, if there is only one timezone for the country, return the</span>
+    <span class="c"># localized country name</span>
+    <span class="n">region_format</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">zone_formats</span><span class="p">[</span><span class="s">&#39;region&#39;</span><span class="p">]</span>
+    <span class="n">territory</span> <span class="o">=</span> <span class="n">get_global</span><span class="p">(</span><span class="s">&#39;zone_territories&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">territory</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">locale</span><span class="o">.</span><span class="n">territories</span><span class="p">:</span>
+        <span class="n">territory</span> <span class="o">=</span> <span class="s">&#39;ZZ&#39;</span> <span class="c"># invalid/unknown</span>
+    <span class="n">territory_name</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">territories</span><span class="p">[</span><span class="n">territory</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">territory</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">get_global</span><span class="p">(</span><span class="s">&#39;territory_zones&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">territory</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">region_format</span> <span class="o">%</span> <span class="p">(</span><span class="n">territory_name</span><span class="p">)</span>
+
+    <span class="c"># Otherwise, include the city in the output</span>
+    <span class="n">fallback_format</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">zone_formats</span><span class="p">[</span><span class="s">&#39;fallback&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s">&#39;city&#39;</span> <span class="ow">in</span> <span class="n">info</span><span class="p">:</span>
+        <span class="n">city_name</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">&#39;city&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">metazone</span> <span class="o">=</span> <span class="n">get_global</span><span class="p">(</span><span class="s">&#39;meta_zones&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+        <span class="n">metazone_info</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">meta_zones</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metazone</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="s">&#39;city&#39;</span> <span class="ow">in</span> <span class="n">metazone_info</span><span class="p">:</span>
+            <span class="n">city_name</span> <span class="o">=</span> <span class="n">metazone_info</span><span class="p">[</span><span class="s">&#39;city&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">zone</span><span class="p">:</span>
+            <span class="n">city_name</span> <span class="o">=</span> <span class="n">zone</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">,</span> <span class="s">&#39; &#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">city_name</span> <span class="o">=</span> <span class="n">zone</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">,</span> <span class="s">&#39; &#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">region_format</span> <span class="o">%</span> <span class="p">(</span><span class="n">fallback_format</span> <span class="o">%</span> <span class="p">{</span>
+        <span class="s">&#39;0&#39;</span><span class="p">:</span> <span class="n">city_name</span><span class="p">,</span>
+        <span class="s">&#39;1&#39;</span><span class="p">:</span> <span class="n">territory_name</span>
+    <span class="p">})</span>
+
+</div>
+<div class="viewcode-block" id="get_timezone_name"><a class="viewcode-back" href="../../babel.html#babel.dates.get_timezone_name">[docs]</a><span class="k">def</span> <span class="nf">get_timezone_name</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s">&#39;long&#39;</span><span class="p">,</span> <span class="n">uncommon</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                      <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">,</span> <span class="n">zone_variant</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;Return the localized display name for the given timezone. The timezone</span>
+<span class="sd">    may be specified using a ``datetime`` or `tzinfo` object.</span>
+
+<span class="sd">    &gt;&gt;&gt; dt = time(15, 30, tzinfo=get_timezone(&#39;America/Los_Angeles&#39;))</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_name(dt, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;Pacific Standard Time&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_name(dt, width=&#39;short&#39;, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;PST&#39;</span>
+
+<span class="sd">    If this function gets passed only a `tzinfo` object and no concrete</span>
+<span class="sd">    `datetime`,  the returned display name is indenpendent of daylight savings</span>
+<span class="sd">    time. This can be used for example for selecting timezones, or to set the</span>
+<span class="sd">    time of events that recur across DST changes:</span>
+
+<span class="sd">    &gt;&gt;&gt; tz = get_timezone(&#39;America/Los_Angeles&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_name(tz, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;Pacific Time&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_name(tz, &#39;short&#39;, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;PT&#39;</span>
+
+<span class="sd">    If no localized display name for the timezone is available, and the timezone</span>
+<span class="sd">    is associated with a country that uses only a single timezone, the name of</span>
+<span class="sd">    that country is returned, formatted according to the locale:</span>
+
+<span class="sd">    &gt;&gt;&gt; tz = get_timezone(&#39;Europe/Berlin&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_name(tz, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    u&#39;Mitteleurop\xe4ische Zeit&#39;</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_name(tz, locale=&#39;pt_BR&#39;)</span>
+<span class="sd">    u&#39;Hor\xe1rio da Europa Central&#39;</span>
+
+<span class="sd">    On the other hand, if the country uses multiple timezones, the city is also</span>
+<span class="sd">    included in the representation:</span>
+
+<span class="sd">    &gt;&gt;&gt; tz = get_timezone(&#39;America/St_Johns&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; get_timezone_name(tz, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    u&#39;Neufundland-Zeit&#39;</span>
+
+<span class="sd">    Note that short format is currently not supported for all timezones and</span>
+<span class="sd">    all locales.  This is partially because not every timezone has a short</span>
+<span class="sd">    code in every locale.  In that case it currently falls back to the long</span>
+<span class="sd">    format.</span>
+
+<span class="sd">    For more information see `LDML Appendix J: Time Zone Display Names</span>
+<span class="sd">    &lt;http://www.unicode.org/reports/tr35/#Time_Zone_Fallback&gt;`_</span>
+
+<span class="sd">    .. versionadded:: 0.9</span>
+
+<span class="sd">    .. versionchanged:: 1.0</span>
+<span class="sd">       Added `zone_variant` support.</span>
+
+<span class="sd">    :param dt_or_tzinfo: the ``datetime`` or ``tzinfo`` object that determines</span>
+<span class="sd">                         the timezone; if a ``tzinfo`` object is used, the</span>
+<span class="sd">                         resulting display name will be generic, i.e.</span>
+<span class="sd">                         independent of daylight savings time; if `None`, the</span>
+<span class="sd">                         current date in UTC is assumed</span>
+<span class="sd">    :param width: either &quot;long&quot; or &quot;short&quot;</span>
+<span class="sd">    :param uncommon: deprecated and ignored</span>
+<span class="sd">    :param zone_variant: defines the zone variation to return.  By default the</span>
+<span class="sd">                           variation is defined from the datetime object</span>
+<span class="sd">                           passed in.  If no datetime object is passed in, the</span>
+<span class="sd">                           ``&#39;generic&#39;`` variation is assumed.  The following</span>
+<span class="sd">                           values are valid: ``&#39;generic&#39;``, ``&#39;daylight&#39;`` and</span>
+<span class="sd">                           ``&#39;standard&#39;``.</span>
+<span class="sd">    :param locale: the `Locale` object, or a locale string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dt_or_tzinfo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">LOCALTZ</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">get_timezone</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">,</span> <span class="n">integer_types</span><span class="p">):</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">UTC</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">,</span> <span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">time</span><span class="p">)):</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">dt_or_tzinfo</span>
+        <span class="k">if</span> <span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">tzinfo</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">UTC</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">tzinfo</span> <span class="o">=</span> <span class="n">dt_or_tzinfo</span>
+    <span class="n">locale</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tzinfo</span><span class="p">,</span> <span class="s">&#39;zone&#39;</span><span class="p">):</span>
+        <span class="n">zone</span> <span class="o">=</span> <span class="n">tzinfo</span><span class="o">.</span><span class="n">zone</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">zone</span> <span class="o">=</span> <span class="n">tzinfo</span><span class="o">.</span><span class="n">tzname</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">zone_variant</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">zone_variant</span> <span class="o">=</span> <span class="s">&#39;generic&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dst</span> <span class="o">=</span> <span class="n">tzinfo</span><span class="o">.</span><span class="n">dst</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dst</span><span class="p">:</span>
+                <span class="n">zone_variant</span> <span class="o">=</span> <span class="s">&#39;daylight&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">zone_variant</span> <span class="o">=</span> <span class="s">&#39;standard&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">zone_variant</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;generic&#39;</span><span class="p">,</span> <span class="s">&#39;standard&#39;</span><span class="p">,</span> <span class="s">&#39;daylight&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Invalid zone variation&#39;</span><span class="p">)</span>
+
+    <span class="c"># Get the canonical time-zone code</span>
+    <span class="n">zone</span> <span class="o">=</span> <span class="n">get_global</span><span class="p">(</span><span class="s">&#39;zone_aliases&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="n">zone</span><span class="p">)</span>
+
+    <span class="n">info</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">time_zones</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="c"># Try explicitly translated zone names first</span>
+    <span class="k">if</span> <span class="n">width</span> <span class="ow">in</span> <span class="n">info</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">zone_variant</span> <span class="ow">in</span> <span class="n">info</span><span class="p">[</span><span class="n">width</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">info</span><span class="p">[</span><span class="n">width</span><span class="p">][</span><span class="n">zone_variant</span><span class="p">]</span>
+
+    <span class="n">metazone</span> <span class="o">=</span> <span class="n">get_global</span><span class="p">(</span><span class="s">&#39;meta_zones&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">metazone</span><span class="p">:</span>
+        <span class="n">metazone_info</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">meta_zones</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metazone</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="n">width</span> <span class="ow">in</span> <span class="n">metazone_info</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">zone_variant</span> <span class="ow">in</span> <span class="n">metazone_info</span><span class="p">[</span><span class="n">width</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">metazone_info</span><span class="p">[</span><span class="n">width</span><span class="p">][</span><span class="n">zone_variant</span><span class="p">]</span>
+
+    <span class="c"># If we have a concrete datetime, we assume that the result can&#39;t be</span>
+    <span class="c"># independent of daylight savings time, so we return the GMT offset</span>
+    <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">get_timezone_gmt</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">get_timezone_location</span><span class="p">(</span><span class="n">dt_or_tzinfo</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="format_date"><a class="viewcode-back" href="../../babel.html#babel.dates.format_date">[docs]</a><span class="k">def</span> <span class="nf">format_date</span><span class="p">(</span><span class="n">date</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a date formatted according to the given pattern.</span>
+
+<span class="sd">    &gt;&gt;&gt; d = date(2007, 04, 01)</span>
+<span class="sd">    &gt;&gt;&gt; format_date(d, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;Apr 1, 2007&#39;</span>
+<span class="sd">    &gt;&gt;&gt; format_date(d, format=&#39;full&#39;, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    u&#39;Sonntag, 1. April 2007&#39;</span>
+
+<span class="sd">    If you don&#39;t want to use the locale default formats, you can specify a</span>
+<span class="sd">    custom date pattern:</span>
+
+<span class="sd">    &gt;&gt;&gt; format_date(d, &quot;EEE, MMM d, &#39;&#39;yy&quot;, locale=&#39;en&#39;)</span>
+<span class="sd">    u&quot;Sun, Apr 1, &#39;07&quot;</span>
+
+<span class="sd">    :param date: the ``date`` or ``datetime`` object; if `None`, the current</span>
+<span class="sd">                 date is used</span>
+<span class="sd">    :param format: one of &quot;full&quot;, &quot;long&quot;, &quot;medium&quot;, or &quot;short&quot;, or a custom</span>
+<span class="sd">                   date/time pattern</span>
+<span class="sd">    :param locale: a `Locale` object or a locale identifier</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">date</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">date_</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+
+    <span class="n">locale</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">format</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;full&#39;</span><span class="p">,</span> <span class="s">&#39;long&#39;</span><span class="p">,</span> <span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="s">&#39;short&#39;</span><span class="p">):</span>
+        <span class="n">format</span> <span class="o">=</span> <span class="n">get_date_format</span><span class="p">(</span><span class="n">format</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">)</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">parse_pattern</span><span class="p">(</span><span class="n">format</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pattern</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="format_datetime"><a class="viewcode-back" href="../../babel.html#babel.dates.format_datetime">[docs]</a><span class="k">def</span> <span class="nf">format_datetime</span><span class="p">(</span><span class="n">datetime</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                    <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;Return a date formatted according to the given pattern.</span>
+
+<span class="sd">    &gt;&gt;&gt; dt = datetime(2007, 04, 01, 15, 30)</span>
+<span class="sd">    &gt;&gt;&gt; format_datetime(dt, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;Apr 1, 2007, 3:30:00 PM&#39;</span>
+
+<span class="sd">    For any pattern requiring the display of the time-zone, the third-party</span>
+<span class="sd">    ``pytz`` package is needed to explicitly specify the time-zone:</span>
+
+<span class="sd">    &gt;&gt;&gt; format_datetime(dt, &#39;full&#39;, tzinfo=get_timezone(&#39;Europe/Paris&#39;),</span>
+<span class="sd">    ...                 locale=&#39;fr_FR&#39;)</span>
+<span class="sd">    u&#39;dimanche 1 avril 2007 17:30:00 heure avanc\xe9e d\u2019Europe centrale&#39;</span>
+<span class="sd">    &gt;&gt;&gt; format_datetime(dt, &quot;yyyy.MM.dd G &#39;at&#39; HH:mm:ss zzz&quot;,</span>
+<span class="sd">    ...                 tzinfo=get_timezone(&#39;US/Eastern&#39;), locale=&#39;en&#39;)</span>
+<span class="sd">    u&#39;2007.04.01 AD at 11:30:00 EDT&#39;</span>
+
+<span class="sd">    :param datetime: the `datetime` object; if `None`, the current date and</span>
+<span class="sd">                     time is used</span>
+<span class="sd">    :param format: one of &quot;full&quot;, &quot;long&quot;, &quot;medium&quot;, or &quot;short&quot;, or a custom</span>
+<span class="sd">                   date/time pattern</span>
+<span class="sd">    :param tzinfo: the timezone to apply to the time for display</span>
+<span class="sd">    :param locale: a `Locale` object or a locale identifier</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">datetime</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">datetime</span> <span class="o">=</span> <span class="n">datetime_</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">number_types</span><span class="p">):</span>
+        <span class="n">datetime</span> <span class="o">=</span> <span class="n">datetime_</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">datetime</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="n">datetime</span> <span class="o">=</span> <span class="n">datetime_</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">(),</span> <span class="n">datetime</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">datetime</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tzinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">get_timezone</span><span class="p">(</span><span class="n">tzinfo</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tzinfo</span><span class="p">,</span> <span class="s">&#39;normalize&#39;</span><span class="p">):</span> <span class="c"># pytz</span>
+            <span class="n">datetime</span> <span class="o">=</span> <span class="n">tzinfo</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">datetime</span><span class="p">)</span>
+
+    <span class="n">locale</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">format</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;full&#39;</span><span class="p">,</span> <span class="s">&#39;long&#39;</span><span class="p">,</span> <span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="s">&#39;short&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">get_datetime_format</span><span class="p">(</span><span class="n">format</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;{0}&#39;</span><span class="p">,</span> <span class="n">format_time</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">format</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                        <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">))</span> \
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;{1}&#39;</span><span class="p">,</span> <span class="n">format_date</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">format</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">parse_pattern</span><span class="p">(</span><span class="n">format</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="format_time"><a class="viewcode-back" href="../../babel.html#babel.dates.format_time">[docs]</a><span class="k">def</span> <span class="nf">format_time</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;Return a time formatted according to the given pattern.</span>
+
+<span class="sd">    &gt;&gt;&gt; t = time(15, 30)</span>
+<span class="sd">    &gt;&gt;&gt; format_time(t, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;3:30:00 PM&#39;</span>
+<span class="sd">    &gt;&gt;&gt; format_time(t, format=&#39;short&#39;, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    u&#39;15:30&#39;</span>
+
+<span class="sd">    If you don&#39;t want to use the locale default formats, you can specify a</span>
+<span class="sd">    custom time pattern:</span>
+
+<span class="sd">    &gt;&gt;&gt; format_time(t, &quot;hh &#39;o&#39;&#39;clock&#39; a&quot;, locale=&#39;en&#39;)</span>
+<span class="sd">    u&quot;03 o&#39;clock PM&quot;</span>
+
+<span class="sd">    For any pattern requiring the display of the time-zone a</span>
+<span class="sd">    timezone has to be specified explicitly:</span>
+
+<span class="sd">    &gt;&gt;&gt; t = datetime(2007, 4, 1, 15, 30)</span>
+<span class="sd">    &gt;&gt;&gt; tzinfo = get_timezone(&#39;Europe/Paris&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; t = tzinfo.localize(t)</span>
+<span class="sd">    &gt;&gt;&gt; format_time(t, format=&#39;full&#39;, tzinfo=tzinfo, locale=&#39;fr_FR&#39;)</span>
+<span class="sd">    u&#39;15:30:00 heure avanc\xe9e d\u2019Europe centrale&#39;</span>
+<span class="sd">    &gt;&gt;&gt; format_time(t, &quot;hh &#39;o&#39;&#39;clock&#39; a, zzzz&quot;, tzinfo=get_timezone(&#39;US/Eastern&#39;),</span>
+<span class="sd">    ...             locale=&#39;en&#39;)</span>
+<span class="sd">    u&quot;09 o&#39;clock AM, Eastern Daylight Time&quot;</span>
+
+<span class="sd">    As that example shows, when this function gets passed a</span>
+<span class="sd">    ``datetime.datetime`` value, the actual time in the formatted string is</span>
+<span class="sd">    adjusted to the timezone specified by the `tzinfo` parameter. If the</span>
+<span class="sd">    ``datetime`` is &quot;naive&quot; (i.e. it has no associated timezone information),</span>
+<span class="sd">    it is assumed to be in UTC.</span>
+
+<span class="sd">    These timezone calculations are **not** performed if the value is of type</span>
+<span class="sd">    ``datetime.time``, as without date information there&#39;s no way to determine</span>
+<span class="sd">    what a given time would translate to in a different timezone without</span>
+<span class="sd">    information about whether daylight savings time is in effect or not. This</span>
+<span class="sd">    means that time values are left as-is, and the value of the `tzinfo`</span>
+<span class="sd">    parameter is only used to display the timezone name if needed:</span>
+
+<span class="sd">    &gt;&gt;&gt; t = time(15, 30)</span>
+<span class="sd">    &gt;&gt;&gt; format_time(t, format=&#39;full&#39;, tzinfo=get_timezone(&#39;Europe/Paris&#39;),</span>
+<span class="sd">    ...             locale=&#39;fr_FR&#39;)</span>
+<span class="sd">    u&#39;15:30:00 heure normale de l\u2019Europe centrale&#39;</span>
+<span class="sd">    &gt;&gt;&gt; format_time(t, format=&#39;full&#39;, tzinfo=get_timezone(&#39;US/Eastern&#39;),</span>
+<span class="sd">    ...             locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;3:30:00 PM Eastern Standard Time&#39;</span>
+
+<span class="sd">    :param time: the ``time`` or ``datetime`` object; if `None`, the current</span>
+<span class="sd">                 time in UTC is used</span>
+<span class="sd">    :param format: one of &quot;full&quot;, &quot;long&quot;, &quot;medium&quot;, or &quot;short&quot;, or a custom</span>
+<span class="sd">                   date/time pattern</span>
+<span class="sd">    :param tzinfo: the time-zone to apply to the time for display</span>
+<span class="sd">    :param locale: a `Locale` object or a locale identifier</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">time</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">number_types</span><span class="p">):</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcfromtimestamp</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tzinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">tzinfo</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tzinfo</span><span class="p">,</span> <span class="s">&#39;normalize&#39;</span><span class="p">):</span> <span class="c"># pytz</span>
+                <span class="n">time</span> <span class="o">=</span> <span class="n">tzinfo</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">timetz</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">tzinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">tzinfo</span><span class="p">)</span>
+
+    <span class="n">locale</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">format</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;full&#39;</span><span class="p">,</span> <span class="s">&#39;long&#39;</span><span class="p">,</span> <span class="s">&#39;medium&#39;</span><span class="p">,</span> <span class="s">&#39;short&#39;</span><span class="p">):</span>
+        <span class="n">format</span> <span class="o">=</span> <span class="n">get_time_format</span><span class="p">(</span><span class="n">format</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parse_pattern</span><span class="p">(</span><span class="n">format</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>
+
+</div>
+<span class="n">TIMEDELTA_UNITS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="s">&#39;year&#39;</span><span class="p">,</span>   <span class="mi">3600</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">365</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;month&#39;</span><span class="p">,</span>  <span class="mi">3600</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">30</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;week&#39;</span><span class="p">,</span>   <span class="mi">3600</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">7</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;day&#39;</span><span class="p">,</span>    <span class="mi">3600</span> <span class="o">*</span> <span class="mi">24</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;hour&#39;</span><span class="p">,</span>   <span class="mi">3600</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;minute&#39;</span><span class="p">,</span> <span class="mi">60</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;second&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="format_timedelta"><a class="viewcode-back" href="../../babel.html#babel.dates.format_timedelta">[docs]</a><span class="k">def</span> <span class="nf">format_timedelta</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s">&#39;second&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=.</span><span class="mi">85</span><span class="p">,</span>
+                     <span class="n">add_direction</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;medium&#39;</span><span class="p">,</span>
+                     <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a time delta according to the rules of the given locale.</span>
+
+<span class="sd">    &gt;&gt;&gt; format_timedelta(timedelta(weeks=12), locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;3 months&#39;</span>
+<span class="sd">    &gt;&gt;&gt; format_timedelta(timedelta(seconds=1), locale=&#39;es&#39;)</span>
+<span class="sd">    u&#39;1 segundo&#39;</span>
+
+<span class="sd">    The granularity parameter can be provided to alter the lowest unit</span>
+<span class="sd">    presented, which defaults to a second.</span>
+
+<span class="sd">    &gt;&gt;&gt; format_timedelta(timedelta(hours=3), granularity=&#39;day&#39;,</span>
+<span class="sd">    ...                  locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;1 day&#39;</span>
+
+<span class="sd">    The threshold parameter can be used to determine at which value the</span>
+<span class="sd">    presentation switches to the next higher unit. A higher threshold factor</span>
+<span class="sd">    means the presentation will switch later. For example:</span>
+
+<span class="sd">    &gt;&gt;&gt; format_timedelta(timedelta(hours=23), threshold=0.9, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;1 day&#39;</span>
+<span class="sd">    &gt;&gt;&gt; format_timedelta(timedelta(hours=23), threshold=1.1, locale=&#39;en_US&#39;)</span>
+<span class="sd">    u&#39;23 hours&#39;</span>
+
+<span class="sd">    In addition directional information can be provided that informs</span>
+<span class="sd">    the user if the date is in the past or in the future:</span>
+
+<span class="sd">    &gt;&gt;&gt; format_timedelta(timedelta(hours=1), add_direction=True, locale=&#39;en&#39;)</span>
+<span class="sd">    u&#39;In 1 hour&#39;</span>
+<span class="sd">    &gt;&gt;&gt; format_timedelta(timedelta(hours=-1), add_direction=True, locale=&#39;en&#39;)</span>
+<span class="sd">    u&#39;1 hour ago&#39;</span>
+
+<span class="sd">    :param delta: a ``timedelta`` object representing the time difference to</span>
+<span class="sd">                  format, or the delta in seconds as an `int` value</span>
+<span class="sd">    :param granularity: determines the smallest unit that should be displayed,</span>
+<span class="sd">                        the value can be one of &quot;year&quot;, &quot;month&quot;, &quot;week&quot;, &quot;day&quot;,</span>
+<span class="sd">                        &quot;hour&quot;, &quot;minute&quot; or &quot;second&quot;</span>
+<span class="sd">    :param threshold: factor that determines at which point the presentation</span>
+<span class="sd">                      switches to the next higher unit</span>
+<span class="sd">    :param add_direction: if this flag is set to `True` the return value will</span>
+<span class="sd">                          include directional information.  For instance a</span>
+<span class="sd">                          positive timedelta will include the information about</span>
+<span class="sd">                          it being in the future, a negative will be information</span>
+<span class="sd">                          about the value being in the past.</span>
+<span class="sd">    :param format: the format (currently only &quot;medium&quot; and &quot;short&quot; are supported)</span>
+<span class="sd">    :param locale: a `Locale` object or a locale identifier</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;short&#39;</span><span class="p">,</span> <span class="s">&#39;medium&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Format can only be one of &quot;short&quot; or &quot;medium&quot;&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">):</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">delta</span><span class="o">.</span><span class="n">days</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">)</span> <span class="o">+</span> <span class="n">delta</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="n">delta</span>
+    <span class="n">locale</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_iter_choices</span><span class="p">(</span><span class="n">unit</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">add_direction</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seconds</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">unit</span> <span class="o">+</span> <span class="s">&#39;-future&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">unit</span> <span class="o">+</span> <span class="s">&#39;-past&#39;</span>
+        <span class="k">yield</span> <span class="n">unit</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">format</span>
+        <span class="k">yield</span> <span class="n">unit</span>
+
+    <span class="k">for</span> <span class="n">unit</span><span class="p">,</span> <span class="n">secs_per_unit</span> <span class="ow">in</span> <span class="n">TIMEDELTA_UNITS</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span> <span class="o">/</span> <span class="n">secs_per_unit</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;=</span> <span class="n">threshold</span> <span class="ow">or</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">granularity</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">unit</span> <span class="o">==</span> <span class="n">granularity</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+            <span class="n">plural_form</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">plural_form</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">for</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">_iter_choices</span><span class="p">(</span><span class="n">unit</span><span class="p">):</span>
+                <span class="n">patterns</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s">&#39;unit_patterns&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">choice</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">patterns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">pattern</span> <span class="o">=</span> <span class="n">patterns</span><span class="p">[</span><span class="n">plural_form</span><span class="p">]</span>
+                    <span class="k">break</span>
+            <span class="c"># This really should not happen</span>
+            <span class="k">if</span> <span class="n">pattern</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">u&#39;&#39;</span>
+            <span class="k">return</span> <span class="n">pattern</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;{0}&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="s">u&#39;&#39;</span>
+
+</div>
+<div class="viewcode-block" id="parse_date"><a class="viewcode-back" href="../../babel.html#babel.dates.parse_date">[docs]</a><span class="k">def</span> <span class="nf">parse_date</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parse a date from a string.</span>
+
+<span class="sd">    This function uses the date format for the locale as a hint to determine</span>
+<span class="sd">    the order in which the date fields appear in the string.</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_date(&#39;4/1/04&#39;, locale=&#39;en_US&#39;)</span>
+<span class="sd">    datetime.date(2004, 4, 1)</span>
+<span class="sd">    &gt;&gt;&gt; parse_date(&#39;01.04.2004&#39;, locale=&#39;de_DE&#39;)</span>
+<span class="sd">    datetime.date(2004, 4, 1)</span>
+
+<span class="sd">    :param string: the string containing the date</span>
+<span class="sd">    :param locale: a `Locale` object or a locale identifier</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># TODO: try ISO format first?</span>
+    <span class="n">format</span> <span class="o">=</span> <span class="n">get_date_format</span><span class="p">(</span><span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">pattern</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">year_idx</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+    <span class="n">month_idx</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;m&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">month_idx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">month_idx</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;l&#39;</span><span class="p">)</span>
+    <span class="n">day_idx</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;d&#39;</span><span class="p">)</span>
+
+    <span class="n">indexes</span> <span class="o">=</span> <span class="p">[(</span><span class="n">year_idx</span><span class="p">,</span> <span class="s">&#39;Y&#39;</span><span class="p">),</span> <span class="p">(</span><span class="n">month_idx</span><span class="p">,</span> <span class="s">&#39;M&#39;</span><span class="p">),</span> <span class="p">(</span><span class="n">day_idx</span><span class="p">,</span> <span class="s">&#39;D&#39;</span><span class="p">)]</span>
+    <span class="n">indexes</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="n">indexes</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">idx</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">indexes</span><span class="p">)])</span>
+
+    <span class="c"># FIXME: this currently only supports numbers, but should also support month</span>
+    <span class="c">#        names, both in the requested locale, and english</span>
+
+    <span class="n">numbers</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&#39;(\d+)&#39;</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+    <span class="n">year</span> <span class="o">=</span> <span class="n">numbers</span><span class="p">[</span><span class="n">indexes</span><span class="p">[</span><span class="s">&#39;Y&#39;</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">year</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="mi">2000</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+    <span class="n">month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numbers</span><span class="p">[</span><span class="n">indexes</span><span class="p">[</span><span class="s">&#39;M&#39;</span><span class="p">]])</span>
+    <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numbers</span><span class="p">[</span><span class="n">indexes</span><span class="p">[</span><span class="s">&#39;D&#39;</span><span class="p">]])</span>
+    <span class="k">if</span> <span class="n">month</span> <span class="o">&gt;</span> <span class="mi">12</span><span class="p">:</span>
+        <span class="n">month</span><span class="p">,</span> <span class="n">day</span> <span class="o">=</span> <span class="n">day</span><span class="p">,</span> <span class="n">month</span>
+    <span class="k">return</span> <span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="parse_time"><a class="viewcode-back" href="../../babel.html#babel.dates.parse_time">[docs]</a><span class="k">def</span> <span class="nf">parse_time</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">LC_TIME</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parse a time from a string.</span>
+
+<span class="sd">    This function uses the time format for the locale as a hint to determine</span>
+<span class="sd">    the order in which the time fields appear in the string.</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_time(&#39;15:30:00&#39;, locale=&#39;en_US&#39;)</span>
+<span class="sd">    datetime.time(15, 30)</span>
+
+<span class="sd">    :param string: the string containing the time</span>
+<span class="sd">    :param locale: a `Locale` object or a locale identifier</span>
+<span class="sd">    :return: the parsed time</span>
+<span class="sd">    :rtype: `time`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># TODO: try ISO format first?</span>
+    <span class="n">format</span> <span class="o">=</span> <span class="n">get_time_format</span><span class="p">(</span><span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="p">)</span><span class="o">.</span><span class="n">pattern</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">hour_idx</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;h&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">hour_idx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">hour_idx</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;k&#39;</span><span class="p">)</span>
+    <span class="n">min_idx</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;m&#39;</span><span class="p">)</span>
+    <span class="n">sec_idx</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;s&#39;</span><span class="p">)</span>
+
+    <span class="n">indexes</span> <span class="o">=</span> <span class="p">[(</span><span class="n">hour_idx</span><span class="p">,</span> <span class="s">&#39;H&#39;</span><span class="p">),</span> <span class="p">(</span><span class="n">min_idx</span><span class="p">,</span> <span class="s">&#39;M&#39;</span><span class="p">),</span> <span class="p">(</span><span class="n">sec_idx</span><span class="p">,</span> <span class="s">&#39;S&#39;</span><span class="p">)]</span>
+    <span class="n">indexes</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="n">indexes</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">idx</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">indexes</span><span class="p">)])</span>
+
+    <span class="c"># FIXME: support 12 hour clock, and 0-based hour specification</span>
+    <span class="c">#        and seconds should be optional, maybe minutes too</span>
+    <span class="c">#        oh, and time-zones, of course</span>
+
+    <span class="n">numbers</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&#39;(\d+)&#39;</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+    <span class="n">hour</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numbers</span><span class="p">[</span><span class="n">indexes</span><span class="p">[</span><span class="s">&#39;H&#39;</span><span class="p">]])</span>
+    <span class="n">minute</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numbers</span><span class="p">[</span><span class="n">indexes</span><span class="p">[</span><span class="s">&#39;M&#39;</span><span class="p">]])</span>
+    <span class="n">second</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numbers</span><span class="p">[</span><span class="n">indexes</span><span class="p">[</span><span class="s">&#39;S&#39;</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="n">time</span><span class="p">(</span><span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="DateTimePattern"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimePattern">[docs]</a><span class="k">class</span> <span class="nc">DateTimePattern</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">format</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="n">pattern</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">format</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;</span><span class="si">%s</span><span class="s"> </span><span class="si">%r</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__unicode__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span>
+
+    <span class="k">def</span> <span class="nf">__mod__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">DateTimeFormat</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">%</span> <span class="n">other</span>
+
+<div class="viewcode-block" id="DateTimePattern.apply"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimePattern.apply">[docs]</a>    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">locale</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">%</span> <span class="n">DateTimeFormat</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="DateTimeFormat"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat">[docs]</a><span class="k">class</span> <span class="nc">DateTimeFormat</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">locale</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">time</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">time</span><span class="p">))</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locale</span> <span class="o">=</span> <span class="n">Locale</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">locale</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">char</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;G&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_era</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="s">&#39;Y&#39;</span><span class="p">,</span> <span class="s">&#39;u&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_year</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;Q&#39;</span><span class="p">,</span> <span class="s">&#39;q&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_quarter</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&#39;L&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_month</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="s">&#39;W&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_week</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;d&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">day</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;D&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_day_of_year</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;F&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_day_of_week_in_month</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="s">&#39;e&#39;</span><span class="p">,</span> <span class="s">&#39;c&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_weekday</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;a&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_period</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;h&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span> <span class="o">%</span> <span class="mi">12</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;H&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;K&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span> <span class="o">%</span> <span class="mi">12</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;k&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;m&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;s&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">second</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;S&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_frac_seconds</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;A&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_milliseconds_in_day</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;z&#39;</span><span class="p">,</span> <span class="s">&#39;Z&#39;</span><span class="p">,</span> <span class="s">&#39;v&#39;</span><span class="p">,</span> <span class="s">&#39;V&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_timezone</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s">&#39;Unsupported date/time field </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">char</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DateTimeFormat.format_era"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_era">[docs]</a>    <span class="k">def</span> <span class="nf">format_era</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="s">&#39;abbreviated&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s">&#39;wide&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="s">&#39;narrow&#39;</span><span class="p">}[</span><span class="nb">max</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">num</span><span class="p">)]</span>
+        <span class="n">era</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">year</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">get_era_names</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)[</span><span class="n">era</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_year"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_year">[docs]</a>    <span class="k">def</span> <span class="nf">format_year</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">year</span>
+        <span class="k">if</span> <span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+            <span class="n">week</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_week_number</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_day_of_year</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">week</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="n">year</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">year</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_quarter"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_quarter">[docs]</a>    <span class="k">def</span> <span class="nf">format_quarter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="n">quarter</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">month</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">num</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="s">&#39;</span><span class="si">%%</span><span class="s">0</span><span class="si">%d</span><span class="s">d&#39;</span> <span class="o">%</span> <span class="n">num</span><span class="p">)</span> <span class="o">%</span> <span class="n">quarter</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="s">&#39;abbreviated&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s">&#39;wide&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="s">&#39;narrow&#39;</span><span class="p">}[</span><span class="n">num</span><span class="p">]</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Q&#39;</span><span class="p">:</span> <span class="s">&#39;format&#39;</span><span class="p">,</span> <span class="s">&#39;q&#39;</span><span class="p">:</span> <span class="s">&#39;stand-alone&#39;</span><span class="p">}[</span><span class="n">char</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">get_quarter_names</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)[</span><span class="n">quarter</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_month"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_month">[docs]</a>    <span class="k">def</span> <span class="nf">format_month</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">num</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="s">&#39;</span><span class="si">%%</span><span class="s">0</span><span class="si">%d</span><span class="s">d&#39;</span> <span class="o">%</span> <span class="n">num</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">month</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="s">&#39;abbreviated&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s">&#39;wide&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="s">&#39;narrow&#39;</span><span class="p">}[</span><span class="n">num</span><span class="p">]</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;M&#39;</span><span class="p">:</span> <span class="s">&#39;format&#39;</span><span class="p">,</span> <span class="s">&#39;L&#39;</span><span class="p">:</span> <span class="s">&#39;stand-alone&#39;</span><span class="p">}[</span><span class="n">char</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">get_month_names</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">month</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_week"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_week">[docs]</a>    <span class="k">def</span> <span class="nf">format_week</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">char</span><span class="o">.</span><span class="n">islower</span><span class="p">():</span> <span class="c"># week of year</span>
+            <span class="n">day_of_year</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_day_of_year</span><span class="p">()</span>
+            <span class="n">week</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_week_number</span><span class="p">(</span><span class="n">day_of_year</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">week</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">day_of_year</span><span class="p">)</span>
+                <span class="n">week</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_week_number</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_day_of_year</span><span class="p">(</span><span class="n">date</span><span class="p">),</span>
+                                            <span class="n">date</span><span class="o">.</span><span class="n">weekday</span><span class="p">())</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">week</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c"># week of month</span>
+            <span class="n">week</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_week_number</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">week</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+                <span class="n">week</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_week_number</span><span class="p">(</span><span class="n">date</span><span class="o">.</span><span class="n">day</span><span class="p">,</span> <span class="n">date</span><span class="o">.</span><span class="n">weekday</span><span class="p">())</span>
+                <span class="k">pass</span>
+            <span class="k">return</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">week</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_weekday"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_weekday">[docs]</a>    <span class="k">def</span> <span class="nf">format_weekday</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">num</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">char</span><span class="o">.</span><span class="n">islower</span><span class="p">():</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="o">.</span><span class="n">first_week_day</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span> <span class="o">%</span> <span class="mi">7</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">weekday</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="s">&#39;abbreviated&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s">&#39;wide&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="s">&#39;narrow&#39;</span><span class="p">}[</span><span class="n">num</span><span class="p">]</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="s">&#39;format&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s">&#39;format&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="s">&#39;stand-alone&#39;</span><span class="p">}[</span><span class="n">num</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">get_day_names</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)[</span><span class="n">weekday</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_day_of_year"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_day_of_year">[docs]</a>    <span class="k">def</span> <span class="nf">format_day_of_year</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_day_of_year</span><span class="p">(),</span> <span class="n">num</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_day_of_week_in_month"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_day_of_week_in_month">[docs]</a>    <span class="k">def</span> <span class="nf">format_day_of_week_in_month</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">day</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">7</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_period"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_period">[docs]</a>    <span class="k">def</span> <span class="nf">format_period</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">):</span>
+        <span class="n">period</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s">&#39;am&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s">&#39;pm&#39;</span><span class="p">}[</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span> <span class="o">&gt;=</span> <span class="mi">12</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">get_period_names</span><span class="p">(</span><span class="n">locale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)[</span><span class="n">period</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_frac_seconds"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_frac_seconds">[docs]</a>    <span class="k">def</span> <span class="nf">format_frac_seconds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">microsecond</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;.</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">value</span><span class="p">),</span> <span class="n">num</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="n">num</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_milliseconds_in_day"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_milliseconds_in_day">[docs]</a>    <span class="k">def</span> <span class="nf">format_milliseconds_in_day</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="n">msecs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">microsecond</span> <span class="o">//</span> <span class="mi">1000</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">second</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">+</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">minute</span> <span class="o">*</span> <span class="mi">60000</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span> <span class="o">*</span> <span class="mi">3600000</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msecs</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format_timezone"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format_timezone">[docs]</a>    <span class="k">def</span> <span class="nf">format_timezone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="s">&#39;short&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s">&#39;long&#39;</span><span class="p">}[</span><span class="nb">max</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">num</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;z&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_timezone_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;Z&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_timezone_gmt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;v&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_timezone_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">tzinfo</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span>
+                                     <span class="n">locale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&#39;V&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">num</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">get_timezone_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">tzinfo</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span>
+                                         <span class="n">uncommon</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">get_timezone_location</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">tzinfo</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.format"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.format">[docs]</a>    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">length</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s">&#39;</span><span class="si">%%</span><span class="s">0</span><span class="si">%d</span><span class="s">d&#39;</span> <span class="o">%</span> <span class="n">length</span><span class="p">)</span> <span class="o">%</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.get_day_of_year"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.get_day_of_year">[docs]</a>    <span class="k">def</span> <span class="nf">get_day_of_year</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">date</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">date</span> <span class="o">-</span> <span class="n">date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">month</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">days</span> <span class="o">+</span> <span class="mi">1</span>
+</div>
+<div class="viewcode-block" id="DateTimeFormat.get_week_number"><a class="viewcode-back" href="../../babel.html#babel.dates.DateTimeFormat.get_week_number">[docs]</a>    <span class="k">def</span> <span class="nf">get_week_number</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">day_of_period</span><span class="p">,</span> <span class="n">day_of_week</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the number of the week of a day within a period. This may be</span>
+<span class="sd">        the week number in a year or the week number in a month.</span>
+
+<span class="sd">        Usually this will return a value equal to or greater than 1, but if the</span>
+<span class="sd">        first week of the period is so short that it actually counts as the last</span>
+<span class="sd">        week of the previous period, this function will return 0.</span>
+
+<span class="sd">        &gt;&gt;&gt; format = DateTimeFormat(date(2006, 1, 8), Locale.parse(&#39;de_DE&#39;))</span>
+<span class="sd">        &gt;&gt;&gt; format.get_week_number(6)</span>
+<span class="sd">        1</span>
+
+<span class="sd">        &gt;&gt;&gt; format = DateTimeFormat(date(2006, 1, 8), Locale.parse(&#39;en_US&#39;))</span>
+<span class="sd">        &gt;&gt;&gt; format.get_week_number(6)</span>
+<span class="sd">        2</span>
+
+<span class="sd">        :param day_of_period: the number of the day in the period (usually</span>
+<span class="sd">                              either the day of month or the day of year)</span>
+<span class="sd">        :param day_of_week: the week day; if ommitted, the week day of the</span>
+<span class="sd">                            current date is assumed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">day_of_week</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">day_of_week</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span>
+        <span class="n">first_day</span> <span class="o">=</span> <span class="p">(</span><span class="n">day_of_week</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="o">.</span><span class="n">first_week_day</span> <span class="o">-</span>
+                     <span class="n">day_of_period</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">7</span>
+        <span class="k">if</span> <span class="n">first_day</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">first_day</span> <span class="o">+=</span> <span class="mi">7</span>
+        <span class="n">week_number</span> <span class="o">=</span> <span class="p">(</span><span class="n">day_of_period</span> <span class="o">+</span> <span class="n">first_day</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">7</span>
+        <span class="k">if</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">first_day</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">locale</span><span class="o">.</span><span class="n">min_week_days</span><span class="p">:</span>
+            <span class="n">week_number</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">week_number</span>
+
+</div></div>
+<span class="n">PATTERN_CHARS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;G&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>                                           <span class="c"># era</span>
+    <span class="s">&#39;y&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;Y&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;u&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>                                <span class="c"># year</span>
+    <span class="s">&#39;Q&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s">&#39;q&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>                           <span class="c"># quarter</span>
+    <span class="s">&#39;M&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="s">&#39;L&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>                     <span class="c"># month</span>
+    <span class="s">&#39;w&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s">&#39;W&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span>                                          <span class="c"># week</span>
+    <span class="s">&#39;d&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s">&#39;D&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s">&#39;F&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#39;g&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>               <span class="c"># day</span>
+    <span class="s">&#39;E&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="s">&#39;e&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="s">&#39;c&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>  <span class="c"># week day</span>
+    <span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span>                                                       <span class="c"># period</span>
+    <span class="s">&#39;h&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s">&#39;H&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s">&#39;K&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s">&#39;k&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>             <span class="c"># hour</span>
+    <span class="s">&#39;m&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>                                                    <span class="c"># minute</span>
+    <span class="s">&#39;s&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s">&#39;S&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;A&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>                              <span class="c"># second</span>
+    <span class="s">&#39;z&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s">&#39;Z&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s">&#39;v&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s">&#39;V&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>  <span class="c"># zone</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="parse_pattern"><a class="viewcode-back" href="../../babel.html#babel.dates.parse_pattern">[docs]</a><span class="k">def</span> <span class="nf">parse_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parse date, time, and datetime format patterns.</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_pattern(&quot;MMMMd&quot;).format</span>
+<span class="sd">    u&#39;%(MMMM)s%(d)s&#39;</span>
+<span class="sd">    &gt;&gt;&gt; parse_pattern(&quot;MMM d, yyyy&quot;).format</span>
+<span class="sd">    u&#39;%(MMM)s %(d)s, %(yyyy)s&#39;</span>
+
+<span class="sd">    Pattern can contain literal strings in single quotes:</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_pattern(&quot;H:mm&#39; Uhr &#39;z&quot;).format</span>
+<span class="sd">    u&#39;%(H)s:%(mm)s Uhr %(z)s&#39;</span>
+
+<span class="sd">    An actual single quote can be used by using two adjacent single quote</span>
+<span class="sd">    characters:</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_pattern(&quot;hh&#39; o&#39;&#39;clock&#39;&quot;).format</span>
+<span class="sd">    u&quot;%(hh)s o&#39;clock&quot;</span>
+
+<span class="sd">    :param pattern: the formatting pattern to parse</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="ow">is</span> <span class="n">DateTimePattern</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pattern</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">quotebuf</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">charbuf</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">fieldchar</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;&#39;</span><span class="p">]</span>
+    <span class="n">fieldnum</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">append_chars</span><span class="p">():</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">charbuf</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;%&#39;</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%%</span><span class="s">&#39;</span><span class="p">))</span>
+        <span class="k">del</span> <span class="n">charbuf</span><span class="p">[:]</span>
+
+    <span class="k">def</span> <span class="nf">append_field</span><span class="p">():</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="n">PATTERN_CHARS</span><span class="p">[</span><span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">limit</span> <span class="ow">and</span> <span class="n">fieldnum</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">limit</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Invalid length for field: </span><span class="si">%r</span><span class="s">&#39;</span>
+                             <span class="o">%</span> <span class="p">(</span><span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">fieldnum</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%%</span><span class="s">(</span><span class="si">%s</span><span class="s">)s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">fieldnum</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">fieldnum</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">char</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pattern</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;&#39;&#39;&quot;</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\0</span><span class="s">&#39;</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">quotebuf</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&quot;&#39;&quot;</span><span class="p">:</span> <span class="c"># quote started</span>
+                <span class="k">if</span> <span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">append_field</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">charbuf</span><span class="p">:</span>
+                    <span class="n">append_chars</span><span class="p">()</span>
+                <span class="n">quotebuf</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">PATTERN_CHARS</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">charbuf</span><span class="p">:</span>
+                    <span class="n">append_chars</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">fieldnum</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                        <span class="n">append_field</span><span class="p">()</span>
+                    <span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">char</span>
+                    <span class="n">fieldnum</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">append_field</span><span class="p">()</span>
+                <span class="n">charbuf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">quotebuf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s">&quot;&#39;&quot;</span><span class="p">:</span> <span class="c"># end of quote</span>
+                <span class="n">charbuf</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">quotebuf</span><span class="p">)</span>
+                <span class="n">quotebuf</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c"># inside quote</span>
+                <span class="n">quotebuf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fieldchar</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">append_field</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">charbuf</span><span class="p">:</span>
+        <span class="n">append_chars</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">DateTimePattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="s">u&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\0</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&quot;&#39;&quot;</span><span class="p">))</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

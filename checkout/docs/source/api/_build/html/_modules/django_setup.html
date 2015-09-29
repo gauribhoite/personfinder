@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>django_setup &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for django_setup</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Initialize Django and its internationalization machinery.</span>
+
+<span class="sd">In any file that uses django modules, always import django_setup first.</span>
+
+<span class="sd">To localize strings in Python files, import either gettext_lazy or ugettext</span>
+<span class="sd">from this module as _, then use _(&#39;foo&#39;) to mark the strings to be translated.</span>
+<span class="sd">Use gettext_lazy for strings that are declared before a language has been</span>
+<span class="sd">selected; ugettext for those after (ugettext is safe to use in all Handlers).&quot;&quot;&quot;</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;kpy@google.com (Ka-Ping Yee)&#39;</span>
+
+<span class="kn">import</span> <span class="nn">django.conf</span>
+<span class="kn">import</span> <span class="nn">django.template</span>
+<span class="kn">import</span> <span class="nn">django.template.loader</span>
+<span class="kn">import</span> <span class="nn">django.utils.translation</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">django.utils.translation</span> <span class="kn">import</span> <span class="n">activate</span><span class="p">,</span> <span class="n">gettext_lazy</span><span class="p">,</span> <span class="n">ugettext</span>
+
+<span class="n">LANGUAGE_CODE</span> <span class="o">=</span> <span class="s">&#39;en&#39;</span>
+<span class="n">LANGUAGES_BIDI</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;ar&#39;</span><span class="p">,</span> <span class="s">&#39;he&#39;</span><span class="p">,</span> <span class="s">&#39;fa&#39;</span><span class="p">,</span> <span class="s">&#39;iw&#39;</span><span class="p">,</span> <span class="s">&#39;ur&#39;</span><span class="p">]</span>
+
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SERVER_SOFTWARE&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;Development&#39;</span><span class="p">):</span>
+    <span class="c"># See http://code.google.com/p/googleappengine/issues/detail?id=985</span>
+    <span class="kn">import</span> <span class="nn">urllib</span>
+    <span class="n">urllib</span><span class="o">.</span><span class="n">getproxies_macosx_sysconf</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="p">{}</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">django</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">configure</span><span class="p">()</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+<span class="n">django</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">LANGUAGE_CODE</span> <span class="o">=</span> <span class="n">LANGUAGE_CODE</span>
+<span class="c"># Enables Django translation system e.g. {% trans %} tag</span>
+<span class="n">django</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">USE_I18N</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="c"># Enables localized formatting</span>
+<span class="c"># e.g. localizing date/time format for {% my_date|date:&quot;DATETIME_FORMAT&quot; %}</span>
+<span class="n">django</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">USE_L10N</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">django</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">LOCALE_PATHS</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;locale&#39;</span><span class="p">,)</span>
+<span class="n">django</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">LANGUAGES_BIDI</span> <span class="o">=</span> <span class="n">LANGUAGES_BIDI</span>
+<span class="n">django</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">TEMPLATE_LOADERS</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;django_setup.TemplateLoader&#39;</span><span class="p">,)</span>
+
+
+<div class="viewcode-block" id="TemplateLoader"><a class="viewcode-back" href="../django_setup.html#django_setup.TemplateLoader">[docs]</a><span class="k">class</span> <span class="nc">TemplateLoader</span><span class="p">(</span><span class="n">django</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">BaseLoader</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Our custom template loader, which loads templates from Resources.&quot;&quot;&quot;</span>
+    <span class="n">is_usable</span> <span class="o">=</span> <span class="bp">True</span>  <span class="c"># Django requires this flag</span>
+
+<div class="viewcode-block" id="TemplateLoader.load_template"><a class="viewcode-back" href="../django_setup.html#django_setup.TemplateLoader.load_template">[docs]</a>    <span class="k">def</span> <span class="nf">load_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">dirs</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">resources</span>
+        <span class="n">lang</span> <span class="o">=</span> <span class="n">django</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">get_language</span><span class="p">()</span>  <span class="c"># currently active lang</span>
+        <span class="n">resource</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">get_localized</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">lang</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">resource</span> <span class="ow">and</span> <span class="n">resource</span><span class="o">.</span><span class="n">get_template</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">template</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">template</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">lang</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">django</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">TemplateDoesNotExist</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="TemplateLoader.load_template_source"><a class="viewcode-back" href="../django_setup.html#django_setup.TemplateLoader.load_template_source">[docs]</a>    <span class="k">def</span> <span class="nf">load_template_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">dirs</span><span class="p">):</span>
+        <span class="c"># Silly Django requires custom TemplateLoaders to have this method,</span>
+        <span class="c"># but the framework actually only calls load_template().</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

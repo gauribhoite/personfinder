@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pfif module &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="index.html" />
+    <link rel="next" title="photo module" href="photo.html" />
+    <link rel="prev" title="multiview module" href="multiview.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-pfif">
+<span id="pfif-module"></span><h1>pfif module<a class="headerlink" href="#module-pfif" title="Permalink to this headline">¶</a></h1>
+<p>PFIF 1.1 - 1.4 parsing and serialization (see <a class="reference external" href="http://zesty.ca/pfif/">http://zesty.ca/pfif/</a>).</p>
+<p>This module converts between PFIF XML documents (PFIF 1.1, 1.2, 1.3, or 1.4) and
+plain Python dictionaries that have PFIF 1.4 field names as keys (always 1.4)
+and Unicode strings as values.  Some useful constants are also defined here
+according to the PFIF specification.  Use parse() to parse PFIF 1.1, 1.2, 1.3,
+or 1.4; use PFIF_1_1, PFIF_1_2, PFIF_1_3, or PFIF_1_4 to serialize to the
+desired version.</p>
+<dl class="class">
+<dt id="pfif.Handler">
+<em class="property">class </em><code class="descclassname">pfif.</code><code class="descname">Handler</code><span class="sig-paren">(</span><em>rename_fields=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#Handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.Handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">xml.sax.handler.ContentHandler</span></code></p>
+<p>SAX event handler for parsing PFIF documents.</p>
+<dl class="method">
+<dt id="pfif.Handler.append_to_field">
+<code class="descname">append_to_field</code><span class="sig-paren">(</span><em>record</em>, <em>tag</em>, <em>parent</em>, <em>content</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#Handler.append_to_field"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.Handler.append_to_field" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pfif.Handler.characters">
+<code class="descname">characters</code><span class="sig-paren">(</span><em>content</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#Handler.characters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.Handler.characters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pfif.Handler.endElementNS">
+<code class="descname">endElementNS</code><span class="sig-paren">(</span><em>tag</em>, <em>qname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#Handler.endElementNS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.Handler.endElementNS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pfif.Handler.startElementNS">
+<code class="descname">startElementNS</code><span class="sig-paren">(</span><em>tag</em>, <em>qname</em>, <em>attrs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#Handler.startElementNS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.Handler.startElementNS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pfif.PfifVersion">
+<em class="property">class </em><code class="descclassname">pfif.</code><code class="descname">PfifVersion</code><span class="sig-paren">(</span><em>version</em>, <em>ns</em>, <em>fields</em>, <em>mandatory_fields</em>, <em>serializers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="pfif.PfifVersion.check_tag">
+<code class="descname">check_tag</code><span class="sig-paren">(</span><em>(ns</em>, <em>local)</em>, <em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion.check_tag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion.check_tag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a namespace-qualified tag and its parent, returns the PFIF
+type or field name if the tag is valid, or None if the tag is not
+recognized.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pfif.PfifVersion.entity_to_dict">
+<code class="descname">entity_to_dict</code><span class="sig-paren">(</span><em>entity</em>, <em>fields</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion.entity_to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion.entity_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a person or note record from a Python object (with PFIF 1.4
+field names as attributes) to a Python dictionary (with the given field
+names as keys, and Unicode strings as values).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pfif.PfifVersion.note_to_dict">
+<code class="descname">note_to_dict</code><span class="sig-paren">(</span><em>entity</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion.note_to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion.note_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pfif.PfifVersion.person_to_dict">
+<code class="descname">person_to_dict</code><span class="sig-paren">(</span><em>entity</em>, <em>expired=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion.person_to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion.person_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pfif.PfifVersion.write_fields">
+<code class="descname">write_fields</code><span class="sig-paren">(</span><em>file</em>, <em>type</em>, <em>record</em>, <em>indent=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion.write_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion.write_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes PFIF tags for a record&#8217;s fields.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pfif.PfifVersion.write_file">
+<code class="descname">write_file</code><span class="sig-paren">(</span><em>file</em>, <em>persons</em>, <em>get_notes_for_person=&lt;function &lt;lambda&gt;&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion.write_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion.write_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a list of person records and a function that gets the list
+of note records for each person, and writes PFIF to the given file
+object.  Each record is a plain dictionary of strings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pfif.PfifVersion.write_note">
+<code class="descname">write_note</code><span class="sig-paren">(</span><em>file</em>, <em>note</em>, <em>indent=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion.write_note"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion.write_note" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes PFIF for a note record.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pfif.PfifVersion.write_person">
+<code class="descname">write_person</code><span class="sig-paren">(</span><em>file</em>, <em>person</em>, <em>notes=[]</em>, <em>indent=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#PfifVersion.write_person"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.PfifVersion.write_person" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes PFIF for a person record and a list of its note records.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pfif.check_pfif_tag">
+<code class="descclassname">pfif.</code><code class="descname">check_pfif_tag</code><span class="sig-paren">(</span><em>name</em>, <em>parent=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#check_pfif_tag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.check_pfif_tag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recognizes a PFIF XML tag from any version of PFIF.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pfif.convert_description_to_other">
+<code class="descclassname">pfif.</code><code class="descname">convert_description_to_other</code><span class="sig-paren">(</span><em>desc</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#convert_description_to_other"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.convert_description_to_other" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts &#8216;description&#8217; in PFIF 1.4 to &#8216;other&#8217; in older versions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pfif.format_boolean">
+<code class="descclassname">pfif.</code><code class="descname">format_boolean</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#format_boolean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.format_boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pfif.format_utc_datetime">
+<code class="descclassname">pfif.</code><code class="descname">format_utc_datetime</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#format_utc_datetime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.format_utc_datetime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pfif.maybe_convert_other_to_description">
+<code class="descclassname">pfif.</code><code class="descname">maybe_convert_other_to_description</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#maybe_convert_other_to_description"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.maybe_convert_other_to_description" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts &#8216;other&#8217; in PFIF 1.3 and earlier to &#8216;description&#8217; in PFIF 1.4 if
+&#8216;other&#8217; has only &#8216;description&#8217; field. Otherwise it returns &#8216;other&#8217; without
+modifying it, so we don&#8217;t lose any information.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pfif.nop">
+<code class="descclassname">pfif.</code><code class="descname">nop</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#nop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.nop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pfif.parse">
+<code class="descclassname">pfif.</code><code class="descname">parse</code><span class="sig-paren">(</span><em>pfif_text</em>, <em>rename_fields=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes the text of a PFIF document, as a Unicode string or UTF-8 string,
+and returns a list of person records and a list of note records.  Each
+record is a plain dictionary of strings, with PFIF 1.4 field names as keys
+if rename_fields is True; otherwise, the field names are kept as is in the
+input XML file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pfif.parse_file">
+<code class="descclassname">pfif.</code><code class="descname">parse_file</code><span class="sig-paren">(</span><em>pfif_utf8_file</em>, <em>rename_fields=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#parse_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.parse_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a UTF-8-encoded PFIF file to give a list of person records and a
+list of note records.  Each record is a plain dictionary of strings,
+with PFIF 1.4 field names as keys if rename_fields is True; otherwise,
+the field names are kept as is in the input XML file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pfif.rename_fields_to_latest">
+<code class="descclassname">pfif.</code><code class="descname">rename_fields_to_latest</code><span class="sig-paren">(</span><em>record</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#rename_fields_to_latest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.rename_fields_to_latest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renames fields in PFIF 1.3 and earlier to PFIF 1.4, and also does a
+special conversion for other -&gt; description.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pfif.xml_escape">
+<code class="descclassname">pfif.</code><code class="descname">xml_escape</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pfif.html#xml_escape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pfif.xml_escape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="multiview.html" title="previous chapter">multiview module</a></li>
+      <li>Next: <a href="photo.html" title="next chapter">photo module</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/pfif.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/pfif.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

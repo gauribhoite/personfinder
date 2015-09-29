@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>indexing &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for indexing</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2010 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#            http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Support for approximate string prefix queries.</span>
+
+<span class="sd">A hit is defined when the words entered in the query are all prefixes of one</span>
+<span class="sd">of the words in the given and family names on the record.  For example, a</span>
+<span class="sd">record with the fields:</span>
+<span class="sd">    given_name: ABC 123</span>
+<span class="sd">    family_name: DEF 456</span>
+
+<span class="sd">will be retrieved by:</span>
+<span class="sd">    &quot;ABC 456&quot;</span>
+<span class="sd">    &quot;45 ED&quot;</span>
+<span class="sd">    &quot;123 ABC&quot;</span>
+<span class="sd">    &quot;ABC 123 DEF&quot;</span>
+
+<span class="sd">but will not be retrieved by:</span>
+<span class="sd">    &quot;ABC 1234&quot;</span>
+<span class="sd">    &quot;ABC 123 DEF 456 789&quot;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">text_query</span> <span class="kn">import</span> <span class="n">TextQuery</span>
+
+<span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">db</span>
+<span class="kn">import</span> <span class="nn">unicodedata</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">model</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">jautils</span>
+
+
+<div class="viewcode-block" id="update_index_properties"><a class="viewcode-back" href="../indexing.html#indexing.update_index_properties">[docs]</a><span class="k">def</span> <span class="nf">update_index_properties</span><span class="p">(</span><span class="n">entity</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Finds and updates all prefix-related properties on the given entity.&quot;&quot;&quot;</span>
+    <span class="c"># Using set to make sure I&#39;m not adding the same string more than once.</span>
+    <span class="n">names_prefixes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="nb">property</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">_fields_to_index_properties</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">TextQuery</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="nb">property</span><span class="p">))</span><span class="o">.</span><span class="n">query_words</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">property</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">_fields_to_index_by_prefix_properties</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="n">pref</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:</span><span class="n">n</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">pref</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">names_prefixes</span><span class="p">:</span>
+                        <span class="n">names_prefixes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pref</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">names_prefixes</span><span class="p">:</span>
+                    <span class="n">names_prefixes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="c"># Add alternate names to the index tokens.  We choose not to index prefixes</span>
+    <span class="c"># of alternate names so that we can keep the index size small.</span>
+    <span class="c"># TODI(ryok): This strategy works well for Japanese, but how about other</span>
+    <span class="c"># languages?</span>
+    <span class="n">names_prefixes</span> <span class="o">|=</span> <span class="n">get_alternate_name_tokens</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+
+    <span class="c"># Put a cap on the number of tokens, just as a precaution.</span>
+    <span class="n">MAX_TOKENS</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">entity</span><span class="o">.</span><span class="n">names_prefixes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">names_prefixes</span><span class="p">)[:</span><span class="n">MAX_TOKENS</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">names_prefixes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_TOKENS</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;MAX_TOKENS exceeded for </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
+                      <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">names_prefixes</span><span class="p">)))</span>
+
+</div>
+<div class="viewcode-block" id="get_alternate_name_tokens"><a class="viewcode-back" href="../indexing.html#indexing.get_alternate_name_tokens">[docs]</a><span class="k">def</span> <span class="nf">get_alternate_name_tokens</span><span class="p">(</span><span class="n">person</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns alternate name tokens and their variations.&quot;&quot;&quot;</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">TextQuery</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">alternate_names</span><span class="p">)</span><span class="o">.</span><span class="n">query_words</span><span class="p">)</span>
+    <span class="c"># This is no-op for non-Japanese.</span>
+    <span class="n">tokens</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">jautils</span><span class="o">.</span><span class="n">get_additional_tokens</span><span class="p">(</span><span class="n">tokens</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">tokens</span>
+
+</div>
+<div class="viewcode-block" id="CmpResults"><a class="viewcode-back" href="../indexing.html#indexing.CmpResults">[docs]</a><span class="k">class</span> <span class="nc">CmpResults</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="n">query</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_words_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">words</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">p1</span><span class="o">.</span><span class="n">primary_full_name</span> <span class="ow">and</span>
+             <span class="n">p1</span><span class="o">.</span><span class="n">primary_full_name</span> <span class="o">==</span> <span class="n">p2</span><span class="o">.</span><span class="n">primary_full_name</span><span class="p">)</span> <span class="ow">or</span>
+            <span class="p">((</span><span class="n">p1</span><span class="o">.</span><span class="n">given_name</span> <span class="ow">or</span> <span class="n">p1</span><span class="o">.</span><span class="n">family_name</span><span class="p">)</span> <span class="ow">and</span>
+             <span class="n">p1</span><span class="o">.</span><span class="n">given_name</span> <span class="o">==</span> <span class="n">p2</span><span class="o">.</span><span class="n">given_name</span> <span class="ow">and</span>
+             <span class="n">p1</span><span class="o">.</span><span class="n">family_name</span> <span class="o">==</span> <span class="n">p2</span><span class="o">.</span><span class="n">family_name</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_ranking_attr</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_ranking_attr</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">r1</span> <span class="o">==</span> <span class="n">r2</span><span class="p">:</span>
+            <span class="c"># if rank is the same sort by name so same names will be together</span>
+            <span class="k">return</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">_normalized_full_name</span><span class="o">.</span><span class="n">normalized</span><span class="p">,</span>
+                       <span class="n">p2</span><span class="o">.</span><span class="n">_normalized_full_name</span><span class="o">.</span><span class="n">normalized</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">r2</span><span class="p">,</span> <span class="n">r1</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CmpResults.set_ranking_attr"><a class="viewcode-back" href="../indexing.html#indexing.CmpResults.set_ranking_attr">[docs]</a>    <span class="k">def</span> <span class="nf">set_ranking_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Consider save these into to db&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">person</span><span class="p">,</span> <span class="s">&#39;_normalized_given_name&#39;</span><span class="p">):</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_given_name</span> <span class="o">=</span> <span class="n">TextQuery</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">)</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_family_name</span> <span class="o">=</span> <span class="n">TextQuery</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">)</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_full_name</span> <span class="o">=</span> <span class="n">TextQuery</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">full_name</span><span class="p">)</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_name_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">_normalized_full_name</span><span class="o">.</span><span class="n">words</span><span class="p">)</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_alt_name_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+                    <span class="n">TextQuery</span><span class="p">(</span><span class="n">person</span><span class="o">.</span><span class="n">alternate_names</span><span class="p">)</span><span class="o">.</span><span class="n">words</span><span class="p">)</span>
+
+    <span class="c"># TODO(ryok): re-consider the ranking putting more weight on full_name (a</span>
+    <span class="c"># required field) instead of given name and family name pair (optional).</span></div>
+<div class="viewcode-block" id="CmpResults.rank"><a class="viewcode-back" href="../indexing.html#indexing.CmpResults.rank">[docs]</a>    <span class="k">def</span> <span class="nf">rank</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">person</span><span class="p">):</span>
+        <span class="c"># The normalized query words, in the order as entered.</span>
+        <span class="n">ordered_words</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">normalized</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">ordered_words</span> <span class="o">==</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_given_name</span><span class="o">.</span><span class="n">words</span> <span class="o">+</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_family_name</span><span class="o">.</span><span class="n">words</span><span class="p">):</span>
+            <span class="c"># Matches a Latin name exactly (given name followed by surname).</span>
+            <span class="k">return</span> <span class="mi">10</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">ur&#39;^[\u3400-\u9fff]$&#39;</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="n">ordered_words</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">family_name</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">]</span>
+            <span class="p">]):</span>
+            <span class="c"># Matches a CJK name exactly (surname followed by given name).</span>
+            <span class="k">return</span> <span class="mi">10</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">ur&#39;^[\u3400-\u9fff]+$&#39;</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="n">ordered_words</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">family_name</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">]</span>
+            <span class="p">]):</span>
+            <span class="c"># Matches a CJK name exactly (surname followed by given name).</span>
+            <span class="c"># A multi-character surname is uncommon, so it is ranked a bit lower.</span>
+            <span class="k">return</span> <span class="mf">9.5</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">ordered_words</span> <span class="o">==</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_family_name</span><span class="o">.</span><span class="n">words</span> <span class="o">+</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_given_name</span><span class="o">.</span><span class="n">words</span><span class="p">):</span>
+            <span class="c"># Matches a Latin name with given and family name switched.</span>
+            <span class="k">return</span> <span class="mi">9</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">ur&#39;^[\u3400-\u9fff]$&#39;</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="n">ordered_words</span> <span class="ow">in</span> <span class="p">[</span>
+                    <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">given_name</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">],</span>
+                    <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">]</span>
+            <span class="p">]):</span>
+            <span class="c"># Matches a CJK name with surname and given name switched.</span>
+            <span class="k">return</span> <span class="mi">9</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">ur&#39;^[\u3400-\u9fff]+$&#39;</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="n">ordered_words</span> <span class="ow">in</span> <span class="p">[</span>
+                    <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">given_name</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">],</span>
+                    <span class="p">[</span><span class="n">person</span><span class="o">.</span><span class="n">given_name</span><span class="p">,</span> <span class="n">person</span><span class="o">.</span><span class="n">family_name</span><span class="p">]</span>
+            <span class="p">]):</span>
+            <span class="c"># Matches a CJK name with surname and given name switched.</span>
+            <span class="c"># A multi-character surname is uncommon, so it&#39;s ranked a bit lower.</span>
+            <span class="k">return</span> <span class="mf">8.5</span>
+
+        <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">_name_words</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_words_set</span><span class="p">:</span>
+            <span class="c"># Matches all the words in the given and family name, out of order.</span>
+            <span class="k">return</span> <span class="mi">8</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">normalized</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_given_name</span><span class="o">.</span><span class="n">normalized</span><span class="p">,</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_normalized_family_name</span><span class="o">.</span><span class="n">normalized</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="c"># Matches the given name exactly or the family name exactly.</span>
+            <span class="k">return</span> <span class="mi">7</span>
+
+        <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">_name_words</span><span class="o">.</span><span class="n">issuperset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_words_set</span><span class="p">):</span>
+            <span class="c"># All words in the query appear somewhere in the name.</span>
+            <span class="k">return</span> <span class="mi">6</span>
+
+        <span class="c"># Count the number of words in the query that appear in the name and</span>
+        <span class="c"># also in the alternate names.</span>
+        <span class="n">matched_words</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">_name_words</span><span class="o">.</span><span class="n">union</span><span class="p">(</span>
+            <span class="n">person</span><span class="o">.</span><span class="n">_alt_name_words</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_words_set</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">matched_words</span><span class="p">))</span>
+
+</div></div>
+<div class="viewcode-block" id="rank_and_order"><a class="viewcode-back" href="../indexing.html#indexing.rank_and_order">[docs]</a><span class="k">def</span> <span class="nf">rank_and_order</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">max_results</span><span class="p">):</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">CmpResults</span><span class="p">(</span><span class="n">query</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">results</span><span class="p">[:</span><span class="n">max_results</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="sort_query_words"><a class="viewcode-back" href="../indexing.html#indexing.sort_query_words">[docs]</a><span class="k">def</span> <span class="nf">sort_query_words</span><span class="p">(</span><span class="n">query_words</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sort query_words so that the query filters created from query_words are</span>
+<span class="sd">    more effective and consistent when truncated due to NeedIndexError, and</span>
+<span class="sd">    return the sorted list.&quot;&quot;&quot;</span>
+    <span class="c">#   (1) Sort them lexicographically so that we return consistent search</span>
+    <span class="c">#       results for query &#39;AA BB CC DD&#39; and &#39;DD AA BB CC&#39; even when filters</span>
+    <span class="c">#       are truncated.</span>
+    <span class="n">sorted_query_words</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">query_words</span><span class="p">)</span>
+    <span class="c">#   (2) Sort them according to popularity so that less popular query words,</span>
+    <span class="c">#       which are usually more effective filters, come first.</span>
+    <span class="n">sorted_query_words</span> <span class="o">=</span> <span class="n">jautils</span><span class="o">.</span><span class="n">sorted_by_popularity</span><span class="p">(</span><span class="n">sorted_query_words</span><span class="p">)</span>
+    <span class="c">#   (3) Sort them according to the lengths so that longer query words,</span>
+    <span class="c">#       which are usually more effective filters, come first.</span>
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">sorted_query_words</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="search"><a class="viewcode-back" href="../indexing.html#indexing.search">[docs]</a><span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">query_obj</span><span class="p">,</span> <span class="n">max_results</span><span class="p">):</span>
+    <span class="c"># As there are limits on the number of filters that we can apply and the</span>
+    <span class="c"># number of entries we can fetch at once, the order of query words could</span>
+    <span class="c"># potentially matter.  In particular, this is the case for most Japanese</span>
+    <span class="c"># names, many of which consist of 4 to 6 Chinese characters, each</span>
+    <span class="c"># coresponding to an additional filter.</span>
+    <span class="n">query_words</span> <span class="o">=</span> <span class="n">sort_query_words</span><span class="p">(</span><span class="n">query_obj</span><span class="o">.</span><span class="n">query_words</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;query_words: </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">query_words</span><span class="p">)</span>
+
+    <span class="c"># First try the query with all the filters, and then keep backing off</span>
+    <span class="c"># if we get NeedIndexError.</span>
+    <span class="n">fetch_limit</span> <span class="o">=</span> <span class="mi">400</span>
+    <span class="n">fetched</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">filters_to_try</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">query_words</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">filters_to_try</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Person</span><span class="o">.</span><span class="n">all_in_repo</span><span class="p">(</span><span class="n">repo</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">query_words</span><span class="p">[:</span><span class="n">filters_to_try</span><span class="p">]:</span>
+            <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;names_prefixes =&#39;</span><span class="p">,</span> <span class="n">word</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fetched</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">fetch_limit</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;query succeeded with </span><span class="si">%d</span><span class="s"> filters&#39;</span> <span class="o">%</span> <span class="n">filters_to_try</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">except</span> <span class="n">db</span><span class="o">.</span><span class="n">NeedIndexError</span><span class="p">:</span>
+            <span class="n">filters_to_try</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;indexing.search fetched: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">fetched</span><span class="p">))</span>
+
+    <span class="c"># Now perform any filtering that App Engine was unable to do for us.</span>
+    <span class="n">matched</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">fetched</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">query_words</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">names_prefixes</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">matched</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;indexing.search matched: </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">matched</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fetched</span><span class="p">)</span> <span class="o">==</span> <span class="n">fetch_limit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">matched</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_results</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Warning: Fetch reached a limit of </span><span class="si">%d</span><span class="s">, but only </span><span class="si">%d</span><span class="s"> &#39;</span>
+                      <span class="s">&#39;exact-matched the query (max_results = </span><span class="si">%d</span><span class="s">).&#39;</span> <span class="o">%</span>
+                      <span class="p">(</span><span class="n">fetch_limit</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">matched</span><span class="p">),</span> <span class="n">max_results</span><span class="p">))</span>
+
+    <span class="c"># Now rank and order the results.</span>
+    <span class="k">return</span> <span class="n">rank_and_order</span><span class="p">(</span><span class="n">matched</span><span class="p">,</span> <span class="n">query_obj</span><span class="p">,</span> <span class="n">max_results</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

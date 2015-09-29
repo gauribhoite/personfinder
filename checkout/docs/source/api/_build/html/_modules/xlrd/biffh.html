@@ -1,0 +1,751 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>xlrd.biffh &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../../index.html" />
+    <link rel="up" title="xlrd" href="../xlrd.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for xlrd.biffh</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: cp1252 -*-</span>
+
+<span class="c">##</span>
+<span class="c"># Support module for the xlrd package.</span>
+<span class="c">#</span>
+<span class="c"># &lt;p&gt;Portions copyright © 2005-2010 Stephen John Machin, Lingfo Pty Ltd&lt;/p&gt;</span>
+<span class="c"># &lt;p&gt;This module is part of the xlrd package, which is released under a BSD-style licence.&lt;/p&gt;</span>
+<span class="c">##</span>
+
+<span class="c"># 2010-03-01 SJM Reading SCL record</span>
+<span class="c"># 2010-03-01 SJM Added more record IDs for biff_dump &amp; biff_count</span>
+<span class="c"># 2008-02-10 SJM BIFF2 BLANK record</span>
+<span class="c"># 2008-02-08 SJM Preparation for Excel 2.0 support</span>
+<span class="c"># 2008-02-02 SJM Added suffixes (_B2, _B2_ONLY, etc) on record names for biff_dump &amp; biff_count</span>
+<span class="c"># 2007-12-04 SJM Added support for Excel 2.x (BIFF2) files.</span>
+<span class="c"># 2007-09-08 SJM Avoid crash when zero-length Unicode string missing options byte.</span>
+<span class="c"># 2007-04-22 SJM Remove experimental &quot;trimming&quot; facility.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="n">DEBUG</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">unpack</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">.timemachine</span> <span class="kn">import</span> <span class="o">*</span>
+
+<div class="viewcode-block" id="XLRDError"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.XLRDError">[docs]</a><span class="k">class</span> <span class="nc">XLRDError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="c">##</span>
+<span class="c"># Parent of almost all other classes in the package. Defines a common &quot;dump&quot; method</span>
+<span class="c"># for debugging.</span>
+</div>
+<div class="viewcode-block" id="BaseObject"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.BaseObject">[docs]</a><span class="k">class</span> <span class="nc">BaseObject</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="n">_repr_these</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c">##</span>
+    <span class="c"># @param f open file object, to which the dump is written</span>
+    <span class="c"># @param header text to write before the dump</span>
+    <span class="c"># @param footer text to write after the dump</span>
+    <span class="c"># @param indent number of leading spaces (for recursive calls)</span>
+
+<div class="viewcode-block" id="BaseObject.dump"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.BaseObject.dump">[docs]</a>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">footer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&quot;__slots__&quot;</span><span class="p">):</span>
+            <span class="n">alist</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__slots__</span><span class="p">:</span>
+                <span class="n">alist</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">attr</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">alist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="n">alist</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">alist</span><span class="p">)</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="s">&quot; &quot;</span> <span class="o">*</span> <span class="n">indent</span>
+        <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">list_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">([])</span>
+        <span class="n">dict_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">({})</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">alist</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;dump&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">attr</span> <span class="o">!=</span> <span class="s">&#39;book&#39;</span><span class="p">:</span>
+                <span class="n">value</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">f</span><span class="p">,</span>
+                    <span class="n">header</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%s%s</span><span class="s"> (</span><span class="si">%s</span><span class="s"> object):&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">pad</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">),</span>
+                    <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="o">+</span><span class="mi">4</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repr_these</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">list_type</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">dict_type</span><span class="p">)</span>
+                <span class="p">):</span>
+                <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s%s</span><span class="s">: </span><span class="si">%s</span><span class="s">, len = </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">pad</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)),</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fprintf</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s%s</span><span class="s">: </span><span class="si">%r</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">footer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="n">footer</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+</div></div>
+<span class="n">FUN</span><span class="p">,</span> <span class="n">FDT</span><span class="p">,</span> <span class="n">FNU</span><span class="p">,</span> <span class="n">FGE</span><span class="p">,</span> <span class="n">FTX</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="c"># unknown, date, number, general, text</span>
+<span class="n">DATEFORMAT</span> <span class="o">=</span> <span class="n">FDT</span>
+<span class="n">NUMBERFORMAT</span> <span class="o">=</span> <span class="n">FNU</span>
+
+<span class="p">(</span>
+    <span class="n">XL_CELL_EMPTY</span><span class="p">,</span>
+    <span class="n">XL_CELL_TEXT</span><span class="p">,</span>
+    <span class="n">XL_CELL_NUMBER</span><span class="p">,</span>
+    <span class="n">XL_CELL_DATE</span><span class="p">,</span>
+    <span class="n">XL_CELL_BOOLEAN</span><span class="p">,</span>
+    <span class="n">XL_CELL_ERROR</span><span class="p">,</span>
+    <span class="n">XL_CELL_BLANK</span><span class="p">,</span> <span class="c"># for use in debugging, gathering stats, etc</span>
+<span class="p">)</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+
+<span class="n">biff_text_from_num</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">0</span><span class="p">:</span>  <span class="s">&quot;(not BIFF)&quot;</span><span class="p">,</span>
+    <span class="mi">20</span><span class="p">:</span> <span class="s">&quot;2.0&quot;</span><span class="p">,</span>
+    <span class="mi">21</span><span class="p">:</span> <span class="s">&quot;2.1&quot;</span><span class="p">,</span>
+    <span class="mi">30</span><span class="p">:</span> <span class="s">&quot;3&quot;</span><span class="p">,</span>
+    <span class="mi">40</span><span class="p">:</span> <span class="s">&quot;4S&quot;</span><span class="p">,</span>
+    <span class="mi">45</span><span class="p">:</span> <span class="s">&quot;4W&quot;</span><span class="p">,</span>
+    <span class="mi">50</span><span class="p">:</span> <span class="s">&quot;5&quot;</span><span class="p">,</span>
+    <span class="mi">70</span><span class="p">:</span> <span class="s">&quot;7&quot;</span><span class="p">,</span>
+    <span class="mi">80</span><span class="p">:</span> <span class="s">&quot;8&quot;</span><span class="p">,</span>
+    <span class="mi">85</span><span class="p">:</span> <span class="s">&quot;8X&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<span class="c">##</span>
+<span class="c"># &lt;p&gt;This dictionary can be used to produce a text version of the internal codes</span>
+<span class="c"># that Excel uses for error cells. Here are its contents:</span>
+<span class="c"># &lt;pre&gt;</span>
+<span class="c"># 0x00: &#39;#NULL!&#39;,  # Intersection of two cell ranges is empty</span>
+<span class="c"># 0x07: &#39;#DIV/0!&#39;, # Division by zero</span>
+<span class="c"># 0x0F: &#39;#VALUE!&#39;, # Wrong type of operand</span>
+<span class="c"># 0x17: &#39;#REF!&#39;,   # Illegal or deleted cell reference</span>
+<span class="c"># 0x1D: &#39;#NAME?&#39;,  # Wrong function or range name</span>
+<span class="c"># 0x24: &#39;#NUM!&#39;,   # Value range overflow</span>
+<span class="c"># 0x2A: &#39;#N/A&#39;,    # Argument or function not available</span>
+<span class="c"># &lt;/pre&gt;&lt;/p&gt;</span>
+
+<span class="n">error_text_from_code</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mh">0x00</span><span class="p">:</span> <span class="s">&#39;#NULL!&#39;</span><span class="p">,</span>  <span class="c"># Intersection of two cell ranges is empty</span>
+    <span class="mh">0x07</span><span class="p">:</span> <span class="s">&#39;#DIV/0!&#39;</span><span class="p">,</span> <span class="c"># Division by zero</span>
+    <span class="mh">0x0F</span><span class="p">:</span> <span class="s">&#39;#VALUE!&#39;</span><span class="p">,</span> <span class="c"># Wrong type of operand</span>
+    <span class="mh">0x17</span><span class="p">:</span> <span class="s">&#39;#REF!&#39;</span><span class="p">,</span>   <span class="c"># Illegal or deleted cell reference</span>
+    <span class="mh">0x1D</span><span class="p">:</span> <span class="s">&#39;#NAME?&#39;</span><span class="p">,</span>  <span class="c"># Wrong function or range name</span>
+    <span class="mh">0x24</span><span class="p">:</span> <span class="s">&#39;#NUM!&#39;</span><span class="p">,</span>   <span class="c"># Value range overflow</span>
+    <span class="mh">0x2A</span><span class="p">:</span> <span class="s">&#39;#N/A&#39;</span><span class="p">,</span>    <span class="c"># Argument or function not available</span>
+<span class="p">}</span>
+
+<span class="n">BIFF_FIRST_UNICODE</span> <span class="o">=</span> <span class="mi">80</span>
+
+<span class="n">XL_WORKBOOK_GLOBALS</span> <span class="o">=</span> <span class="n">WBKBLOBAL</span> <span class="o">=</span> <span class="mh">0x5</span>
+<span class="n">XL_WORKBOOK_GLOBALS_4W</span> <span class="o">=</span> <span class="mh">0x100</span>
+<span class="n">XL_WORKSHEET</span> <span class="o">=</span> <span class="n">WRKSHEET</span> <span class="o">=</span> <span class="mh">0x10</span>
+
+<span class="n">XL_BOUNDSHEET_WORKSHEET</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="n">XL_BOUNDSHEET_CHART</span>     <span class="o">=</span> <span class="mh">0x02</span>
+<span class="n">XL_BOUNDSHEET_VB_MODULE</span> <span class="o">=</span> <span class="mh">0x06</span>
+
+<span class="c"># XL_RK2 = 0x7e</span>
+<span class="n">XL_ARRAY</span>  <span class="o">=</span> <span class="mh">0x0221</span>
+<span class="n">XL_ARRAY2</span> <span class="o">=</span> <span class="mh">0x0021</span>
+<span class="n">XL_BLANK</span> <span class="o">=</span> <span class="mh">0x0201</span>
+<span class="n">XL_BLANK_B2</span> <span class="o">=</span> <span class="mh">0x01</span>
+<span class="n">XL_BOF</span> <span class="o">=</span> <span class="mh">0x809</span>
+<span class="n">XL_BOOLERR</span> <span class="o">=</span> <span class="mh">0x205</span>
+<span class="n">XL_BOOLERR_B2</span> <span class="o">=</span> <span class="mh">0x5</span>
+<span class="n">XL_BOUNDSHEET</span> <span class="o">=</span> <span class="mh">0x85</span>
+<span class="n">XL_BUILTINFMTCOUNT</span> <span class="o">=</span> <span class="mh">0x56</span>
+<span class="n">XL_CF</span> <span class="o">=</span> <span class="mh">0x01B1</span>
+<span class="n">XL_CODEPAGE</span> <span class="o">=</span> <span class="mh">0x42</span>
+<span class="n">XL_COLINFO</span> <span class="o">=</span> <span class="mh">0x7D</span>
+<span class="n">XL_COLUMNDEFAULT</span> <span class="o">=</span> <span class="mh">0x20</span> <span class="c"># BIFF2 only</span>
+<span class="n">XL_COLWIDTH</span> <span class="o">=</span> <span class="mh">0x24</span> <span class="c"># BIFF2 only</span>
+<span class="n">XL_CONDFMT</span> <span class="o">=</span> <span class="mh">0x01B0</span>
+<span class="n">XL_CONTINUE</span> <span class="o">=</span> <span class="mh">0x3c</span>
+<span class="n">XL_COUNTRY</span> <span class="o">=</span> <span class="mh">0x8C</span>
+<span class="n">XL_DATEMODE</span> <span class="o">=</span> <span class="mh">0x22</span>
+<span class="n">XL_DEFAULTROWHEIGHT</span> <span class="o">=</span> <span class="mh">0x0225</span>
+<span class="n">XL_DEFCOLWIDTH</span> <span class="o">=</span> <span class="mh">0x55</span>
+<span class="n">XL_DIMENSION</span> <span class="o">=</span> <span class="mh">0x200</span>
+<span class="n">XL_DIMENSION2</span> <span class="o">=</span> <span class="mh">0x0</span>
+<span class="n">XL_EFONT</span> <span class="o">=</span> <span class="mh">0x45</span>
+<span class="n">XL_EOF</span> <span class="o">=</span> <span class="mh">0x0a</span>
+<span class="n">XL_EXTERNNAME</span> <span class="o">=</span> <span class="mh">0x23</span>
+<span class="n">XL_EXTERNSHEET</span> <span class="o">=</span> <span class="mh">0x17</span>
+<span class="n">XL_EXTSST</span> <span class="o">=</span> <span class="mh">0xff</span>
+<span class="n">XL_FEAT11</span> <span class="o">=</span> <span class="mh">0x872</span>
+<span class="n">XL_FILEPASS</span> <span class="o">=</span> <span class="mh">0x2f</span>
+<span class="n">XL_FONT</span> <span class="o">=</span> <span class="mh">0x31</span>
+<span class="n">XL_FONT_B3B4</span> <span class="o">=</span> <span class="mh">0x231</span>
+<span class="n">XL_FORMAT</span> <span class="o">=</span> <span class="mh">0x41e</span>
+<span class="n">XL_FORMAT2</span> <span class="o">=</span> <span class="mh">0x1E</span> <span class="c"># BIFF2, BIFF3</span>
+<span class="n">XL_FORMULA</span> <span class="o">=</span> <span class="mh">0x6</span>
+<span class="n">XL_FORMULA3</span> <span class="o">=</span> <span class="mh">0x206</span>
+<span class="n">XL_FORMULA4</span> <span class="o">=</span> <span class="mh">0x406</span>
+<span class="n">XL_GCW</span> <span class="o">=</span> <span class="mh">0xab</span>
+<span class="n">XL_HLINK</span> <span class="o">=</span> <span class="mh">0x01B8</span>
+<span class="n">XL_QUICKTIP</span> <span class="o">=</span> <span class="mh">0x0800</span>
+<span class="n">XL_HORIZONTALPAGEBREAKS</span> <span class="o">=</span> <span class="mh">0x1b</span>
+<span class="n">XL_INDEX</span> <span class="o">=</span> <span class="mh">0x20b</span>
+<span class="n">XL_INTEGER</span> <span class="o">=</span> <span class="mh">0x2</span> <span class="c"># BIFF2 only</span>
+<span class="n">XL_IXFE</span> <span class="o">=</span> <span class="mh">0x44</span> <span class="c"># BIFF2 only</span>
+<span class="n">XL_LABEL</span> <span class="o">=</span> <span class="mh">0x204</span>
+<span class="n">XL_LABEL_B2</span> <span class="o">=</span> <span class="mh">0x04</span>
+<span class="n">XL_LABELRANGES</span> <span class="o">=</span> <span class="mh">0x15f</span>
+<span class="n">XL_LABELSST</span> <span class="o">=</span> <span class="mh">0xfd</span>
+<span class="n">XL_LEFTMARGIN</span> <span class="o">=</span> <span class="mh">0x26</span>
+<span class="n">XL_TOPMARGIN</span> <span class="o">=</span> <span class="mh">0x28</span>
+<span class="n">XL_RIGHTMARGIN</span> <span class="o">=</span> <span class="mh">0x27</span>
+<span class="n">XL_BOTTOMMARGIN</span> <span class="o">=</span> <span class="mh">0x29</span>
+<span class="n">XL_HEADER</span> <span class="o">=</span> <span class="mh">0x14</span>
+<span class="n">XL_FOOTER</span> <span class="o">=</span> <span class="mh">0x15</span>
+<span class="n">XL_HCENTER</span> <span class="o">=</span> <span class="mh">0x83</span>
+<span class="n">XL_VCENTER</span> <span class="o">=</span> <span class="mh">0x84</span>
+<span class="n">XL_MERGEDCELLS</span> <span class="o">=</span> <span class="mh">0xE5</span>
+<span class="n">XL_MSO_DRAWING</span> <span class="o">=</span> <span class="mh">0x00EC</span>
+<span class="n">XL_MSO_DRAWING_GROUP</span> <span class="o">=</span> <span class="mh">0x00EB</span>
+<span class="n">XL_MSO_DRAWING_SELECTION</span> <span class="o">=</span> <span class="mh">0x00ED</span>
+<span class="n">XL_MULRK</span> <span class="o">=</span> <span class="mh">0xbd</span>
+<span class="n">XL_MULBLANK</span> <span class="o">=</span> <span class="mh">0xbe</span>
+<span class="n">XL_NAME</span> <span class="o">=</span> <span class="mh">0x18</span>
+<span class="n">XL_NOTE</span> <span class="o">=</span> <span class="mh">0x1c</span>
+<span class="n">XL_NUMBER</span> <span class="o">=</span> <span class="mh">0x203</span>
+<span class="n">XL_NUMBER_B2</span> <span class="o">=</span> <span class="mh">0x3</span>
+<span class="n">XL_OBJ</span> <span class="o">=</span> <span class="mh">0x5D</span>
+<span class="n">XL_PAGESETUP</span> <span class="o">=</span> <span class="mh">0xA1</span>
+<span class="n">XL_PALETTE</span> <span class="o">=</span> <span class="mh">0x92</span>
+<span class="n">XL_PANE</span> <span class="o">=</span> <span class="mh">0x41</span>
+<span class="n">XL_PRINTGRIDLINES</span> <span class="o">=</span> <span class="mh">0x2B</span>
+<span class="n">XL_PRINTHEADERS</span> <span class="o">=</span> <span class="mh">0x2A</span>
+<span class="n">XL_RK</span> <span class="o">=</span> <span class="mh">0x27e</span>
+<span class="n">XL_ROW</span> <span class="o">=</span> <span class="mh">0x208</span>
+<span class="n">XL_ROW_B2</span> <span class="o">=</span> <span class="mh">0x08</span>
+<span class="n">XL_RSTRING</span> <span class="o">=</span> <span class="mh">0xd6</span>
+<span class="n">XL_SCL</span> <span class="o">=</span> <span class="mh">0x00A0</span>
+<span class="n">XL_SHEETHDR</span> <span class="o">=</span> <span class="mh">0x8F</span> <span class="c"># BIFF4W only</span>
+<span class="n">XL_SHEETPR</span> <span class="o">=</span> <span class="mh">0x81</span>
+<span class="n">XL_SHEETSOFFSET</span> <span class="o">=</span> <span class="mh">0x8E</span> <span class="c"># BIFF4W only</span>
+<span class="n">XL_SHRFMLA</span> <span class="o">=</span> <span class="mh">0x04bc</span>
+<span class="n">XL_SST</span> <span class="o">=</span> <span class="mh">0xfc</span>
+<span class="n">XL_STANDARDWIDTH</span> <span class="o">=</span> <span class="mh">0x99</span>
+<span class="n">XL_STRING</span> <span class="o">=</span> <span class="mh">0x207</span>
+<span class="n">XL_STRING_B2</span> <span class="o">=</span> <span class="mh">0x7</span>
+<span class="n">XL_STYLE</span> <span class="o">=</span> <span class="mh">0x293</span>
+<span class="n">XL_SUPBOOK</span> <span class="o">=</span> <span class="mh">0x1AE</span> <span class="c"># aka EXTERNALBOOK in OOo docs</span>
+<span class="n">XL_TABLEOP</span> <span class="o">=</span> <span class="mh">0x236</span>
+<span class="n">XL_TABLEOP2</span> <span class="o">=</span> <span class="mh">0x37</span>
+<span class="n">XL_TABLEOP_B2</span> <span class="o">=</span> <span class="mh">0x36</span>
+<span class="n">XL_TXO</span> <span class="o">=</span> <span class="mh">0x1b6</span>
+<span class="n">XL_UNCALCED</span> <span class="o">=</span> <span class="mh">0x5e</span>
+<span class="n">XL_UNKNOWN</span> <span class="o">=</span> <span class="mh">0xffff</span>
+<span class="n">XL_VERTICALPAGEBREAKS</span> <span class="o">=</span> <span class="mh">0x1a</span>
+<span class="n">XL_WINDOW2</span>    <span class="o">=</span> <span class="mh">0x023E</span>
+<span class="n">XL_WINDOW2_B2</span> <span class="o">=</span> <span class="mh">0x003E</span>
+<span class="n">XL_WRITEACCESS</span> <span class="o">=</span> <span class="mh">0x5C</span>
+<span class="n">XL_WSBOOL</span> <span class="o">=</span> <span class="n">XL_SHEETPR</span>
+<span class="n">XL_XF</span> <span class="o">=</span> <span class="mh">0xe0</span>
+<span class="n">XL_XF2</span> <span class="o">=</span> <span class="mh">0x0043</span> <span class="c"># BIFF2 version of XF record</span>
+<span class="n">XL_XF3</span> <span class="o">=</span> <span class="mh">0x0243</span> <span class="c"># BIFF3 version of XF record</span>
+<span class="n">XL_XF4</span> <span class="o">=</span> <span class="mh">0x0443</span> <span class="c"># BIFF4 version of XF record</span>
+
+<span class="n">boflen</span> <span class="o">=</span> <span class="p">{</span><span class="mh">0x0809</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="mh">0x0409</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="mh">0x0209</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="mh">0x0009</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span>
+<span class="n">bofcodes</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x0809</span><span class="p">,</span> <span class="mh">0x0409</span><span class="p">,</span> <span class="mh">0x0209</span><span class="p">,</span> <span class="mh">0x0009</span><span class="p">)</span>
+
+<span class="n">XL_FORMULA_OPCODES</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x0006</span><span class="p">,</span> <span class="mh">0x0406</span><span class="p">,</span> <span class="mh">0x0206</span><span class="p">)</span>
+
+<span class="n">_cell_opcode_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">XL_BOOLERR</span><span class="p">,</span>
+    <span class="n">XL_FORMULA</span><span class="p">,</span>
+    <span class="n">XL_FORMULA3</span><span class="p">,</span>
+    <span class="n">XL_FORMULA4</span><span class="p">,</span>
+    <span class="n">XL_LABEL</span><span class="p">,</span>
+    <span class="n">XL_LABELSST</span><span class="p">,</span>
+    <span class="n">XL_MULRK</span><span class="p">,</span>
+    <span class="n">XL_NUMBER</span><span class="p">,</span>
+    <span class="n">XL_RK</span><span class="p">,</span>
+    <span class="n">XL_RSTRING</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="n">_cell_opcode_dict</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">_cell_opcode</span> <span class="ow">in</span> <span class="n">_cell_opcode_list</span><span class="p">:</span>
+    <span class="n">_cell_opcode_dict</span><span class="p">[</span><span class="n">_cell_opcode</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="is_cell_opcode"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.is_cell_opcode">[docs]</a><span class="k">def</span> <span class="nf">is_cell_opcode</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">c</span> <span class="ow">in</span>  <span class="n">_cell_opcode_dict</span>
+</div>
+<div class="viewcode-block" id="upkbits"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.upkbits">[docs]</a><span class="k">def</span> <span class="nf">upkbits</span><span class="p">(</span><span class="n">tgt_obj</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">manifest</span><span class="p">,</span> <span class="n">local_setattr</span><span class="o">=</span><span class="nb">setattr</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+        <span class="n">local_setattr</span><span class="p">(</span><span class="n">tgt_obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="p">(</span><span class="n">src</span> <span class="o">&amp;</span> <span class="n">mask</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">n</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="upkbitsL"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.upkbitsL">[docs]</a><span class="k">def</span> <span class="nf">upkbitsL</span><span class="p">(</span><span class="n">tgt_obj</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">manifest</span><span class="p">,</span> <span class="n">local_setattr</span><span class="o">=</span><span class="nb">setattr</span><span class="p">,</span> <span class="n">local_int</span><span class="o">=</span><span class="nb">int</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">manifest</span><span class="p">:</span>
+        <span class="n">local_setattr</span><span class="p">(</span><span class="n">tgt_obj</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">local_int</span><span class="p">((</span><span class="n">src</span> <span class="o">&amp;</span> <span class="n">mask</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">n</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="unpack_string"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.unpack_string">[docs]</a><span class="k">def</span> <span class="nf">unpack_string</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">lenlen</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">nchars</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="s">&#39;BH&#39;</span><span class="p">[</span><span class="n">lenlen</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">lenlen</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pos</span> <span class="o">+=</span> <span class="n">lenlen</span>
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">nchars</span><span class="p">],</span> <span class="n">encoding</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="unpack_string_update_pos"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.unpack_string_update_pos">[docs]</a><span class="k">def</span> <span class="nf">unpack_string_update_pos</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">lenlen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">known_len</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">known_len</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="c"># On a NAME record, the length byte is detached from the front of the string.</span>
+        <span class="n">nchars</span> <span class="o">=</span> <span class="n">known_len</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">nchars</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="s">&#39;BH&#39;</span><span class="p">[</span><span class="n">lenlen</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">lenlen</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="n">lenlen</span>
+    <span class="n">newpos</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">nchars</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">unicode</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">newpos</span><span class="p">],</span> <span class="n">encoding</span><span class="p">),</span> <span class="n">newpos</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="unpack_unicode"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.unpack_unicode">[docs]</a><span class="k">def</span> <span class="nf">unpack_unicode</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">lenlen</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="s">&quot;Return unicode_strg&quot;</span>
+    <span class="n">nchars</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="s">&#39;BH&#39;</span><span class="p">[</span><span class="n">lenlen</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">lenlen</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nchars</span><span class="p">:</span>
+        <span class="c"># Ambiguous whether 0-length string should have an &quot;options&quot; byte.</span>
+        <span class="c"># Avoid crash if missing.</span>
+        <span class="k">return</span> <span class="n">UNICODE_LITERAL</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">pos</span> <span class="o">+=</span> <span class="n">lenlen</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">BYTES_ORD</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span>
+    <span class="n">pos</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="c"># phonetic = options &amp; 0x04</span>
+    <span class="c"># richtext = options &amp; 0x08</span>
+    <span class="k">if</span> <span class="n">options</span> <span class="o">&amp;</span> <span class="mh">0x08</span><span class="p">:</span>
+        <span class="c"># rt = unpack(&#39;&lt;H&#39;, data[pos:pos+2])[0] # unused</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">options</span> <span class="o">&amp;</span> <span class="mh">0x04</span><span class="p">:</span>
+        <span class="c"># sz = unpack(&#39;&lt;i&#39;, data[pos:pos+4])[0] # unused</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="mi">4</span>
+    <span class="k">if</span> <span class="n">options</span> <span class="o">&amp;</span> <span class="mh">0x01</span><span class="p">:</span>
+        <span class="c"># Uncompressed UTF-16-LE</span>
+        <span class="n">rawstrg</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">nchars</span><span class="p">]</span>
+        <span class="c"># if DEBUG: print &quot;nchars=%d pos=%d rawstrg=%r&quot; % (nchars, pos, rawstrg)</span>
+        <span class="n">strg</span> <span class="o">=</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">rawstrg</span><span class="p">,</span> <span class="s">&#39;utf_16_le&#39;</span><span class="p">)</span>
+        <span class="c"># pos += 2*nchars</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># Note: this is COMPRESSED (not ASCII!) encoding!!!</span>
+        <span class="c"># Merely returning the raw bytes would work OK 99.99% of the time</span>
+        <span class="c"># if the local codepage was cp1252 -- however this would rapidly go pear-shaped</span>
+        <span class="c"># for other codepages so we grit our Anglocentric teeth and return Unicode :-)</span>
+
+        <span class="n">strg</span> <span class="o">=</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">nchars</span><span class="p">],</span> <span class="s">&quot;latin_1&quot;</span><span class="p">)</span>
+        <span class="c"># pos += nchars</span>
+    <span class="c"># if richtext:</span>
+    <span class="c">#     pos += 4 * rt</span>
+    <span class="c"># if phonetic:</span>
+    <span class="c">#     pos += sz</span>
+    <span class="c"># return (strg, pos)</span>
+    <span class="k">return</span> <span class="n">strg</span>
+</div>
+<div class="viewcode-block" id="unpack_unicode_update_pos"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.unpack_unicode_update_pos">[docs]</a><span class="k">def</span> <span class="nf">unpack_unicode_update_pos</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">lenlen</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">known_len</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="s">&quot;Return (unicode_strg, updated value of pos)&quot;</span>
+    <span class="k">if</span> <span class="n">known_len</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="c"># On a NAME record, the length byte is detached from the front of the string.</span>
+        <span class="n">nchars</span> <span class="o">=</span> <span class="n">known_len</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">nchars</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="s">&#39;BH&#39;</span><span class="p">[</span><span class="n">lenlen</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">lenlen</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="n">lenlen</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nchars</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:]:</span>
+        <span class="c"># Zero-length string with no options byte</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">UNICODE_LITERAL</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">),</span> <span class="n">pos</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">BYTES_ORD</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span>
+    <span class="n">pos</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">phonetic</span> <span class="o">=</span> <span class="n">options</span> <span class="o">&amp;</span> <span class="mh">0x04</span>
+    <span class="n">richtext</span> <span class="o">=</span> <span class="n">options</span> <span class="o">&amp;</span> <span class="mh">0x08</span>
+    <span class="k">if</span> <span class="n">richtext</span><span class="p">:</span>
+        <span class="n">rt</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;H&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="mi">2</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">phonetic</span><span class="p">:</span>
+        <span class="n">sz</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;i&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="mi">4</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="mi">4</span>
+    <span class="k">if</span> <span class="n">options</span> <span class="o">&amp;</span> <span class="mh">0x01</span><span class="p">:</span>
+        <span class="c"># Uncompressed UTF-16-LE</span>
+        <span class="n">strg</span> <span class="o">=</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">nchars</span><span class="p">],</span> <span class="s">&#39;utf_16_le&#39;</span><span class="p">)</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="mi">2</span><span class="o">*</span><span class="n">nchars</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># Note: this is COMPRESSED (not ASCII!) encoding!!!</span>
+        <span class="n">strg</span> <span class="o">=</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">nchars</span><span class="p">],</span> <span class="s">&quot;latin_1&quot;</span><span class="p">)</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="n">nchars</span>
+    <span class="k">if</span> <span class="n">richtext</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">rt</span>
+    <span class="k">if</span> <span class="n">phonetic</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="n">sz</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">strg</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="unpack_cell_range_address_list_update_pos"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.unpack_cell_range_address_list_update_pos">[docs]</a><span class="k">def</span> <span class="nf">unpack_cell_range_address_list_update_pos</span><span class="p">(</span>
+    <span class="n">output_list</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">biff_version</span><span class="p">,</span> <span class="n">addr_size</span><span class="o">=</span><span class="mi">6</span><span class="p">):</span>
+    <span class="c"># output_list is updated in situ</span>
+    <span class="k">assert</span> <span class="n">addr_size</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+    <span class="c"># Used to assert size == 6 if not BIFF8, but pyWLWriter writes</span>
+    <span class="c"># BIFF8-only MERGEDCELLS records in a BIFF5 file!</span>
+    <span class="n">n</span><span class="p">,</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&quot;&lt;H&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">pos</span> <span class="o">+=</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">n</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">addr_size</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s">&quot;&lt;HHBB&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s">&quot;&lt;HHHH&quot;</span>
+        <span class="k">for</span> <span class="n">_unused</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">ra</span><span class="p">,</span> <span class="n">rb</span><span class="p">,</span> <span class="n">ca</span><span class="p">,</span> <span class="n">cb</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="n">addr_size</span><span class="p">])</span>
+            <span class="n">output_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ra</span><span class="p">,</span> <span class="n">rb</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">ca</span><span class="p">,</span> <span class="n">cb</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">pos</span> <span class="o">+=</span> <span class="n">addr_size</span>
+    <span class="k">return</span> <span class="n">pos</span>
+</div>
+<span class="n">_brecstrg</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s">0000 DIMENSIONS_B2</span>
+<span class="s">0001 BLANK_B2</span>
+<span class="s">0002 INTEGER_B2_ONLY</span>
+<span class="s">0003 NUMBER_B2</span>
+<span class="s">0004 LABEL_B2</span>
+<span class="s">0005 BOOLERR_B2</span>
+<span class="s">0006 FORMULA</span>
+<span class="s">0007 STRING_B2</span>
+<span class="s">0008 ROW_B2</span>
+<span class="s">0009 BOF_B2</span>
+<span class="s">000A EOF</span>
+<span class="s">000B INDEX_B2_ONLY</span>
+<span class="s">000C CALCCOUNT</span>
+<span class="s">000D CALCMODE</span>
+<span class="s">000E PRECISION</span>
+<span class="s">000F REFMODE</span>
+<span class="s">0010 DELTA</span>
+<span class="s">0011 ITERATION</span>
+<span class="s">0012 PROTECT</span>
+<span class="s">0013 PASSWORD</span>
+<span class="s">0014 HEADER</span>
+<span class="s">0015 FOOTER</span>
+<span class="s">0016 EXTERNCOUNT</span>
+<span class="s">0017 EXTERNSHEET</span>
+<span class="s">0018 NAME_B2,5+</span>
+<span class="s">0019 WINDOWPROTECT</span>
+<span class="s">001A VERTICALPAGEBREAKS</span>
+<span class="s">001B HORIZONTALPAGEBREAKS</span>
+<span class="s">001C NOTE</span>
+<span class="s">001D SELECTION</span>
+<span class="s">001E FORMAT_B2-3</span>
+<span class="s">001F BUILTINFMTCOUNT_B2</span>
+<span class="s">0020 COLUMNDEFAULT_B2_ONLY</span>
+<span class="s">0021 ARRAY_B2_ONLY</span>
+<span class="s">0022 DATEMODE</span>
+<span class="s">0023 EXTERNNAME</span>
+<span class="s">0024 COLWIDTH_B2_ONLY</span>
+<span class="s">0025 DEFAULTROWHEIGHT_B2_ONLY</span>
+<span class="s">0026 LEFTMARGIN</span>
+<span class="s">0027 RIGHTMARGIN</span>
+<span class="s">0028 TOPMARGIN</span>
+<span class="s">0029 BOTTOMMARGIN</span>
+<span class="s">002A PRINTHEADERS</span>
+<span class="s">002B PRINTGRIDLINES</span>
+<span class="s">002F FILEPASS</span>
+<span class="s">0031 FONT</span>
+<span class="s">0032 FONT2_B2_ONLY</span>
+<span class="s">0036 TABLEOP_B2</span>
+<span class="s">0037 TABLEOP2_B2</span>
+<span class="s">003C CONTINUE</span>
+<span class="s">003D WINDOW1</span>
+<span class="s">003E WINDOW2_B2</span>
+<span class="s">0040 BACKUP</span>
+<span class="s">0041 PANE</span>
+<span class="s">0042 CODEPAGE</span>
+<span class="s">0043 XF_B2</span>
+<span class="s">0044 IXFE_B2_ONLY</span>
+<span class="s">0045 EFONT_B2_ONLY</span>
+<span class="s">004D PLS</span>
+<span class="s">0051 DCONREF</span>
+<span class="s">0055 DEFCOLWIDTH</span>
+<span class="s">0056 BUILTINFMTCOUNT_B3-4</span>
+<span class="s">0059 XCT</span>
+<span class="s">005A CRN</span>
+<span class="s">005B FILESHARING</span>
+<span class="s">005C WRITEACCESS</span>
+<span class="s">005D OBJECT</span>
+<span class="s">005E UNCALCED</span>
+<span class="s">005F SAVERECALC</span>
+<span class="s">0063 OBJECTPROTECT</span>
+<span class="s">007D COLINFO</span>
+<span class="s">007E RK2_mythical_?</span>
+<span class="s">0080 GUTS</span>
+<span class="s">0081 WSBOOL</span>
+<span class="s">0082 GRIDSET</span>
+<span class="s">0083 HCENTER</span>
+<span class="s">0084 VCENTER</span>
+<span class="s">0085 BOUNDSHEET</span>
+<span class="s">0086 WRITEPROT</span>
+<span class="s">008C COUNTRY</span>
+<span class="s">008D HIDEOBJ</span>
+<span class="s">008E SHEETSOFFSET</span>
+<span class="s">008F SHEETHDR</span>
+<span class="s">0090 SORT</span>
+<span class="s">0092 PALETTE</span>
+<span class="s">0099 STANDARDWIDTH</span>
+<span class="s">009B FILTERMODE</span>
+<span class="s">009C FNGROUPCOUNT</span>
+<span class="s">009D AUTOFILTERINFO</span>
+<span class="s">009E AUTOFILTER</span>
+<span class="s">00A0 SCL</span>
+<span class="s">00A1 SETUP</span>
+<span class="s">00AB GCW</span>
+<span class="s">00BD MULRK</span>
+<span class="s">00BE MULBLANK</span>
+<span class="s">00C1 MMS</span>
+<span class="s">00D6 RSTRING</span>
+<span class="s">00D7 DBCELL</span>
+<span class="s">00DA BOOKBOOL</span>
+<span class="s">00DD SCENPROTECT</span>
+<span class="s">00E0 XF</span>
+<span class="s">00E1 INTERFACEHDR</span>
+<span class="s">00E2 INTERFACEEND</span>
+<span class="s">00E5 MERGEDCELLS</span>
+<span class="s">00E9 BITMAP</span>
+<span class="s">00EB MSO_DRAWING_GROUP</span>
+<span class="s">00EC MSO_DRAWING</span>
+<span class="s">00ED MSO_DRAWING_SELECTION</span>
+<span class="s">00EF PHONETIC</span>
+<span class="s">00FC SST</span>
+<span class="s">00FD LABELSST</span>
+<span class="s">00FF EXTSST</span>
+<span class="s">013D TABID</span>
+<span class="s">015F LABELRANGES</span>
+<span class="s">0160 USESELFS</span>
+<span class="s">0161 DSF</span>
+<span class="s">01AE SUPBOOK</span>
+<span class="s">01AF PROTECTIONREV4</span>
+<span class="s">01B0 CONDFMT</span>
+<span class="s">01B1 CF</span>
+<span class="s">01B2 DVAL</span>
+<span class="s">01B6 TXO</span>
+<span class="s">01B7 REFRESHALL</span>
+<span class="s">01B8 HLINK</span>
+<span class="s">01BC PASSWORDREV4</span>
+<span class="s">01BE DV</span>
+<span class="s">01C0 XL9FILE</span>
+<span class="s">01C1 RECALCID</span>
+<span class="s">0200 DIMENSIONS</span>
+<span class="s">0201 BLANK</span>
+<span class="s">0203 NUMBER</span>
+<span class="s">0204 LABEL</span>
+<span class="s">0205 BOOLERR</span>
+<span class="s">0206 FORMULA_B3</span>
+<span class="s">0207 STRING</span>
+<span class="s">0208 ROW</span>
+<span class="s">0209 BOF</span>
+<span class="s">020B INDEX_B3+</span>
+<span class="s">0218 NAME</span>
+<span class="s">0221 ARRAY</span>
+<span class="s">0223 EXTERNNAME_B3-4</span>
+<span class="s">0225 DEFAULTROWHEIGHT</span>
+<span class="s">0231 FONT_B3B4</span>
+<span class="s">0236 TABLEOP</span>
+<span class="s">023E WINDOW2</span>
+<span class="s">0243 XF_B3</span>
+<span class="s">027E RK</span>
+<span class="s">0293 STYLE</span>
+<span class="s">0406 FORMULA_B4</span>
+<span class="s">0409 BOF</span>
+<span class="s">041E FORMAT</span>
+<span class="s">0443 XF_B4</span>
+<span class="s">04BC SHRFMLA</span>
+<span class="s">0800 QUICKTIP</span>
+<span class="s">0809 BOF</span>
+<span class="s">0862 SHEETLAYOUT</span>
+<span class="s">0867 SHEETPROTECTION</span>
+<span class="s">0868 RANGEPROTECTION</span>
+<span class="s">&quot;&quot;&quot;</span>
+
+<span class="n">biff_rec_name_dict</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">_buff</span> <span class="ow">in</span> <span class="n">_brecstrg</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+    <span class="n">_numh</span><span class="p">,</span> <span class="n">_name</span> <span class="o">=</span> <span class="n">_buff</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="n">biff_rec_name_dict</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">_numh</span><span class="p">,</span> <span class="mi">16</span><span class="p">)]</span> <span class="o">=</span> <span class="n">_name</span>
+<span class="k">del</span> <span class="n">_buff</span><span class="p">,</span> <span class="n">_name</span><span class="p">,</span> <span class="n">_brecstrg</span>
+
+<div class="viewcode-block" id="hex_char_dump"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.hex_char_dump">[docs]</a><span class="k">def</span> <span class="nf">hex_char_dump</span><span class="p">(</span><span class="n">strg</span><span class="p">,</span> <span class="n">ofs</span><span class="p">,</span> <span class="n">dlen</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fout</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">unnumbered</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="n">endpos</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">ofs</span> <span class="o">+</span> <span class="n">dlen</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">strg</span><span class="p">))</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">ofs</span>
+    <span class="n">numbered</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">unnumbered</span>
+    <span class="n">num_prefix</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="k">while</span> <span class="n">pos</span> <span class="o">&lt;</span> <span class="n">endpos</span><span class="p">:</span>
+        <span class="n">endsub</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">16</span><span class="p">,</span> <span class="n">endpos</span><span class="p">)</span>
+        <span class="n">substrg</span> <span class="o">=</span> <span class="n">strg</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">endsub</span><span class="p">]</span>
+        <span class="n">lensub</span> <span class="o">=</span> <span class="n">endsub</span> <span class="o">-</span> <span class="n">pos</span>
+        <span class="k">if</span> <span class="n">lensub</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">lensub</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">substrg</span><span class="p">):</span>
+            <span class="n">fprintf</span><span class="p">(</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span>
+                <span class="s">&#39;??? hex_char_dump: ofs=</span><span class="si">%d</span><span class="s"> dlen=</span><span class="si">%d</span><span class="s"> base=</span><span class="si">%d</span><span class="s"> -&gt; endpos=</span><span class="si">%d</span><span class="s"> pos=</span><span class="si">%d</span><span class="s"> endsub=</span><span class="si">%d</span><span class="s"> substrg=</span><span class="si">%r</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span>
+                <span class="n">ofs</span><span class="p">,</span> <span class="n">dlen</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">endpos</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">endsub</span><span class="p">,</span> <span class="n">substrg</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="n">hexd</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&quot;</span><span class="si">%02x</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="n">BYTES_ORD</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">substrg</span><span class="p">])</span>
+        
+        <span class="n">chard</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">substrg</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="nb">chr</span><span class="p">(</span><span class="n">BYTES_ORD</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s">&#39;</span><span class="se">\0</span><span class="s">&#39;</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="s">&#39;~&#39;</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="p">(</span><span class="s">&#39; &#39;</span> <span class="o">&lt;=</span> <span class="n">c</span> <span class="o">&lt;=</span> <span class="s">&#39;~&#39;</span><span class="p">):</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="s">&#39;?&#39;</span>
+            <span class="n">chard</span> <span class="o">+=</span> <span class="n">c</span>
+        <span class="k">if</span> <span class="n">numbered</span><span class="p">:</span>
+            <span class="n">num_prefix</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%5d</span><span class="s">: &quot;</span> <span class="o">%</span>  <span class="p">(</span><span class="n">base</span><span class="o">+</span><span class="n">pos</span><span class="o">-</span><span class="n">ofs</span><span class="p">)</span>
+        
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">     </span><span class="si">%-48s</span><span class="s"> </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">num_prefix</span><span class="p">,</span> <span class="n">hexd</span><span class="p">,</span> <span class="n">chard</span><span class="p">)</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">endsub</span>
+</div>
+<div class="viewcode-block" id="biff_dump"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.biff_dump">[docs]</a><span class="k">def</span> <span class="nf">biff_dump</span><span class="p">(</span><span class="n">mem</span><span class="p">,</span> <span class="n">stream_offset</span><span class="p">,</span> <span class="n">stream_len</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fout</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">unnumbered</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">stream_offset</span>
+    <span class="n">stream_end</span> <span class="o">=</span> <span class="n">stream_offset</span> <span class="o">+</span> <span class="n">stream_len</span>
+    <span class="n">adj</span> <span class="o">=</span> <span class="n">base</span> <span class="o">-</span> <span class="n">stream_offset</span>
+    <span class="n">dummies</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">numbered</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">unnumbered</span>
+    <span class="n">num_prefix</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="k">while</span> <span class="n">stream_end</span> <span class="o">-</span> <span class="n">pos</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;HH&#39;</span><span class="p">,</span> <span class="n">mem</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="mi">4</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">rc</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mem</span><span class="p">[</span><span class="n">pos</span><span class="p">:]</span> <span class="o">==</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\0</span><span class="s">&#39;</span> <span class="o">*</span> <span class="p">(</span><span class="n">stream_end</span> <span class="o">-</span> <span class="n">pos</span><span class="p">):</span>
+                <span class="n">dummies</span> <span class="o">=</span> <span class="n">stream_end</span> <span class="o">-</span> <span class="n">pos</span>
+                <span class="n">savpos</span> <span class="o">=</span> <span class="n">pos</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">stream_end</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">dummies</span><span class="p">:</span>
+                <span class="n">dummies</span> <span class="o">+=</span> <span class="mi">4</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">savpos</span> <span class="o">=</span> <span class="n">pos</span>
+                <span class="n">dummies</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="n">pos</span> <span class="o">+=</span> <span class="mi">4</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dummies</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">numbered</span><span class="p">:</span>
+                    <span class="n">num_prefix</span> <span class="o">=</span>  <span class="s">&quot;</span><span class="si">%5d</span><span class="s">: &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">adj</span> <span class="o">+</span> <span class="n">savpos</span><span class="p">)</span>
+                <span class="n">fprintf</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">---- </span><span class="si">%d</span><span class="s"> zero bytes skipped ----</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">num_prefix</span><span class="p">,</span> <span class="n">dummies</span><span class="p">)</span>
+                <span class="n">dummies</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">recname</span> <span class="o">=</span> <span class="n">biff_rec_name_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rc</span><span class="p">,</span> <span class="s">&#39;&lt;UNKNOWN&gt;&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">numbered</span><span class="p">:</span>
+                <span class="n">num_prefix</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%5d</span><span class="s">: &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">adj</span> <span class="o">+</span> <span class="n">pos</span><span class="p">)</span>
+            <span class="n">fprintf</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s%04x</span><span class="s"> </span><span class="si">%s</span><span class="s"> len = </span><span class="si">%04x</span><span class="s"> (</span><span class="si">%d</span><span class="s">)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">num_prefix</span><span class="p">,</span> <span class="n">rc</span><span class="p">,</span> <span class="n">recname</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+            <span class="n">pos</span> <span class="o">+=</span> <span class="mi">4</span>
+            <span class="n">hex_char_dump</span><span class="p">(</span><span class="n">mem</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">adj</span><span class="o">+</span><span class="n">pos</span><span class="p">,</span> <span class="n">fout</span><span class="p">,</span> <span class="n">unnumbered</span><span class="p">)</span>
+            <span class="n">pos</span> <span class="o">+=</span> <span class="n">length</span>
+    <span class="k">if</span> <span class="n">dummies</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">numbered</span><span class="p">:</span>
+            <span class="n">num_prefix</span> <span class="o">=</span>  <span class="s">&quot;</span><span class="si">%5d</span><span class="s">: &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">adj</span> <span class="o">+</span> <span class="n">savpos</span><span class="p">)</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">---- </span><span class="si">%d</span><span class="s"> zero bytes skipped ----</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">num_prefix</span><span class="p">,</span> <span class="n">dummies</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos</span> <span class="o">&lt;</span> <span class="n">stream_end</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">numbered</span><span class="p">:</span>
+            <span class="n">num_prefix</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%5d</span><span class="s">: &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">adj</span> <span class="o">+</span> <span class="n">pos</span><span class="p">)</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">---- Misc bytes at end ----</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">num_prefix</span><span class="p">)</span>
+        <span class="n">hex_char_dump</span><span class="p">(</span><span class="n">mem</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">stream_end</span><span class="o">-</span><span class="n">pos</span><span class="p">,</span> <span class="n">adj</span> <span class="o">+</span> <span class="n">pos</span><span class="p">,</span> <span class="n">fout</span><span class="p">,</span> <span class="n">unnumbered</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">pos</span> <span class="o">&gt;</span> <span class="n">stream_end</span><span class="p">:</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="s">&quot;Last dumped record has length (</span><span class="si">%d</span><span class="s">) that is too large</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="biff_count_records"><a class="viewcode-back" href="../../xlrd.html#xlrd.biffh.biff_count_records">[docs]</a><span class="k">def</span> <span class="nf">biff_count_records</span><span class="p">(</span><span class="n">mem</span><span class="p">,</span> <span class="n">stream_offset</span><span class="p">,</span> <span class="n">stream_len</span><span class="p">,</span> <span class="n">fout</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">):</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">stream_offset</span>
+    <span class="n">stream_end</span> <span class="o">=</span> <span class="n">stream_offset</span> <span class="o">+</span> <span class="n">stream_len</span>
+    <span class="n">tally</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">while</span> <span class="n">stream_end</span> <span class="o">-</span> <span class="n">pos</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="n">rc</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;&lt;HH&#39;</span><span class="p">,</span> <span class="n">mem</span><span class="p">[</span><span class="n">pos</span><span class="p">:</span><span class="n">pos</span><span class="o">+</span><span class="mi">4</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">rc</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mem</span><span class="p">[</span><span class="n">pos</span><span class="p">:]</span> <span class="o">==</span> <span class="n">b</span><span class="s">&#39;</span><span class="se">\0</span><span class="s">&#39;</span> <span class="o">*</span> <span class="p">(</span><span class="n">stream_end</span> <span class="o">-</span> <span class="n">pos</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="n">recname</span> <span class="o">=</span> <span class="s">&quot;&lt;Dummy (zero)&gt;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">recname</span> <span class="o">=</span> <span class="n">biff_rec_name_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rc</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">recname</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">recname</span> <span class="o">=</span> <span class="s">&quot;Unknown_0x</span><span class="si">%04X</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">rc</span>
+        <span class="k">if</span> <span class="n">recname</span> <span class="ow">in</span> <span class="n">tally</span><span class="p">:</span>
+            <span class="n">tally</span><span class="p">[</span><span class="n">recname</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tally</span><span class="p">[</span><span class="n">recname</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="n">length</span> <span class="o">+</span> <span class="mi">4</span>
+    <span class="n">slist</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">tally</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">recname</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">slist</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%8d</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">recname</span><span class="p">),</span> <span class="nb">file</span><span class="o">=</span><span class="n">fout</span><span class="p">)</span>
+</div>
+<span class="n">encoding_from_codepage</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">1200</span> <span class="p">:</span> <span class="s">&#39;utf_16_le&#39;</span><span class="p">,</span>
+    <span class="mi">10000</span><span class="p">:</span> <span class="s">&#39;mac_roman&#39;</span><span class="p">,</span>
+    <span class="mi">10006</span><span class="p">:</span> <span class="s">&#39;mac_greek&#39;</span><span class="p">,</span> <span class="c"># guess</span>
+    <span class="mi">10007</span><span class="p">:</span> <span class="s">&#39;mac_cyrillic&#39;</span><span class="p">,</span> <span class="c"># guess</span>
+    <span class="mi">10029</span><span class="p">:</span> <span class="s">&#39;mac_latin2&#39;</span><span class="p">,</span> <span class="c"># guess</span>
+    <span class="mi">10079</span><span class="p">:</span> <span class="s">&#39;mac_iceland&#39;</span><span class="p">,</span> <span class="c"># guess</span>
+    <span class="mi">10081</span><span class="p">:</span> <span class="s">&#39;mac_turkish&#39;</span><span class="p">,</span> <span class="c"># guess</span>
+    <span class="mi">32768</span><span class="p">:</span> <span class="s">&#39;mac_roman&#39;</span><span class="p">,</span>
+    <span class="mi">32769</span><span class="p">:</span> <span class="s">&#39;cp1252&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="c"># some more guessing, for Indic scripts</span>
+<span class="c"># codepage 57000 range:</span>
+<span class="c"># 2 Devanagari [0]</span>
+<span class="c"># 3 Bengali [1]</span>
+<span class="c"># 4 Tamil [5]</span>
+<span class="c"># 5 Telegu [6]</span>
+<span class="c"># 6 Assamese [1] c.f. Bengali</span>
+<span class="c"># 7 Oriya [4]</span>
+<span class="c"># 8 Kannada [7]</span>
+<span class="c"># 9 Malayalam [8]</span>
+<span class="c"># 10 Gujarati [3]</span>
+<span class="c"># 11 Gurmukhi [2]</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../xlrd.html">xlrd</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

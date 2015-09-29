@@ -1,0 +1,575 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>babel.plural &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for babel.plural</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    babel.numbers</span>
+<span class="sd">    ~~~~~~~~~~~~~</span>
+
+<span class="sd">    CLDR Plural support.  See UTS #35.</span>
+
+<span class="sd">    :copyright: (c) 2013 by the Babel Team.</span>
+<span class="sd">    :license: BSD, see LICENSE for more details.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+
+
+<span class="n">_plural_tags</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;zero&#39;</span><span class="p">,</span> <span class="s">&#39;one&#39;</span><span class="p">,</span> <span class="s">&#39;two&#39;</span><span class="p">,</span> <span class="s">&#39;few&#39;</span><span class="p">,</span> <span class="s">&#39;many&#39;</span><span class="p">,</span> <span class="s">&#39;other&#39;</span><span class="p">)</span>
+<span class="n">_fallback_tag</span> <span class="o">=</span> <span class="s">&#39;other&#39;</span>
+
+
+<div class="viewcode-block" id="PluralRule"><a class="viewcode-back" href="../../babel.html#babel.plural.PluralRule">[docs]</a><span class="k">class</span> <span class="nc">PluralRule</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Represents a set of language pluralization rules.  The constructor</span>
+<span class="sd">    accepts a list of (tag, expr) tuples or a dict of CLDR rules. The</span>
+<span class="sd">    resulting object is callable and accepts one parameter with a positive or</span>
+<span class="sd">    negative number (both integer and float) for the number that indicates the</span>
+<span class="sd">    plural form for a string and returns the tag for the format:</span>
+
+<span class="sd">    &gt;&gt;&gt; rule = PluralRule({&#39;one&#39;: &#39;n is 1&#39;})</span>
+<span class="sd">    &gt;&gt;&gt; rule(1)</span>
+<span class="sd">    &#39;one&#39;</span>
+<span class="sd">    &gt;&gt;&gt; rule(2)</span>
+<span class="sd">    &#39;other&#39;</span>
+
+<span class="sd">    Currently the CLDR defines these tags: zero, one, two, few, many and</span>
+<span class="sd">    other where other is an implicit default.  Rules should be mutually</span>
+<span class="sd">    exclusive; for a given numeric value, only one rule should apply (i.e.</span>
+<span class="sd">    the condition should only be true for one of the plural rule elements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;abstract&#39;</span><span class="p">,</span> <span class="s">&#39;_func&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rules</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the rule instance.</span>
+
+<span class="sd">        :param rules: a list of ``(tag, expr)``) tuples with the rules</span>
+<span class="sd">                      conforming to UTS #35 or a dict with the tags as keys</span>
+<span class="sd">                      and expressions as values.</span>
+<span class="sd">        :raise RuleError: if the expression is malformed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">rules</span> <span class="o">=</span> <span class="n">rules</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">abstract</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">rules</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_plural_tags</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;unknown tag </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">found</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;tag </span><span class="si">%r</span><span class="s"> defined twice&#39;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
+            <span class="n">found</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">abstract</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">_Parser</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="o">.</span><span class="n">ast</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rules</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;</span><span class="si">%s</span><span class="s"> </span><span class="si">%r</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+            <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">rules</span><span class="p">[</span><span class="n">tag</span><span class="p">])</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">_plural_tags</span>
+                       <span class="k">if</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">])</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="PluralRule.parse"><a class="viewcode-back" href="../../babel.html#babel.plural.PluralRule.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">rules</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a `PluralRule` instance for the given rules.  If the rules</span>
+<span class="sd">        are a `PluralRule` object, that object is returned.</span>
+
+<span class="sd">        :param rules: the rules as list or dict, or a `PluralRule` object</span>
+<span class="sd">        :raise RuleError: if the expression is malformed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="n">cls</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">rules</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="n">rules</span><span class="p">)</span>
+</div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">rules</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The `PluralRule` as a dict of unicode plural rules.</span>
+
+<span class="sd">        &gt;&gt;&gt; rule = PluralRule({&#39;one&#39;: &#39;n is 1&#39;})</span>
+<span class="sd">        &gt;&gt;&gt; rule.rules</span>
+<span class="sd">        {&#39;one&#39;: &#39;n is 1&#39;}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_compile</span> <span class="o">=</span> <span class="n">_UnicodeCompiler</span><span class="p">()</span><span class="o">.</span><span class="n">compile</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">tag</span><span class="p">,</span> <span class="n">_compile</span><span class="p">(</span><span class="n">ast</span><span class="p">))</span> <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">ast</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstract</span><span class="p">])</span>
+
+    <span class="n">tags</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">([</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">abstract</span><span class="p">]),</span> <span class="n">doc</span><span class="o">=</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">        A set of explicitly defined tags in this rule.  The implicit default</span>
+<span class="s">        ``&#39;other&#39;`` rules is not part of this set unless there is an explicit</span>
+<span class="s">        rule for it.&quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstract</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">abstract</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">abstract</span> <span class="o">=</span> <span class="n">abstract</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;_func&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_func</span> <span class="o">=</span> <span class="n">to_python</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="to_javascript"><a class="viewcode-back" href="../../babel.html#babel.plural.to_javascript">[docs]</a><span class="k">def</span> <span class="nf">to_javascript</span><span class="p">(</span><span class="n">rule</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a list/dict of rules or a `PluralRule` object into a JavaScript</span>
+<span class="sd">    function.  This function depends on no external library:</span>
+
+<span class="sd">    &gt;&gt;&gt; to_javascript({&#39;one&#39;: &#39;n is 1&#39;})</span>
+<span class="sd">    &quot;(function(n) { return (n == 1) ? &#39;one&#39; : &#39;other&#39;; })&quot;</span>
+
+<span class="sd">    Implementation detail: The function generated will probably evaluate</span>
+<span class="sd">    expressions involved into range operations multiple times.  This has the</span>
+<span class="sd">    advantage that external helper functions are not required and is not a</span>
+<span class="sd">    big performance hit for these simple calculations.</span>
+
+<span class="sd">    :param rule: the rules as list or dict, or a `PluralRule` object</span>
+<span class="sd">    :raise RuleError: if the expression is malformed</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">to_js</span> <span class="o">=</span> <span class="n">_JavaScriptCompiler</span><span class="p">()</span><span class="o">.</span><span class="n">compile</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;(function(n) { return &#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">ast</span> <span class="ow">in</span> <span class="n">PluralRule</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span><span class="o">.</span><span class="n">abstract</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ? </span><span class="si">%r</span><span class="s"> : &#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">to_js</span><span class="p">(</span><span class="n">ast</span><span class="p">),</span> <span class="n">tag</span><span class="p">))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%r</span><span class="s">; })&#39;</span> <span class="o">%</span> <span class="n">_fallback_tag</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="to_python"><a class="viewcode-back" href="../../babel.html#babel.plural.to_python">[docs]</a><span class="k">def</span> <span class="nf">to_python</span><span class="p">(</span><span class="n">rule</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a list/dict of rules or a `PluralRule` object into a regular</span>
+<span class="sd">    Python function.  This is useful in situations where you need a real</span>
+<span class="sd">    function and don&#39;t are about the actual rule object:</span>
+
+<span class="sd">    &gt;&gt;&gt; func = to_python({&#39;one&#39;: &#39;n is 1&#39;, &#39;few&#39;: &#39;n in 2..4&#39;})</span>
+<span class="sd">    &gt;&gt;&gt; func(1)</span>
+<span class="sd">    &#39;one&#39;</span>
+<span class="sd">    &gt;&gt;&gt; func(3)</span>
+<span class="sd">    &#39;few&#39;</span>
+<span class="sd">    &gt;&gt;&gt; func = to_python({&#39;one&#39;: &#39;n in 1,11&#39;, &#39;few&#39;: &#39;n in 3..10,13..19&#39;})</span>
+<span class="sd">    &gt;&gt;&gt; func(11)</span>
+<span class="sd">    &#39;one&#39;</span>
+<span class="sd">    &gt;&gt;&gt; func(15)</span>
+<span class="sd">    &#39;few&#39;</span>
+
+<span class="sd">    :param rule: the rules as list or dict, or a `PluralRule` object</span>
+<span class="sd">    :raise RuleError: if the expression is malformed</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">namespace</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;IN&#39;</span><span class="p">:</span>       <span class="n">in_range_list</span><span class="p">,</span>
+        <span class="s">&#39;WITHIN&#39;</span><span class="p">:</span>   <span class="n">within_range_list</span><span class="p">,</span>
+        <span class="s">&#39;MOD&#39;</span><span class="p">:</span>      <span class="n">cldr_modulo</span>
+    <span class="p">}</span>
+    <span class="n">to_python</span> <span class="o">=</span> <span class="n">_PythonCompiler</span><span class="p">()</span><span class="o">.</span><span class="n">compile</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;def evaluate(n):&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">ast</span> <span class="ow">in</span> <span class="n">PluralRule</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span><span class="o">.</span><span class="n">abstract</span><span class="p">:</span>
+        <span class="c"># the str() call is to coerce the tag to the native string.  It&#39;s</span>
+        <span class="c"># a limited ascii restricted set of tags anyways so that is fine.</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39; if (</span><span class="si">%s</span><span class="s">): return </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">to_python</span><span class="p">(</span><span class="n">ast</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">tag</span><span class="p">)))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39; return </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">_fallback_tag</span><span class="p">)</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">),</span> <span class="s">&#39;&lt;rule&gt;&#39;</span><span class="p">,</span> <span class="s">&#39;exec&#39;</span><span class="p">)</span>
+    <span class="nb">eval</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">namespace</span><span class="p">[</span><span class="s">&#39;evaluate&#39;</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="to_gettext"><a class="viewcode-back" href="../../babel.html#babel.plural.to_gettext">[docs]</a><span class="k">def</span> <span class="nf">to_gettext</span><span class="p">(</span><span class="n">rule</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The plural rule as gettext expression.  The gettext expression is</span>
+<span class="sd">    technically limited to integers and returns indices rather than tags.</span>
+
+<span class="sd">    &gt;&gt;&gt; to_gettext({&#39;one&#39;: &#39;n is 1&#39;, &#39;two&#39;: &#39;n is 2&#39;})</span>
+<span class="sd">    &#39;nplurals=3; plural=((n == 1) ? 0 : (n == 2) ? 1 : 2)&#39;</span>
+
+<span class="sd">    :param rule: the rules as list or dict, or a `PluralRule` object</span>
+<span class="sd">    :raise RuleError: if the expression is malformed</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rule</span> <span class="o">=</span> <span class="n">PluralRule</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span>
+
+    <span class="n">used_tags</span> <span class="o">=</span> <span class="n">rule</span><span class="o">.</span><span class="n">tags</span> <span class="o">|</span> <span class="nb">set</span><span class="p">([</span><span class="n">_fallback_tag</span><span class="p">])</span>
+    <span class="n">_compile</span> <span class="o">=</span> <span class="n">_GettextCompiler</span><span class="p">()</span><span class="o">.</span><span class="n">compile</span>
+    <span class="n">_get_index</span> <span class="o">=</span> <span class="p">[</span><span class="n">tag</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">_plural_tags</span> <span class="k">if</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">used_tags</span><span class="p">]</span><span class="o">.</span><span class="n">index</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;nplurals=</span><span class="si">%d</span><span class="s">; plural=(&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">used_tags</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">ast</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">abstract</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> ? </span><span class="si">%d</span><span class="s"> : &#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">_compile</span><span class="p">(</span><span class="n">ast</span><span class="p">),</span> <span class="n">_get_index</span><span class="p">(</span><span class="n">tag</span><span class="p">)))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="n">_get_index</span><span class="p">(</span><span class="n">_fallback_tag</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="in_range_list"><a class="viewcode-back" href="../../babel.html#babel.plural.in_range_list">[docs]</a><span class="k">def</span> <span class="nf">in_range_list</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">range_list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Integer range list test.  This is the callback for the &quot;in&quot; operator</span>
+<span class="sd">    of the UTS #35 pluralization rule language:</span>
+
+<span class="sd">    &gt;&gt;&gt; in_range_list(1, [(1, 3)])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; in_range_list(3, [(1, 3)])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; in_range_list(3, [(1, 3), (5, 8)])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; in_range_list(1.2, [(1, 4)])</span>
+<span class="sd">    False</span>
+<span class="sd">    &gt;&gt;&gt; in_range_list(10, [(1, 4)])</span>
+<span class="sd">    False</span>
+<span class="sd">    &gt;&gt;&gt; in_range_list(10, [(1, 4), (6, 8)])</span>
+<span class="sd">    False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">num</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="ow">and</span> <span class="n">within_range_list</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">range_list</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="within_range_list"><a class="viewcode-back" href="../../babel.html#babel.plural.within_range_list">[docs]</a><span class="k">def</span> <span class="nf">within_range_list</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">range_list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Float range test.  This is the callback for the &quot;within&quot; operator</span>
+<span class="sd">    of the UTS #35 pluralization rule language:</span>
+
+<span class="sd">    &gt;&gt;&gt; within_range_list(1, [(1, 3)])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; within_range_list(1.0, [(1, 3)])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; within_range_list(1.2, [(1, 4)])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; within_range_list(8.8, [(1, 4), (7, 15)])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; within_range_list(10, [(1, 4)])</span>
+<span class="sd">    False</span>
+<span class="sd">    &gt;&gt;&gt; within_range_list(10.5, [(1, 4), (20, 30)])</span>
+<span class="sd">    False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">num</span> <span class="o">&gt;=</span> <span class="n">min_</span> <span class="ow">and</span> <span class="n">num</span> <span class="o">&lt;=</span> <span class="n">max_</span> <span class="k">for</span> <span class="n">min_</span><span class="p">,</span> <span class="n">max_</span> <span class="ow">in</span> <span class="n">range_list</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="cldr_modulo"><a class="viewcode-back" href="../../babel.html#babel.plural.cldr_modulo">[docs]</a><span class="k">def</span> <span class="nf">cldr_modulo</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Javaish modulo.  This modulo operator returns the value with the sign</span>
+<span class="sd">    of the dividend rather than the divisor like Python does:</span>
+
+<span class="sd">    &gt;&gt;&gt; cldr_modulo(-3, 5)</span>
+<span class="sd">    -3</span>
+<span class="sd">    &gt;&gt;&gt; cldr_modulo(-3, -5)</span>
+<span class="sd">    -3</span>
+<span class="sd">    &gt;&gt;&gt; cldr_modulo(3, 5)</span>
+<span class="sd">    3</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reverse</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">a</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">reverse</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">b</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">a</span> <span class="o">%</span> <span class="n">b</span>
+    <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+        <span class="n">rv</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">rv</span>
+
+</div>
+<div class="viewcode-block" id="RuleError"><a class="viewcode-back" href="../../babel.html#babel.plural.RuleError">[docs]</a><span class="k">class</span> <span class="nc">RuleError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised if a rule is malformed.&quot;&quot;&quot;</span>
+
+</div>
+<span class="k">class</span> <span class="nc">_Parser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Internal parser.  This class can translate a single rule into an abstract</span>
+<span class="sd">    tree of tuples. It implements the following grammar::</span>
+
+<span class="sd">        condition     = and_condition (&#39;or&#39; and_condition)*</span>
+<span class="sd">        and_condition = relation (&#39;and&#39; relation)*</span>
+<span class="sd">        relation      = is_relation | in_relation | within_relation | &#39;n&#39; &lt;EOL&gt;</span>
+<span class="sd">        is_relation   = expr &#39;is&#39; (&#39;not&#39;)? value</span>
+<span class="sd">        in_relation   = expr (&#39;not&#39;)? &#39;in&#39; range_list</span>
+<span class="sd">        within_relation = expr (&#39;not&#39;)? &#39;within&#39; range_list</span>
+<span class="sd">        expr          = &#39;n&#39; (&#39;mod&#39; value)?</span>
+<span class="sd">        range_list    = (range | value) (&#39;,&#39; range_list)*</span>
+<span class="sd">        value         = digit+</span>
+<span class="sd">        digit         = 0|1|2|3|4|5|6|7|8|9</span>
+<span class="sd">        range         = value&#39;..&#39;value</span>
+
+<span class="sd">    - Whitespace can occur between or around any of the above tokens.</span>
+<span class="sd">    - Rules should be mutually exclusive; for a given numeric value, only one</span>
+<span class="sd">      rule should apply (i.e. the condition should only be true for one of</span>
+<span class="sd">      the plural rule elements).</span>
+<span class="sd">    - The in and within relations can take comma-separated lists, such as:</span>
+<span class="sd">      &#39;n in 3,5,7..15&#39;.</span>
+
+<span class="sd">    The translator parses the expression on instanciation into an attribute</span>
+<span class="sd">    called `ast`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_rules</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;\s+(?u)&#39;</span><span class="p">)),</span>
+        <span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;\b(and|or|is|(?:with)?in|not|mod|n)\b&#39;</span><span class="p">)),</span>
+        <span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;\d+&#39;</span><span class="p">)),</span>
+        <span class="p">(</span><span class="s">&#39;comma&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;,&#39;</span><span class="p">)),</span>
+        <span class="p">(</span><span class="s">&#39;ellipsis&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;\.\.&#39;</span><span class="p">))</span>
+    <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">pos</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tok</span><span class="p">,</span> <span class="n">rule</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rules</span><span class="p">:</span>
+                <span class="n">match</span> <span class="o">=</span> <span class="n">rule</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">tok</span><span class="p">:</span>
+                        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">tok</span><span class="p">,</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">()))</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">RuleError</span><span class="p">(</span><span class="s">&#39;malformed CLDR pluralization rule.  &#39;</span>
+                                <span class="s">&#39;Got unexpected </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">string</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span> <span class="o">=</span> <span class="n">result</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RuleError</span><span class="p">(</span><span class="s">&#39;Expected end of rule, got </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="nb">type</span> <span class="ow">and</span> \
+               <span class="p">(</span><span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">skip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">test</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">expect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">term</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">token</span>
+        <span class="k">if</span> <span class="n">term</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">term</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="nb">type</span> <span class="ow">or</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RuleError</span><span class="p">(</span><span class="s">&#39;expected </span><span class="si">%s</span><span class="s"> but end of rule reached&#39;</span> <span class="o">%</span> <span class="n">term</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">RuleError</span><span class="p">(</span><span class="s">&#39;expected </span><span class="si">%s</span><span class="s"> but got </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">term</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="k">def</span> <span class="nf">condition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">and_condition</span><span class="p">()</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;or&#39;</span><span class="p">):</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="s">&#39;or&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">and_condition</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">op</span>
+
+    <span class="k">def</span> <span class="nf">and_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span><span class="p">()</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;and&#39;</span><span class="p">):</span>
+            <span class="n">op</span> <span class="o">=</span> <span class="s">&#39;and&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">relation</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">op</span>
+
+    <span class="k">def</span> <span class="nf">relation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;is&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;not&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="s">&#39;isnot&#39;</span> <span class="ow">or</span> <span class="s">&#39;is&#39;</span><span class="p">,</span> \
+                   <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">())</span>
+        <span class="n">negated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;not&#39;</span><span class="p">)</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;within&#39;</span><span class="p">):</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="s">&#39;within&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expect</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">term</span><span class="o">=</span><span class="s">&quot;&#39;within&#39; or &#39;in&#39;&quot;</span><span class="p">)</span>
+        <span class="n">rv</span> <span class="o">=</span> <span class="s">&#39;relation&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_list</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">negated</span><span class="p">:</span>
+            <span class="n">rv</span> <span class="o">=</span> <span class="s">&#39;not&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">rv</span><span class="p">,)</span>
+        <span class="k">return</span> <span class="n">rv</span>
+
+    <span class="k">def</span> <span class="nf">range_or_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;ellipsis&#39;</span><span class="p">):</span>
+            <span class="k">return</span><span class="p">((</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span><span class="p">((</span><span class="n">left</span><span class="p">,</span> <span class="n">left</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">range_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">range_list</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">range_or_value</span><span class="p">()]</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;comma&#39;</span><span class="p">):</span>
+            <span class="n">range_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">range_or_value</span><span class="p">())</span>
+        <span class="k">return</span> <span class="s">&#39;range_list&#39;</span><span class="p">,</span> <span class="n">range_list</span>
+
+    <span class="k">def</span> <span class="nf">expr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expect</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;n&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s">&#39;word&#39;</span><span class="p">,</span> <span class="s">&#39;mod&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s">&#39;mod&#39;</span><span class="p">,</span> <span class="p">((</span><span class="s">&#39;n&#39;</span><span class="p">,</span> <span class="p">()),</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">())</span>
+        <span class="k">return</span> <span class="s">&#39;n&#39;</span><span class="p">,</span> <span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;value&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expect</span><span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]),)</span>
+
+
+<span class="k">def</span> <span class="nf">_binary_compiler</span><span class="p">(</span><span class="n">tmpl</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compiler factory for the `_Compiler`.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="n">tmpl</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_unary_compiler</span><span class="p">(</span><span class="n">tmpl</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compiler factory for the `_Compiler`.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">tmpl</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_Compiler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The compilers are able to transform the expressions into multiple</span>
+<span class="sd">    output formats.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="n">op</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">arg</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;compile_&#39;</span> <span class="o">+</span> <span class="n">op</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="n">compile_n</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s">&#39;n&#39;</span>
+    <span class="n">compile_value</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">compile_and</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> &amp;&amp; </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+    <span class="n">compile_or</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> || </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+    <span class="n">compile_not</span> <span class="o">=</span> <span class="n">_unary_compiler</span><span class="p">(</span><span class="s">&#39;(!</span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+    <span class="n">compile_mod</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> </span><span class="si">%%</span><span class="s"> </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+    <span class="n">compile_is</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> == </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+    <span class="n">compile_isnot</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> != </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">compile_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">range_list</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">_PythonCompiler</span><span class="p">(</span><span class="n">_Compiler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compiles an expression to Python.&quot;&quot;&quot;</span>
+
+    <span class="n">compile_and</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> and </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+    <span class="n">compile_or</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> or </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+    <span class="n">compile_not</span> <span class="o">=</span> <span class="n">_unary_compiler</span><span class="p">(</span><span class="s">&#39;(not </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+    <span class="n">compile_mod</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;MOD(</span><span class="si">%s</span><span class="s">, </span><span class="si">%s</span><span class="s">)&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">compile_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">range_list</span><span class="p">):</span>
+        <span class="n">compile_range_list</span> <span class="o">=</span> <span class="s">&#39;[</span><span class="si">%s</span><span class="s">]&#39;</span> <span class="o">%</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s">, </span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">,</span> <span class="n">range_</span><span class="p">))</span>
+             <span class="k">for</span> <span class="n">range_</span> <span class="ow">in</span> <span class="n">range_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">(</span><span class="si">%s</span><span class="s">, </span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">expr</span><span class="p">),</span>
+                               <span class="n">compile_range_list</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_GettextCompiler</span><span class="p">(</span><span class="n">_Compiler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compile into a gettext plural expression.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">compile_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">range_list</span><span class="p">):</span>
+        <span class="n">rv</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">range_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">rv</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> == </span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                    <span class="n">expr</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+                <span class="n">rv</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;(</span><span class="si">%s</span><span class="s"> &gt;= </span><span class="si">%s</span><span class="s"> &amp;&amp; </span><span class="si">%s</span><span class="s"> &lt;= </span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                    <span class="n">expr</span><span class="p">,</span>
+                    <span class="nb">min</span><span class="p">,</span>
+                    <span class="n">expr</span><span class="p">,</span>
+                    <span class="nb">max</span>
+                <span class="p">))</span>
+        <span class="k">return</span> <span class="s">&#39;(</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="s">&#39; || &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rv</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_JavaScriptCompiler</span><span class="p">(</span><span class="n">_GettextCompiler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compiles the expression to plain of JavaScript.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">compile_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">range_list</span><span class="p">):</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="n">_GettextCompiler</span><span class="o">.</span><span class="n">compile_relation</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">range_list</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;in&#39;</span><span class="p">:</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="s">&#39;(parseInt(</span><span class="si">%s</span><span class="s">) == </span><span class="si">%s</span><span class="s"> &amp;&amp; </span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">code</span>
+
+
+<span class="k">class</span> <span class="nc">_UnicodeCompiler</span><span class="p">(</span><span class="n">_Compiler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a unicode pluralization rule again.&quot;&quot;&quot;</span>
+
+    <span class="n">compile_is</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> is </span><span class="si">%s</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">compile_isnot</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> is not </span><span class="si">%s</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">compile_and</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> and </span><span class="si">%s</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">compile_or</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> or </span><span class="si">%s</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">compile_mod</span> <span class="o">=</span> <span class="n">_binary_compiler</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> mod </span><span class="si">%s</span><span class="s">&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">compile_not</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">relation</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compile_relation</span><span class="p">(</span><span class="n">negated</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">*</span><span class="n">relation</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">compile_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">range_list</span><span class="p">,</span> <span class="n">negated</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">ranges</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">range_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">ranges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ranges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">..</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">,</span> <span class="n">item</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">expr</span><span class="p">),</span> <span class="n">negated</span> <span class="ow">and</span> <span class="s">&#39; not&#39;</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+            <span class="n">method</span><span class="p">,</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+        <span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

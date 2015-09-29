@@ -1,0 +1,648 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>babel.messages.extract &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for babel.messages.extract</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    babel.messages.extract</span>
+<span class="sd">    ~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="sd">    Basic infrastructure for extracting localizable messages from source files.</span>
+
+<span class="sd">    This module defines an extensible system for collecting localizable message</span>
+<span class="sd">    strings from a variety of sources. A native extractor for Python source</span>
+<span class="sd">    files is builtin, extractors for other sources can be added using very</span>
+<span class="sd">    simple plugins.</span>
+
+<span class="sd">    The main entry points into the extraction functionality are the functions</span>
+<span class="sd">    `extract_from_dir` and `extract_from_file`.</span>
+
+<span class="sd">    :copyright: (c) 2013 by the Babel Team.</span>
+<span class="sd">    :license: BSD, see LICENSE for more details.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">tokenize</span> <span class="kn">import</span> <span class="n">generate_tokens</span><span class="p">,</span> <span class="n">COMMENT</span><span class="p">,</span> <span class="n">NAME</span><span class="p">,</span> <span class="n">OP</span><span class="p">,</span> <span class="n">STRING</span>
+
+<span class="kn">from</span> <span class="nn">babel.util</span> <span class="kn">import</span> <span class="n">parse_encoding</span><span class="p">,</span> <span class="n">pathmatch</span><span class="p">,</span> <span class="n">relpath</span>
+<span class="kn">from</span> <span class="nn">babel._compat</span> <span class="kn">import</span> <span class="n">PY2</span><span class="p">,</span> <span class="n">text_type</span>
+<span class="kn">from</span> <span class="nn">textwrap</span> <span class="kn">import</span> <span class="n">dedent</span>
+
+
+<span class="n">GROUP_NAME</span> <span class="o">=</span> <span class="s">&#39;babel.extractors&#39;</span>
+
+<span class="n">DEFAULT_KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;_&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="s">&#39;gettext&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="s">&#39;ngettext&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="s">&#39;ugettext&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="s">&#39;ungettext&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="s">&#39;dgettext&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,),</span>
+    <span class="s">&#39;dngettext&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+    <span class="s">&#39;N_&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="s">&#39;pgettext&#39;</span><span class="p">:</span> <span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;c&#39;</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">DEFAULT_MAPPING</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;**.py&#39;</span><span class="p">,</span> <span class="s">&#39;python&#39;</span><span class="p">)]</span>
+
+<span class="n">empty_msgid_warning</span> <span class="o">=</span> <span class="p">(</span>
+<span class="s">&#39;</span><span class="si">%s</span><span class="s">: warning: Empty msgid.  It is reserved by GNU gettext: gettext(&quot;&quot;) &#39;</span>
+<span class="s">&#39;returns the header entry with meta information, not the empty string.&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_strip_comment_tags</span><span class="p">(</span><span class="n">comments</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Helper function for `extract` that strips comment tags from strings</span>
+<span class="sd">    in a list of comment lines.  This functions operates in-place.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_strip</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">tag</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">tag</span><span class="p">):]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">line</span>
+    <span class="n">comments</span><span class="p">[:]</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">_strip</span><span class="p">,</span> <span class="n">comments</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="extract_from_dir"><a class="viewcode-back" href="../../../babel.messages.html#babel.messages.extract.extract_from_dir">[docs]</a><span class="k">def</span> <span class="nf">extract_from_dir</span><span class="p">(</span><span class="n">dirname</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">method_map</span><span class="o">=</span><span class="n">DEFAULT_MAPPING</span><span class="p">,</span>
+                     <span class="n">options_map</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">keywords</span><span class="o">=</span><span class="n">DEFAULT_KEYWORDS</span><span class="p">,</span>
+                     <span class="n">comment_tags</span><span class="o">=</span><span class="p">(),</span> <span class="n">callback</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">strip_comment_tags</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract messages from any source files found in the given directory.</span>
+
+<span class="sd">    This function generates tuples of the form ``(filename, lineno, message,</span>
+<span class="sd">    comments, context)``.</span>
+
+<span class="sd">    Which extraction method is used per file is determined by the `method_map`</span>
+<span class="sd">    parameter, which maps extended glob patterns to extraction method names.</span>
+<span class="sd">    For example, the following is the default mapping:</span>
+
+<span class="sd">    &gt;&gt;&gt; method_map = [</span>
+<span class="sd">    ...     (&#39;**.py&#39;, &#39;python&#39;)</span>
+<span class="sd">    ... ]</span>
+
+<span class="sd">    This basically says that files with the filename extension &quot;.py&quot; at any</span>
+<span class="sd">    level inside the directory should be processed by the &quot;python&quot; extraction</span>
+<span class="sd">    method. Files that don&#39;t match any of the mapping patterns are ignored. See</span>
+<span class="sd">    the documentation of the `pathmatch` function for details on the pattern</span>
+<span class="sd">    syntax.</span>
+
+<span class="sd">    The following extended mapping would also use the &quot;genshi&quot; extraction</span>
+<span class="sd">    method on any file in &quot;templates&quot; subdirectory:</span>
+
+<span class="sd">    &gt;&gt;&gt; method_map = [</span>
+<span class="sd">    ...     (&#39;**/templates/**.*&#39;, &#39;genshi&#39;),</span>
+<span class="sd">    ...     (&#39;**.py&#39;, &#39;python&#39;)</span>
+<span class="sd">    ... ]</span>
+
+<span class="sd">    The dictionary provided by the optional `options_map` parameter augments</span>
+<span class="sd">    these mappings. It uses extended glob patterns as keys, and the values are</span>
+<span class="sd">    dictionaries mapping options names to option values (both strings).</span>
+
+<span class="sd">    The glob patterns of the `options_map` do not necessarily need to be the</span>
+<span class="sd">    same as those used in the method mapping. For example, while all files in</span>
+<span class="sd">    the ``templates`` folders in an application may be Genshi applications, the</span>
+<span class="sd">    options for those files may differ based on extension:</span>
+
+<span class="sd">    &gt;&gt;&gt; options_map = {</span>
+<span class="sd">    ...     &#39;**/templates/**.txt&#39;: {</span>
+<span class="sd">    ...         &#39;template_class&#39;: &#39;genshi.template:TextTemplate&#39;,</span>
+<span class="sd">    ...         &#39;encoding&#39;: &#39;latin-1&#39;</span>
+<span class="sd">    ...     },</span>
+<span class="sd">    ...     &#39;**/templates/**.html&#39;: {</span>
+<span class="sd">    ...         &#39;include_attrs&#39;: &#39;&#39;</span>
+<span class="sd">    ...     }</span>
+<span class="sd">    ... }</span>
+
+<span class="sd">    :param dirname: the path to the directory to extract messages from.  If</span>
+<span class="sd">                    not given the current working directory is used.</span>
+<span class="sd">    :param method_map: a list of ``(pattern, method)`` tuples that maps of</span>
+<span class="sd">                       extraction method names to extended glob patterns</span>
+<span class="sd">    :param options_map: a dictionary of additional options (optional)</span>
+<span class="sd">    :param keywords: a dictionary mapping keywords (i.e. names of functions</span>
+<span class="sd">                     that should be recognized as translation functions) to</span>
+<span class="sd">                     tuples that specify which of their arguments contain</span>
+<span class="sd">                     localizable strings</span>
+<span class="sd">    :param comment_tags: a list of tags of translator comments to search for</span>
+<span class="sd">                         and include in the results</span>
+<span class="sd">    :param callback: a function that is called for every file that message are</span>
+<span class="sd">                     extracted from, just before the extraction itself is</span>
+<span class="sd">                     performed; the function is passed the filename, the name</span>
+<span class="sd">                     of the extraction method and and the options dictionary as</span>
+<span class="sd">                     positional arguments, in that order</span>
+<span class="sd">    :param strip_comment_tags: a flag that if set to `True` causes all comment</span>
+<span class="sd">                               tags to be removed from the collected comments.</span>
+<span class="sd">    :see: `pathmatch`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dirname</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">options_map</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">options_map</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">absname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">absname</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">subdir</span> <span class="ow">in</span> <span class="n">dirnames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">subdir</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">subdir</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span>
+                <span class="n">dirnames</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">subdir</span><span class="p">)</span>
+        <span class="n">dirnames</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">filenames</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">relpath</span><span class="p">(</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s">&#39;/&#39;</span><span class="p">),</span>
+                <span class="n">dirname</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">method_map</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pathmatch</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+                    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">absname</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+                    <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">opattern</span><span class="p">,</span> <span class="n">odict</span> <span class="ow">in</span> <span class="n">options_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">pathmatch</span><span class="p">(</span><span class="n">opattern</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+                            <span class="n">options</span> <span class="o">=</span> <span class="n">odict</span>
+                    <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+                        <span class="n">callback</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">comments</span><span class="p">,</span> <span class="n">context</span> <span class="ow">in</span> \
+                          <span class="n">extract_from_file</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span>
+                                            <span class="n">keywords</span><span class="o">=</span><span class="n">keywords</span><span class="p">,</span>
+                                            <span class="n">comment_tags</span><span class="o">=</span><span class="n">comment_tags</span><span class="p">,</span>
+                                            <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
+                                            <span class="n">strip_comment_tags</span><span class="o">=</span>
+                                                <span class="n">strip_comment_tags</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">filename</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">comments</span><span class="p">,</span> <span class="n">context</span>
+                    <span class="k">break</span>
+
+</div>
+<div class="viewcode-block" id="extract_from_file"><a class="viewcode-back" href="../../../babel.messages.html#babel.messages.extract.extract_from_file">[docs]</a><span class="k">def</span> <span class="nf">extract_from_file</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">keywords</span><span class="o">=</span><span class="n">DEFAULT_KEYWORDS</span><span class="p">,</span>
+                      <span class="n">comment_tags</span><span class="o">=</span><span class="p">(),</span> <span class="n">options</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">strip_comment_tags</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract messages from a specific file.</span>
+
+<span class="sd">    This function returns a list of tuples of the form ``(lineno, funcname,</span>
+<span class="sd">    message)``.</span>
+
+<span class="sd">    :param filename: the path to the file to extract messages from</span>
+<span class="sd">    :param method: a string specifying the extraction method (.e.g. &quot;python&quot;)</span>
+<span class="sd">    :param keywords: a dictionary mapping keywords (i.e. names of functions</span>
+<span class="sd">                     that should be recognized as translation functions) to</span>
+<span class="sd">                     tuples that specify which of their arguments contain</span>
+<span class="sd">                     localizable strings</span>
+<span class="sd">    :param comment_tags: a list of translator tags to search for and include</span>
+<span class="sd">                         in the results</span>
+<span class="sd">    :param strip_comment_tags: a flag that if set to `True` causes all comment</span>
+<span class="sd">                               tags to be removed from the collected comments.</span>
+<span class="sd">    :param options: a dictionary of additional options (optional)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fileobj</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">extract</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">fileobj</span><span class="p">,</span> <span class="n">keywords</span><span class="p">,</span> <span class="n">comment_tags</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span>
+                            <span class="n">strip_comment_tags</span><span class="p">))</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">fileobj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="extract"><a class="viewcode-back" href="../../../babel.messages.html#babel.messages.extract.extract">[docs]</a><span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">fileobj</span><span class="p">,</span> <span class="n">keywords</span><span class="o">=</span><span class="n">DEFAULT_KEYWORDS</span><span class="p">,</span> <span class="n">comment_tags</span><span class="o">=</span><span class="p">(),</span>
+            <span class="n">options</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">strip_comment_tags</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract messages from the given file-like object using the specified</span>
+<span class="sd">    extraction method.</span>
+
+<span class="sd">    This function returns tuples of the form ``(lineno, message, comments)``.</span>
+
+<span class="sd">    The implementation dispatches the actual extraction to plugins, based on the</span>
+<span class="sd">    value of the ``method`` parameter.</span>
+
+<span class="sd">    &gt;&gt;&gt; source = &#39;&#39;&#39;# foo module</span>
+<span class="sd">    ... def run(argv):</span>
+<span class="sd">    ...    print _(&#39;Hello, world!&#39;)</span>
+<span class="sd">    ... &#39;&#39;&#39;</span>
+
+<span class="sd">    &gt;&gt;&gt; from StringIO import StringIO</span>
+<span class="sd">    &gt;&gt;&gt; for message in extract(&#39;python&#39;, StringIO(source)):</span>
+<span class="sd">    ...     print message</span>
+<span class="sd">    (3, u&#39;Hello, world!&#39;, [], None)</span>
+
+<span class="sd">    :param method: a string specifying the extraction method (.e.g. &quot;python&quot;);</span>
+<span class="sd">                   if this is a simple name, the extraction function will be</span>
+<span class="sd">                   looked up by entry point; if it is an explicit reference</span>
+<span class="sd">                   to a function (of the form ``package.module:funcname`` or</span>
+<span class="sd">                   ``package.module.funcname``), the corresponding function</span>
+<span class="sd">                   will be imported and used</span>
+<span class="sd">    :param fileobj: the file-like object the messages should be extracted from</span>
+<span class="sd">    :param keywords: a dictionary mapping keywords (i.e. names of functions</span>
+<span class="sd">                     that should be recognized as translation functions) to</span>
+<span class="sd">                     tuples that specify which of their arguments contain</span>
+<span class="sd">                     localizable strings</span>
+<span class="sd">    :param comment_tags: a list of translator tags to search for and include</span>
+<span class="sd">                         in the results</span>
+<span class="sd">    :param options: a dictionary of additional options (optional)</span>
+<span class="sd">    :param strip_comment_tags: a flag that if set to `True` causes all comment</span>
+<span class="sd">                               tags to be removed from the collected comments.</span>
+<span class="sd">    :raise ValueError: if the extraction method is not registered</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">func</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="s">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">method</span> <span class="ow">or</span> <span class="s">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">method</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;:&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">method</span><span class="p">:</span>
+            <span class="n">lastdot</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+            <span class="n">module</span><span class="p">,</span> <span class="n">attrname</span> <span class="o">=</span> <span class="n">method</span><span class="p">[:</span><span class="n">lastdot</span><span class="p">],</span> <span class="n">method</span><span class="p">[</span><span class="n">lastdot</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">module</span><span class="p">,</span> <span class="n">attrname</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">__import__</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{},</span> <span class="p">[</span><span class="n">attrname</span><span class="p">]),</span> <span class="n">attrname</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">pkg_resources</span> <span class="kn">import</span> <span class="n">working_set</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">entry_point</span> <span class="ow">in</span> <span class="n">working_set</span><span class="o">.</span><span class="n">iter_entry_points</span><span class="p">(</span><span class="n">GROUP_NAME</span><span class="p">,</span>
+                                                             <span class="n">method</span><span class="p">):</span>
+                <span class="n">func</span> <span class="o">=</span> <span class="n">entry_point</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">require</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># if pkg_resources is not available or no usable egg-info was found</span>
+            <span class="c"># (see #230), we resort to looking up the builtin extractors</span>
+            <span class="c"># directly</span>
+            <span class="n">builtin</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="n">extract_nothing</span><span class="p">,</span>
+                <span class="s">&#39;python&#39;</span><span class="p">:</span> <span class="n">extract_python</span><span class="p">,</span>
+                <span class="s">&#39;javascript&#39;</span><span class="p">:</span> <span class="n">extract_javascript</span>
+            <span class="p">}</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">builtin</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Unknown extraction method </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">method</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">keywords</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">comment_tags</span><span class="p">,</span>
+                   <span class="n">options</span><span class="o">=</span><span class="n">options</span> <span class="ow">or</span> <span class="p">{})</span>
+
+    <span class="k">for</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">funcname</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="n">comments</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">funcname</span><span class="p">:</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">keywords</span><span class="p">[</span><span class="n">funcname</span><span class="p">]</span> <span class="ow">or</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span><span class="n">messages</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="c"># Validate the messages against the keyword&#39;s specification</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">msgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">invalid</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># last_index is 1 based like the keyword spec</span>
+        <span class="n">last_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">context</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">last_index</span> <span class="o">&lt;</span> <span class="n">index</span><span class="p">:</span>
+                <span class="c"># Not enough arguments</span>
+                <span class="n">invalid</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">break</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="n">index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">message</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">invalid</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">break</span>
+            <span class="n">msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="c"># keyword spec indexes are 1 based, therefore &#39;-1&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="c"># context-aware *gettext method</span>
+            <span class="n">first_msg_index</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">first_msg_index</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">messages</span><span class="p">[</span><span class="n">first_msg_index</span><span class="p">]:</span>
+            <span class="c"># An empty string msgid isn&#39;t valid, emit a warning</span>
+            <span class="n">where</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">:</span><span class="si">%i</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">)</span> <span class="ow">and</span> \
+                                   <span class="n">fileobj</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="s">&#39;(unknown)&#39;</span><span class="p">,</span> <span class="n">lineno</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">((</span><span class="n">empty_msgid_warning</span> <span class="o">%</span> <span class="n">where</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="n">messages</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">msgs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">messages</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">strip_comment_tags</span><span class="p">:</span>
+            <span class="n">_strip_comment_tags</span><span class="p">(</span><span class="n">comments</span><span class="p">,</span> <span class="n">comment_tags</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="n">comments</span><span class="p">,</span> <span class="n">context</span>
+
+</div>
+<div class="viewcode-block" id="extract_nothing"><a class="viewcode-back" href="../../../babel.messages.html#babel.messages.extract.extract_nothing">[docs]</a><span class="k">def</span> <span class="nf">extract_nothing</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">keywords</span><span class="p">,</span> <span class="n">comment_tags</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Pseudo extractor that does not actually extract anything, but simply</span>
+<span class="sd">    returns an empty list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[]</span>
+
+</div>
+<div class="viewcode-block" id="extract_python"><a class="viewcode-back" href="../../../babel.messages.html#babel.messages.extract.extract_python">[docs]</a><span class="k">def</span> <span class="nf">extract_python</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">keywords</span><span class="p">,</span> <span class="n">comment_tags</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract messages from Python source code.</span>
+
+<span class="sd">    It returns an iterator yielding tuples in the following form ``(lineno,</span>
+<span class="sd">    funcname, message, comments)``.</span>
+
+<span class="sd">    :param fileobj: the seekable, file-like object the messages should be</span>
+<span class="sd">                    extracted from</span>
+<span class="sd">    :param keywords: a list of keywords (i.e. function names) that should be</span>
+<span class="sd">                     recognized as translation functions</span>
+<span class="sd">    :param comment_tags: a list of translator tags to search for and include</span>
+<span class="sd">                         in the results</span>
+<span class="sd">    :param options: a dictionary of additional options (optional)</span>
+<span class="sd">    :rtype: ``iterator``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">funcname</span> <span class="o">=</span> <span class="n">lineno</span> <span class="o">=</span> <span class="n">message_lineno</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">call_stack</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">translator_comments</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">in_def</span> <span class="o">=</span> <span class="n">in_translator_comments</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">comment_tag</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="n">encoding</span> <span class="o">=</span> <span class="n">parse_encoding</span><span class="p">(</span><span class="n">fileobj</span><span class="p">)</span> <span class="ow">or</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;encoding&#39;</span><span class="p">,</span> <span class="s">&#39;iso-8859-1&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">PY2</span><span class="p">:</span>
+        <span class="n">next_line</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">readline</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">next_line</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">generate_tokens</span><span class="p">(</span><span class="n">next_line</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tok</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">lineno</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">call_stack</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">NAME</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;def&#39;</span><span class="p">,</span> <span class="s">&#39;class&#39;</span><span class="p">):</span>
+            <span class="n">in_def</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">elif</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">OP</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;(&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">in_def</span><span class="p">:</span>
+                <span class="c"># Avoid false positives for declarations such as:</span>
+                <span class="c"># def gettext(arg=&#39;message&#39;):</span>
+                <span class="n">in_def</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">funcname</span><span class="p">:</span>
+                <span class="n">message_lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+                <span class="n">call_stack</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">in_def</span> <span class="ow">and</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">OP</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;:&#39;</span><span class="p">:</span>
+            <span class="c"># End of a class definition without parens</span>
+            <span class="n">in_def</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">call_stack</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">COMMENT</span><span class="p">:</span>
+            <span class="c"># Strip the comment token from the line</span>
+            <span class="k">if</span> <span class="n">PY2</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">in_translator_comments</span> <span class="ow">and</span> \
+                    <span class="n">translator_comments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">lineno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c"># We&#39;re already inside a translator comment, continue appending</span>
+                <span class="n">translator_comments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lineno</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="c"># If execution reaches this point, let&#39;s see if comment line</span>
+            <span class="c"># starts with one of the comment tags</span>
+            <span class="k">for</span> <span class="n">comment_tag</span> <span class="ow">in</span> <span class="n">comment_tags</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">comment_tag</span><span class="p">):</span>
+                    <span class="n">in_translator_comments</span> <span class="o">=</span> <span class="bp">True</span>
+                    <span class="n">translator_comments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lineno</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+                    <span class="k">break</span>
+        <span class="k">elif</span> <span class="n">funcname</span> <span class="ow">and</span> <span class="n">call_stack</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">OP</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;)&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">buf</span><span class="p">:</span>
+                    <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">buf</span><span class="p">))</span>
+                    <span class="k">del</span> <span class="n">buf</span><span class="p">[:]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">messages</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">messages</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="c"># Comments don&#39;t apply unless they immediately preceed the</span>
+                <span class="c"># message</span>
+                <span class="k">if</span> <span class="n">translator_comments</span> <span class="ow">and</span> \
+                        <span class="n">translator_comments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">message_lineno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">translator_comments</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="k">yield</span> <span class="p">(</span><span class="n">message_lineno</span><span class="p">,</span> <span class="n">funcname</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span>
+                       <span class="p">[</span><span class="n">comment</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">translator_comments</span><span class="p">])</span>
+
+                <span class="n">funcname</span> <span class="o">=</span> <span class="n">lineno</span> <span class="o">=</span> <span class="n">message_lineno</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="n">call_stack</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">translator_comments</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">in_translator_comments</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">elif</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">STRING</span><span class="p">:</span>
+                <span class="c"># Unwrap quotes in a safe manner, maintaining the string&#39;s</span>
+                <span class="c"># encoding</span>
+                <span class="c"># https://sourceforge.net/tracker/?func=detail&amp;atid=355470&amp;</span>
+                <span class="c"># aid=617979&amp;group_id=5470</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s">&#39;# coding=</span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">encoding</span><span class="p">),</span> <span class="n">value</span><span class="p">),</span>
+                             <span class="p">{</span><span class="s">&#39;__builtins__&#39;</span><span class="p">:{}},</span> <span class="p">{})</span>
+                <span class="k">if</span> <span class="n">PY2</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">text_type</span><span class="p">):</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+                <span class="n">buf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">OP</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;,&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">buf</span><span class="p">:</span>
+                    <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">buf</span><span class="p">))</span>
+                    <span class="k">del</span> <span class="n">buf</span><span class="p">[:]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">translator_comments</span><span class="p">:</span>
+                    <span class="c"># We have translator comments, and since we&#39;re on a</span>
+                    <span class="c"># comma(,) user is allowed to break into a new line</span>
+                    <span class="c"># Let&#39;s increase the last comment&#39;s lineno in order</span>
+                    <span class="c"># for the comment to still be a valid one</span>
+                    <span class="n">old_lineno</span><span class="p">,</span> <span class="n">old_comment</span> <span class="o">=</span> <span class="n">translator_comments</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                    <span class="n">translator_comments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">old_lineno</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">old_comment</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">call_stack</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">OP</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;)&#39;</span><span class="p">:</span>
+            <span class="n">call_stack</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">funcname</span> <span class="ow">and</span> <span class="n">call_stack</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">funcname</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">elif</span> <span class="n">tok</span> <span class="o">==</span> <span class="n">NAME</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+            <span class="n">funcname</span> <span class="o">=</span> <span class="n">value</span>
+
+</div>
+<div class="viewcode-block" id="extract_javascript"><a class="viewcode-back" href="../../../babel.messages.html#babel.messages.extract.extract_javascript">[docs]</a><span class="k">def</span> <span class="nf">extract_javascript</span><span class="p">(</span><span class="n">fileobj</span><span class="p">,</span> <span class="n">keywords</span><span class="p">,</span> <span class="n">comment_tags</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract messages from JavaScript source code.</span>
+
+<span class="sd">    :param fileobj: the seekable, file-like object the messages should be</span>
+<span class="sd">                    extracted from</span>
+<span class="sd">    :param keywords: a list of keywords (i.e. function names) that should be</span>
+<span class="sd">                     recognized as translation functions</span>
+<span class="sd">    :param comment_tags: a list of translator tags to search for and include</span>
+<span class="sd">                         in the results</span>
+<span class="sd">    :param options: a dictionary of additional options (optional)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">babel.messages.jslexer</span> <span class="kn">import</span> <span class="n">tokenize</span><span class="p">,</span> <span class="n">unquote_string</span>
+    <span class="n">funcname</span> <span class="o">=</span> <span class="n">message_lineno</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">last_argument</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">translator_comments</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">concatenate_next</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">encoding</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;encoding&#39;</span><span class="p">,</span> <span class="s">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="n">last_token</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">call_stack</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokenize</span><span class="p">(</span><span class="n">fileobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;operator&#39;</span> <span class="ow">and</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s">&#39;(&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">funcname</span><span class="p">:</span>
+                <span class="n">message_lineno</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">lineno</span>
+                <span class="n">call_stack</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">elif</span> <span class="n">call_stack</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">token</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;linecomment&#39;</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">translator_comments</span> <span class="ow">and</span> \
+               <span class="n">translator_comments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">token</span><span class="o">.</span><span class="n">lineno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">translator_comments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">token</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="k">for</span> <span class="n">comment_tag</span> <span class="ow">in</span> <span class="n">comment_tags</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">comment_tag</span><span class="p">):</span>
+                    <span class="n">translator_comments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">token</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+                    <span class="k">break</span>
+
+        <span class="k">elif</span> <span class="n">token</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;multilinecomment&#39;</span><span class="p">:</span>
+            <span class="c"># only one multi-line comment may preceed a translation</span>
+            <span class="n">translator_comments</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">comment_tag</span> <span class="ow">in</span> <span class="n">comment_tags</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">comment_tag</span><span class="p">):</span>
+                    <span class="n">lines</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">lines</span><span class="p">:</span>
+                        <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+                        <span class="k">for</span> <span class="n">offset</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+                            <span class="n">translator_comments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">token</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+</span> <span class="n">offset</span><span class="p">,</span>
+                                                        <span class="n">line</span><span class="p">))</span>
+                    <span class="k">break</span>
+
+        <span class="k">elif</span> <span class="n">funcname</span> <span class="ow">and</span> <span class="n">call_stack</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;operator&#39;</span> <span class="ow">and</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s">&#39;)&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">last_argument</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">last_argument</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">messages</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">messages</span><span class="p">:</span>
+                    <span class="n">messages</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">messages</span> <span class="o">=</span> <span class="bp">None</span>
+
+                <span class="c"># Comments don&#39;t apply unless they immediately precede the</span>
+                <span class="c"># message</span>
+                <span class="k">if</span> <span class="n">translator_comments</span> <span class="ow">and</span> \
+                   <span class="n">translator_comments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">message_lineno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">translator_comments</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="k">if</span> <span class="n">messages</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="p">(</span><span class="n">message_lineno</span><span class="p">,</span> <span class="n">funcname</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span>
+                           <span class="p">[</span><span class="n">comment</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">translator_comments</span><span class="p">])</span>
+
+                <span class="n">funcname</span> <span class="o">=</span> <span class="n">message_lineno</span> <span class="o">=</span> <span class="n">last_argument</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="n">concatenate_next</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="n">translator_comments</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">call_stack</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+            <span class="k">elif</span> <span class="n">token</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;string&#39;</span><span class="p">:</span>
+                <span class="n">new_value</span> <span class="o">=</span> <span class="n">unquote_string</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">concatenate_next</span><span class="p">:</span>
+                    <span class="n">last_argument</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_argument</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">new_value</span>
+                    <span class="n">concatenate_next</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">last_argument</span> <span class="o">=</span> <span class="n">new_value</span>
+
+            <span class="k">elif</span> <span class="n">token</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;operator&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s">&#39;,&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">last_argument</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">last_argument</span><span class="p">)</span>
+                        <span class="n">last_argument</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+                    <span class="n">concatenate_next</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">elif</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s">&#39;+&#39;</span><span class="p">:</span>
+                    <span class="n">concatenate_next</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">elif</span> <span class="n">call_stack</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">token</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;operator&#39;</span> \
+             <span class="ow">and</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s">&#39;)&#39;</span><span class="p">:</span>
+            <span class="n">call_stack</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="k">elif</span> <span class="n">funcname</span> <span class="ow">and</span> <span class="n">call_stack</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">funcname</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">elif</span> <span class="n">call_stack</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">token</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;name&#39;</span> <span class="ow">and</span> \
+             <span class="n">token</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="n">keywords</span> <span class="ow">and</span> \
+             <span class="p">(</span><span class="n">last_token</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">last_token</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s">&#39;name&#39;</span> <span class="ow">or</span>
+              <span class="n">last_token</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="s">&#39;function&#39;</span><span class="p">):</span>
+            <span class="n">funcname</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">last_token</span> <span class="o">=</span> <span class="n">token</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

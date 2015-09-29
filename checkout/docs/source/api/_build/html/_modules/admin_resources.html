@@ -1,0 +1,493 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>admin_resources &mdash; app  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="app  documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for admin_resources</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python2.7</span>
+<span class="c"># Copyright 2011 Google Inc.</span>
+<span class="c">#</span>
+<span class="c"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c"># you may not use this file except in compliance with the License.</span>
+<span class="c"># You may obtain a copy of the License at</span>
+<span class="c">#</span>
+<span class="c">#      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c">#</span>
+<span class="c"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c"># See the License for the specific language governing permissions and</span>
+<span class="c"># limitations under the License.</span>
+
+<span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">db</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">cgi</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">mimetypes</span>
+
+<span class="kn">import</span> <span class="nn">config</span>
+<span class="kn">import</span> <span class="nn">const</span>
+<span class="kn">from</span> <span class="nn">resources</span> <span class="kn">import</span> <span class="n">Resource</span><span class="p">,</span> <span class="n">ResourceBundle</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+
+<span class="c"># Because this handler is used to administer resources such as templates and</span>
+<span class="c"># stylesheets, nothing in this handler depends on those resources.</span>
+
+<span class="n">PREFACE</span> <span class="o">=</span> <span class="s">&#39;&#39;&#39;</span>
+<span class="s">&lt;style&gt;</span>
+<span class="s">body, table, th, td, input { font-family: arial; font-size: 13px; }</span>
+<span class="s">body, form, input { margin: 0; padding: 0; }</span>
+
+<span class="s">.nav { padding: 6px 12px; background: #cdf; }</span>
+<span class="s">a { text-decoration: none; color: #06c; }</span>
+<span class="s">a.sel { color: #000; font-weight: bold; }</span>
+<span class="s">a:hover { text-decoration: underline; }</span>
+
+<span class="s">form { display: inline; }</span>
+<span class="s">textarea { font-family: courier, courier new, monospace; font-size: 12px; }</span>
+<span class="s">img { margin: 12px 0; border: 1px solid #eee; }</span>
+<span class="s">.editable .hide-when-editable { display: none; }</span>
+<span class="s">.readonly .hide-when-readonly { display: none; }</span>
+
+<span class="s">table { min-width: 400px; margin: 12px; border: 1px solid #ccc; }</span>
+<span class="s">tr { vertical-align: baseline; }</span>
+<span class="s">th, td { text-align: left; padding: 3px 10px; min-width: 5em; }</span>
+<span class="s">th { border-bottom: 1px solid #ccc; }</span>
+<span class="s">.active td { background: #afa; }</span>
+<span class="s">#show-unaltered { margin-left: 1em; font-weight: normal; color: #aaa; }</span>
+
+<span class="s">div.add { margin: 12px; }</span>
+
+<span class="s">.warning { color: #a00; }</span>
+<span class="s">a.bundle { color: #06c; }</span>
+<span class="s">a.resource { color: #06c; }</span>
+<span class="s">a.file { color: #aaa; }</span>
+<span class="s">&lt;/style&gt;</span>
+<span class="s">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="html"><a class="viewcode-back" href="../admin_resources.html#admin_resources.html">[docs]</a><span class="k">def</span> <span class="nf">html</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts plain text to HTML.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span>  <span class="c"># for textarea editing, we need Unicode</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;latin-1&#39;</span><span class="p">)</span>  <span class="c"># in case the content was uploaded binary data</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&amp;&#39;</span><span class="p">,</span><span class="s">&#39;&amp;amp;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&lt;&#39;</span><span class="p">,</span><span class="s">&#39;&amp;lt;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&gt;&#39;</span><span class="p">,</span><span class="s">&#39;&amp;gt;&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="format_datetime"><a class="viewcode-back" href="../admin_resources.html#admin_resources.format_datetime">[docs]</a><span class="k">def</span> <span class="nf">format_datetime</span><span class="p">(</span><span class="n">dt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Formats a datetime object for display in a directory listing.&quot;&quot;&quot;</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="n">dt</span>
+    <span class="k">if</span> <span class="n">delta</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">delta</span><span class="o">.</span><span class="n">seconds</span> <span class="o">&lt;</span> <span class="mi">3600</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s"> min ago&#39;</span> <span class="o">%</span> <span class="nb">int</span><span class="p">(</span><span class="n">delta</span><span class="o">.</span><span class="n">seconds</span> <span class="o">/</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%.1f</span><span class="s"> h ago&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">delta</span><span class="o">.</span><span class="n">seconds</span> <span class="o">/</span> <span class="mf">3600.0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%04d</span><span class="s">-</span><span class="si">%02d</span><span class="s">-</span><span class="si">%02d</span><span class="s"> </span><span class="si">%02d</span><span class="s">:</span><span class="si">%02d</span><span class="s"> UTC&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">dt</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">dt</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">dt</span><span class="o">.</span><span class="n">day</span><span class="p">,</span> <span class="n">dt</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span> <span class="n">dt</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="put_bundle"><a class="viewcode-back" href="../admin_resources.html#admin_resources.put_bundle">[docs]</a><span class="k">def</span> <span class="nf">put_bundle</span><span class="p">(</span><span class="n">new_bundle_name</span><span class="p">,</span> <span class="n">original_bundle_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Puts a new ResourceBundle, optionally copying from another bundle.&quot;&quot;&quot;</span>
+    <span class="n">new_bundle</span> <span class="o">=</span> <span class="n">ResourceBundle</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">new_bundle_name</span><span class="p">)</span>
+    <span class="n">entities</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_bundle</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">original_bundle_name</span><span class="p">:</span>
+        <span class="n">original_bundle</span> <span class="o">=</span> <span class="n">ResourceBundle</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="n">original_bundle_name</span><span class="p">)</span>
+        <span class="n">original_resources</span> <span class="o">=</span> <span class="n">Resource</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">ancestor</span><span class="p">(</span><span class="n">original_bundle</span><span class="p">)</span>
+        <span class="n">entities</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Resource</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">new_bundle</span><span class="p">,</span>
+                              <span class="n">key_name</span><span class="o">=</span><span class="n">resource</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span>
+                              <span class="n">cache_seconds</span><span class="o">=</span><span class="n">resource</span><span class="o">.</span><span class="n">cache_seconds</span><span class="p">,</span>
+                              <span class="n">content</span><span class="o">=</span><span class="n">resource</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+                     <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">original_resources</span><span class="p">]</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="put_resource"><a class="viewcode-back" href="../admin_resources.html#admin_resources.put_resource">[docs]</a><span class="k">def</span> <span class="nf">put_resource</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">key_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Puts a Resource in the datastore under the specified ResourceBundle.&quot;&quot;&quot;</span>
+    <span class="n">bundle</span> <span class="o">=</span> <span class="n">ResourceBundle</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="n">bundle_name</span><span class="p">)</span>
+    <span class="n">Resource</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">bundle</span><span class="p">,</span> <span class="n">key_name</span><span class="o">=</span><span class="n">key_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="format_content_html"><a class="viewcode-back" href="../admin_resources.html#admin_resources.format_content_html">[docs]</a><span class="k">def</span> <span class="nf">format_content_html</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">editable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Formats HTML to show a Resource&#39;s content, optionally for editing.&quot;&quot;&quot;</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="s">&#39;text/plain&#39;</span>
+    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.template&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;text/&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;textarea name=&quot;content&quot; cols=80 rows=40 </span><span class="si">%s</span><span class="s">&gt;</span><span class="si">%s</span><span class="s">&lt;/textarea&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">editable</span> <span class="ow">and</span> <span class="s">&#39;readonly&#39;</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">html</span><span class="p">(</span><span class="n">content</span><span class="p">))</span>
+    <span class="n">content_html</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> data, </span><span class="si">%d</span><span class="s"> bytes&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">content</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;image/&#39;</span><span class="p">):</span>
+        <span class="n">content_html</span> <span class="o">+=</span> <span class="s">&#39;&lt;br&gt;&lt;img src=&quot;data:</span><span class="si">%s</span><span class="s">;base64,</span><span class="si">%s</span><span class="s">&quot;&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">type</span><span class="p">,</span> <span class="n">base64</span><span class="o">.</span><span class="n">encodestring</span><span class="p">(</span><span class="n">content</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">content_html</span>
+
+</div>
+<div class="viewcode-block" id="Handler"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler">[docs]</a><span class="k">class</span> <span class="nc">Handler</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A page that lets app administrators create resource bundles, create</span>
+<span class="sd">    and edit resources, and preview bundles before making them default.&quot;&quot;&quot;</span>
+
+    <span class="c"># Resources apply to all repositories.</span>
+    <span class="n">repo_required</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="n">admin_required</span> <span class="o">=</span> <span class="bp">True</span>
+
+<div class="viewcode-block" id="Handler.get_admin_url"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler.get_admin_url">[docs]</a>    <span class="k">def</span> <span class="nf">get_admin_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bundle_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">lang</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructs a parameterized URL to this page.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(</span><span class="s">&#39;admin/resources&#39;</span><span class="p">,</span>
+                            <span class="n">resource_bundle</span><span class="o">=</span><span class="n">bundle_name</span><span class="p">,</span>
+                            <span class="n">resource_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                            <span class="n">resource_lang</span><span class="o">=</span><span class="n">lang</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.format_nav_html"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler.format_nav_html">[docs]</a>    <span class="k">def</span> <span class="nf">format_nav_html</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bundle_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lang</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Formats the breadcrumb navigation bar.&quot;&quot;&quot;</span>
+        <span class="n">crumbs</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;All bundles&#39;</span><span class="p">,</span> <span class="p">())]</span>
+        <span class="k">if</span> <span class="n">bundle_name</span><span class="p">:</span>
+            <span class="n">crumbs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;Bundle: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">bundle_name</span><span class="p">,</span> <span class="p">(</span><span class="n">bundle_name</span><span class="p">,)))</span>
+        <span class="k">if</span> <span class="n">bundle_name</span> <span class="ow">and</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">crumbs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;Resource: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">name</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">bundle_name</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">lang</span><span class="p">:</span>
+            <span class="n">anchor</span> <span class="o">=</span> <span class="n">lang</span> <span class="o">+</span> <span class="s">&#39;: &#39;</span> <span class="o">+</span> <span class="n">const</span><span class="o">.</span><span class="n">LANGUAGE_EXONYMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="s">&#39;?&#39;</span><span class="p">)</span>
+            <span class="n">crumbs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">anchor</span><span class="p">,</span> <span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lang</span><span class="p">)))</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="n">crumbs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;div class=&quot;nav&quot;&gt;</span><span class="si">%s</span><span class="s">&lt;/div&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &amp;gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="s">&#39;&lt;a class=&quot;</span><span class="si">%s</span><span class="s">&quot; href=&quot;</span><span class="si">%s</span><span class="s">&quot;&gt;</span><span class="si">%s</span><span class="s">&lt;/a&gt;&#39;</span> <span class="o">%</span>
+            <span class="p">(</span><span class="n">args</span> <span class="o">==</span> <span class="n">last</span> <span class="ow">and</span> <span class="s">&#39;sel&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="n">anchor</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">anchor</span><span class="p">,</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">crumbs</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Handler.get"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">operation</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.post"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">operation</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Handler.handle"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler.handle">[docs]</a>    <span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operation</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Handles both GET and POST requests.  POST requests include an</span>
+<span class="sd">        &#39;operation&#39; param describing what the user is trying to change.&quot;&quot;&quot;</span>
+        <span class="n">bundle_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">resource_bundle</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">resource_name</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span>
+        <span class="n">lang</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">resource_lang</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span>
+        <span class="n">key_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="p">(</span><span class="n">lang</span> <span class="ow">and</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="n">lang</span><span class="p">)</span>
+        <span class="n">editable</span> <span class="o">=</span> <span class="p">(</span><span class="n">bundle_name</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">default_resource_bundle</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ResourceBundle</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">default_resource_bundle</span><span class="p">):</span>
+            <span class="n">ResourceBundle</span><span class="p">(</span><span class="n">key_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">default_resource_bundle</span><span class="p">)</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;set_preview&#39;</span><span class="p">:</span>
+            <span class="c"># Set the resource_bundle cookie.  This causes all pages to render</span>
+            <span class="c"># using the selected bundle (see main.py).  We use a cookie so that</span>
+            <span class="c"># it&#39;s possible to preview PF as embedded on external sites.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s">&#39;Set-Cookie&#39;</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="s">&#39;resource_bundle=</span><span class="si">%s</span><span class="s">; path=/&#39;</span> <span class="o">%</span> <span class="n">bundle_name</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;set_default&#39;</span><span class="p">:</span>
+            <span class="c"># Set the default resource bundle.</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">default_resource_bundle</span><span class="o">=</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">resource_bundle_default</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;add_bundle&#39;</span> <span class="ow">and</span> <span class="n">editable</span><span class="p">:</span>
+            <span class="c"># Add a new bundle, optionally copying from an existing bundle.</span>
+            <span class="n">put_bundle</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">resource_bundle_original</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;add_resource&#39;</span> <span class="ow">and</span> <span class="n">editable</span><span class="p">:</span>
+            <span class="c"># Go to the edit page for a new resource (don&#39;t create until save).</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lang</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;delete_resource&#39;</span> <span class="ow">and</span> <span class="n">editable</span><span class="p">:</span>
+            <span class="c"># Delete a resource.</span>
+            <span class="n">resource</span> <span class="o">=</span> <span class="n">Resource</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key_name</span><span class="p">,</span> <span class="n">bundle_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">resource</span><span class="p">:</span>
+                <span class="n">resource</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s">&#39;put_resource&#39;</span> <span class="ow">and</span> <span class="n">editable</span><span class="p">:</span>
+            <span class="c"># Store the content of a resource.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;file&#39;</span><span class="p">),</span> <span class="n">cgi</span><span class="o">.</span><span class="n">FieldStorage</span><span class="p">):</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;file&#39;</span><span class="p">)</span>  <span class="c"># uploaded file content</span>
+            <span class="k">elif</span> <span class="s">&#39;content&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">:</span>  <span class="c"># edited text</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;content&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c"># modify cache_seconds but leave content unchanged</span>
+                <span class="n">resource</span> <span class="o">=</span> <span class="n">Resource</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key_name</span><span class="p">,</span> <span class="n">bundle_name</span><span class="p">)</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="n">resource</span> <span class="ow">and</span> <span class="n">resource</span><span class="o">.</span><span class="n">content</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span>
+            <span class="n">put_resource</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">key_name</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+                         <span class="n">cache_seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">cache_seconds</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">operation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">PREFACE</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_nav_html</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lang</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">bundle_name</span> <span class="ow">and</span> <span class="n">name</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">show_resource</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">key_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lang</span><span class="p">,</span> <span class="n">editable</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">bundle_name</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">list_resources</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">editable</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">list_bundles</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Handler.show_resource"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler.show_resource">[docs]</a>    <span class="k">def</span> <span class="nf">show_resource</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bundle_name</span><span class="p">,</span> <span class="n">key_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lang</span><span class="p">,</span> <span class="n">editable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Displays a single resource, optionally for editing.&quot;&quot;&quot;</span>
+        <span class="n">resource</span> <span class="o">=</span> <span class="n">Resource</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key_name</span><span class="p">,</span> <span class="n">bundle_name</span><span class="p">)</span> <span class="ow">or</span> <span class="n">Resource</span><span class="p">()</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="n">content</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&#39;&#39;</span>
+<span class="s">&lt;form method=&quot;post&quot; class=&quot;</span><span class="si">%(class)s</span><span class="s">&quot; enctype=&quot;multipart/form-data&quot;&gt;</span>
+<span class="s">  &lt;input type=&quot;hidden&quot; name=&quot;operation&quot; value=&quot;put_resource&quot;&gt;</span>
+<span class="s">  &lt;input type=&quot;hidden&quot; name=&quot;resource_bundle&quot; value=&quot;</span><span class="si">%(bundle_name)s</span><span class="s">&quot;&gt;</span>
+<span class="s">  &lt;input type=&quot;hidden&quot; name=&quot;resource_name&quot; value=&quot;</span><span class="si">%(name)s</span><span class="s">&quot;&gt;</span>
+<span class="s">  &lt;input type=&quot;hidden&quot; name=&quot;resource_lang&quot; value=&quot;</span><span class="si">%(lang)s</span><span class="s">&quot;&gt;</span>
+<span class="s">  &lt;table cellpadding=0 cellspacing=0&gt;</span>
+<span class="s">    &lt;tr&gt;</span>
+<span class="s">      &lt;td class=&quot;warning hide-when-editable&quot;&gt;</span>
+<span class="s">        This bundle cannot be edited while it is set as default.</span>
+<span class="s">      &lt;/td&gt;</span>
+<span class="s">    &lt;/tr&gt;</span>
+<span class="s">    &lt;tr&gt;&lt;td colspan=2&gt;</span><span class="si">%(content_html)s</span><span class="s">&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="s">    &lt;tr&gt;</span>
+<span class="s">      &lt;td style=&quot;position: relative&quot;&gt;</span>
+<span class="s">        &lt;button style=&quot;position: absolute&quot;&gt;Replace with a file&lt;/button&gt;</span>
+<span class="s">        &lt;input type=&quot;file&quot; name=&quot;file&quot; class=&quot;hide-when-readonly&quot;</span>
+<span class="s">            onchange=&quot;document.forms[0].submit()&quot;</span>
+<span class="s">            style=&quot;position: absolute; opacity: 0; z-index: 1&quot;&gt;</span>
+<span class="s">      &lt;/td&gt;</span>
+<span class="s">      &lt;td style=&quot;text-align: right&quot;&gt;</span>
+<span class="s">        Cache seconds: &lt;input </span><span class="si">%(maybe_readonly)s</span><span class="s"> size=4</span>
+<span class="s">            name=&quot;cache_seconds&quot; value=&quot;</span><span class="si">%(cache_seconds).1f</span><span class="s">&quot;&gt;</span>
+<span class="s">      &lt;/td&gt;</span>
+<span class="s">    &lt;/tr&gt;</span>
+<span class="s">    &lt;tr class=&quot;hide-when-readonly&quot;&gt;</span>
+<span class="s">      &lt;td&gt;</span>
+<span class="s">        &lt;button onclick=&quot;delete_resource()&quot;&gt;Delete resource&lt;/button&gt;</span>
+<span class="s">      &lt;/td&gt;</span>
+<span class="s">      &lt;td style=&quot;text-align: right&quot;&gt;</span>
+<span class="s">        &lt;input type=&quot;submit&quot; name=&quot;save_content&quot; value=&quot;Save resource&quot;&gt;</span>
+<span class="s">      &lt;/td&gt;</span>
+<span class="s">    &lt;/tr&gt;</span>
+<span class="s">  &lt;/table&gt;</span>
+<span class="s">&lt;/form&gt;</span>
+<span class="s">&lt;script&gt;</span>
+<span class="s">function delete_resource() {</span>
+<span class="s">  if (confirm(&#39;Really delete </span><span class="si">%(name)s</span><span class="s">?&#39;)) {</span>
+<span class="s">    document.forms[0].operation.value = &#39;delete_resource&#39;;</span>
+<span class="s">    document.forms[0].submit();</span>
+<span class="s">  }</span>
+<span class="s">}</span>
+<span class="s">&lt;/script&gt;&#39;&#39;&#39;</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;class&#39;</span><span class="p">:</span> <span class="n">editable</span> <span class="ow">and</span> <span class="s">&#39;editable&#39;</span> <span class="ow">or</span> <span class="s">&#39;readonly&#39;</span><span class="p">,</span>
+                <span class="s">&#39;bundle_name&#39;</span><span class="p">:</span> <span class="n">bundle_name</span><span class="p">,</span>
+                <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                <span class="s">&#39;lang&#39;</span><span class="p">:</span> <span class="n">lang</span><span class="p">,</span>
+                <span class="s">&#39;content_html&#39;</span><span class="p">:</span> <span class="n">format_content_html</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">editable</span><span class="p">),</span>
+                <span class="s">&#39;cache_seconds&#39;</span><span class="p">:</span> <span class="n">resource</span><span class="o">.</span><span class="n">cache_seconds</span><span class="p">,</span>
+                <span class="s">&#39;maybe_readonly&#39;</span><span class="p">:</span> <span class="ow">not</span> <span class="n">editable</span> <span class="ow">and</span> <span class="s">&#39;readonly&#39;</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span><span class="p">})</span>
+</div>
+<div class="viewcode-block" id="Handler.list_resources"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler.list_resources">[docs]</a>    <span class="k">def</span> <span class="nf">list_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bundle_name</span><span class="p">,</span> <span class="n">editable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Displays a list of the resources in a bundle.&quot;&quot;&quot;</span>
+        <span class="n">bundle</span> <span class="o">=</span> <span class="n">ResourceBundle</span><span class="o">.</span><span class="n">get_by_key_name</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">)</span>
+        <span class="n">editable_class</span> <span class="o">=</span> <span class="n">editable</span> <span class="ow">and</span> <span class="s">&#39;editable&#39;</span> <span class="ow">or</span> <span class="s">&#39;readonly&#39;</span>
+
+        <span class="n">langs_by_name</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c"># Group language variants of each resource together.</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">Resource</span><span class="o">.</span><span class="n">list_files</span><span class="p">():</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">lang</span> <span class="o">=</span> <span class="p">(</span><span class="n">filename</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="bp">None</span><span class="p">])[:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">langs_by_name</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{})[</span><span class="n">lang</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;file&#39;</span>
+        <span class="k">for</span> <span class="n">resource_name</span> <span class="ow">in</span> <span class="n">bundle</span><span class="o">.</span><span class="n">list_resources</span><span class="p">():</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">lang</span> <span class="o">=</span> <span class="p">(</span><span class="n">resource_name</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="bp">None</span><span class="p">])[:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">langs_by_name</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{})[</span><span class="n">lang</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;resource&#39;</span>
+
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># Each row shows one Resource and its localized variants.</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">langs_by_name</span><span class="p">):</span>
+            <span class="n">sources_by_lang</span> <span class="o">=</span> <span class="n">langs_by_name</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">altered</span> <span class="o">=</span> <span class="s">&#39;resource&#39;</span> <span class="ow">in</span> <span class="n">sources_by_lang</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="n">generic</span> <span class="o">=</span> <span class="s">&#39;&lt;a class=&quot;</span><span class="si">%s</span><span class="s">&quot; href=&quot;</span><span class="si">%s</span><span class="s">&quot;&gt;</span><span class="si">%s</span><span class="s">&lt;/a&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">sources_by_lang</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="s">&#39;missing&#39;</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">variants</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;&lt;a class=&quot;</span><span class="si">%s</span><span class="s">&quot; href=&quot;</span><span class="si">%s</span><span class="s">&quot;&gt;</span><span class="si">%s</span><span class="s">&lt;/a&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">sources_by_lang</span><span class="p">[</span><span class="n">lang</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lang</span><span class="p">),</span> <span class="n">html</span><span class="p">(</span><span class="n">lang</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">sources_by_lang</span><span class="p">)]</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;&#39;</span>
+<span class="s">&lt;tr class=&quot;</span><span class="si">%(altered)s</span><span class="s">&quot;&gt;</span>
+<span class="s">  &lt;td&gt;</span><span class="si">%(generic)s</span><span class="s">&lt;/td&gt;</span>
+<span class="s">  &lt;td&gt;</span><span class="si">%(variants)s</span><span class="s"></span>
+<span class="s">    &lt;form method=&quot;post&quot; class=&quot;</span><span class="si">%(class)s</span><span class="s">&quot;&gt;</span>
+<span class="s">      &lt;input type=&quot;hidden&quot; name=&quot;operation&quot; value=&quot;add_resource&quot;&gt;</span>
+<span class="s">      &lt;input type=&quot;hidden&quot; name=&quot;resource_name&quot; value=&quot;</span><span class="si">%(name)s</span><span class="s">&quot;&gt;</span>
+<span class="s">      &lt;input name=&quot;resource_lang&quot; size=3 class=&quot;hide-when-readonly&quot;</span>
+<span class="s">          placeholder=&quot;lang&quot;&gt;</span>
+<span class="s">      &lt;input type=&quot;submit&quot; value=&quot;Add&quot; class=&quot;hide-when-readonly&quot;&gt;</span>
+<span class="s">    &lt;/form&gt;</span>
+<span class="s">  &lt;/td&gt;</span>
+<span class="s">&lt;/tr&gt;&#39;&#39;&#39;</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;altered&#39;</span><span class="p">:</span> <span class="n">altered</span> <span class="ow">and</span> <span class="s">&#39;altered&#39;</span> <span class="ow">or</span> <span class="s">&#39;unaltered&#39;</span><span class="p">,</span>
+            <span class="s">&#39;generic&#39;</span><span class="p">:</span> <span class="n">generic</span><span class="p">,</span>
+            <span class="s">&#39;variants&#39;</span><span class="p">:</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">variants</span><span class="p">),</span>
+            <span class="s">&#39;class&#39;</span><span class="p">:</span> <span class="n">editable_class</span><span class="p">,</span>
+            <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">})</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&#39;&#39;</span>
+<span class="s">&lt;table cellpadding=0 cellspacing=0&gt;</span>
+<span class="s">&lt;tr&gt;&lt;th&gt;</span>
+<span class="s">  Resource name</span>
+<span class="s">  &lt;span id=&quot;show-unaltered&quot;&gt;</span>
+<span class="s">    &lt;input id=&quot;show-unaltered-checkbox&quot; type=&quot;checkbox&quot;</span>
+<span class="s">        onchange=&quot;show_unaltered(this.checked)&quot;&gt;</span>
+<span class="s">    &lt;label for=&quot;show-unaltered-checkbox&quot;&gt;Show unaltered files&lt;/label&gt;</span>
+<span class="s">  &lt;/span&gt;</span>
+<span class="s">&lt;/th&gt;&lt;th&gt;Localized variants&lt;/th&gt;&lt;/tr&gt;</span>
+<span class="s">&lt;tr class=&quot;add&quot;&gt;&lt;td&gt;</span>
+<span class="s">  &lt;form method=&quot;post&quot; class=&quot;</span><span class="si">%(class)s</span><span class="s">&quot;&gt;</span>
+<span class="s">    &lt;input type=&quot;hidden&quot; name=&quot;operation&quot; value=&quot;add_resource&quot;&gt;</span>
+<span class="s">    &lt;input name=&quot;resource_name&quot; size=&quot;36&quot; class=&quot;hide-when-readonly&quot;</span>
+<span class="s">        placeholder=&quot;resource filename&quot;&gt;</span>
+<span class="s">    &lt;input type=&quot;submit&quot; value=&quot;Add&quot; class=&quot;hide-when-readonly&quot;&gt;</span>
+<span class="s">    &lt;div class=&quot;warning hide-when-editable&quot;&gt;</span>
+<span class="s">      This bundle cannot be edited while it is set as default.</span>
+<span class="s">    &lt;/div&gt;</span>
+<span class="s">  &lt;/form&gt;</span>
+<span class="s">&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="si">%(rows)s</span><span class="s"></span>
+<span class="s">&lt;/table&gt;</span>
+<span class="s">&lt;script&gt;</span>
+<span class="s">function show_unaltered(show) {</span>
+<span class="s">  var rows = document.getElementsByClassName(&#39;unaltered&#39;);</span>
+<span class="s">  for (var r = 0; r &lt; rows.length; r++) {</span>
+<span class="s">    rows[r].style.display = show ? &#39;&#39; : &#39;none&#39;;</span>
+<span class="s">  }</span>
+<span class="s">}</span>
+<span class="s">show_unaltered(false);</span>
+<span class="s">&lt;/script&gt;</span>
+<span class="s">&lt;form method=&quot;post&quot; action=&quot;</span><span class="si">%(action)s</span><span class="s">&quot;&gt;</span>
+<span class="s">  &lt;input type=&quot;hidden&quot; name=&quot;operation&quot; value=&quot;add_bundle&quot;&gt;</span>
+<span class="s">  &lt;input type=&quot;hidden&quot; name=&quot;resource_bundle_original&quot; value=&quot;</span><span class="si">%(bundle_name)s</span><span class="s">&quot;&gt;</span>
+<span class="s">  &lt;table cellpadding=0 cellspacing=0&gt;</span>
+<span class="s">    &lt;tr&gt;&lt;td&gt;</span>
+<span class="s">      Copy all these resources to another bundle:</span>
+<span class="s">      &lt;input name=&quot;resource_bundle&quot; size=&quot;18&quot;</span>
+<span class="s">          placeholder=&quot;bundle name&quot;&gt;</span>
+<span class="s">      &lt;input type=&quot;submit&quot; value=&quot;Copy&quot;&gt;</span>
+<span class="s">    &lt;/td&gt;&lt;/tr&gt;</span>
+<span class="s">  &lt;/table&gt;</span>
+<span class="s">&lt;/form&gt;&#39;&#39;&#39;</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;class&#39;</span><span class="p">:</span> <span class="n">editable_class</span><span class="p">,</span>
+              <span class="s">&#39;rows&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rows</span><span class="p">),</span>
+              <span class="s">&#39;action&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(),</span>
+              <span class="s">&#39;bundle_name&#39;</span><span class="p">:</span> <span class="n">bundle_name</span><span class="p">})</span>
+</div>
+<div class="viewcode-block" id="Handler.list_bundles"><a class="viewcode-back" href="../admin_resources.html#admin_resources.Handler.list_bundles">[docs]</a>    <span class="k">def</span> <span class="nf">list_bundles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Displays a list of all the resource bundles.&quot;&quot;&quot;</span>
+        <span class="n">bundles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ResourceBundle</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="s">&#39;-created&#39;</span><span class="p">))</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">bundle</span> <span class="ow">in</span> <span class="n">bundles</span><span class="p">:</span>
+            <span class="n">bundle_name</span> <span class="o">=</span> <span class="n">bundle</span><span class="o">.</span><span class="n">key</span><span class="p">()</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+            <span class="n">bundle_name_html</span> <span class="o">=</span> <span class="n">html</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">)</span>
+            <span class="n">is_default</span> <span class="o">=</span> <span class="n">bundle_name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">default_resource_bundle</span>
+            <span class="n">is_in_preview</span> <span class="o">=</span> <span class="n">bundle_name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">resource_bundle</span>
+            <span class="k">if</span> <span class="n">is_default</span><span class="p">:</span>
+                <span class="n">bundle_name_html</span> <span class="o">=</span> <span class="s">&#39;&lt;b&gt;</span><span class="si">%s</span><span class="s">&lt;/b&gt; (default)&#39;</span> <span class="o">%</span> <span class="n">bundle_name_html</span>
+            <span class="k">elif</span> <span class="n">is_in_preview</span><span class="p">:</span>
+                <span class="n">bundle_name_html</span> <span class="o">+=</span> <span class="s">&#39; (in preview)&#39;</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;&#39;&#39;</span>
+<span class="s">&lt;tr class=&quot;</span><span class="si">%(class)s</span><span class="s">&quot;&gt;</span>
+<span class="s">  &lt;td&gt;&lt;a class=&quot;bundle&quot; href=&quot;</span><span class="si">%(link)s</span><span class="s">&quot;&gt;</span><span class="si">%(bundle_name_html)s</span><span class="s">&lt;/a&gt;&lt;/td&gt;</span>
+<span class="s">  &lt;td&gt;</span><span class="si">%(created)s</span><span class="s">&lt;/td&gt;</span>
+<span class="s">  &lt;td&gt;&lt;a href=&quot;</span><span class="si">%(preview)s</span><span class="s">&quot;&gt;&lt;input type=&quot;button&quot; value=&quot;Preview&quot;&gt;&lt;/a&gt;&lt;/td&gt;</span>
+<span class="s">  &lt;td&gt;&lt;input type=&quot;radio&quot; name=&quot;resource_bundle_default&quot; value=&quot;</span><span class="si">%(bundle_name)s</span><span class="s">&quot;</span>
+<span class="s">      </span><span class="si">%(default_checked)s</span><span class="s">&gt;&lt;/td&gt;</span>
+<span class="s">&lt;/tr&gt;&#39;&#39;&#39;</span> <span class="o">%</span> <span class="p">{</span>
+    <span class="s">&#39;class&#39;</span><span class="p">:</span> <span class="n">is_in_preview</span> <span class="ow">and</span> <span class="s">&#39;active&#39;</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+    <span class="s">&#39;link&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">),</span>
+    <span class="s">&#39;bundle_name&#39;</span><span class="p">:</span> <span class="n">bundle_name</span><span class="p">,</span>
+    <span class="s">&#39;bundle_name_html&#39;</span><span class="p">:</span> <span class="n">bundle_name_html</span><span class="p">,</span>
+    <span class="s">&#39;default_checked&#39;</span><span class="p">:</span> <span class="n">is_default</span> <span class="ow">and</span> <span class="s">&#39;checked&#39;</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+    <span class="s">&#39;created&#39;</span><span class="p">:</span> <span class="n">format_datetime</span><span class="p">(</span><span class="n">bundle</span><span class="o">.</span><span class="n">created</span><span class="p">),</span>
+    <span class="s">&#39;preview&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">bundle_name</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="s">&#39;set_preview&#39;</span><span class="p">)})</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&#39;&#39;</span>
+<span class="s">&lt;form method=&quot;post&quot;&gt;</span>
+<span class="s">  &lt;input type=&quot;hidden&quot; name=&quot;operation&quot; value=&quot;set_default&quot;&gt;</span>
+<span class="s">  &lt;table cellpadding=0 cellspacing=0&gt;</span>
+<span class="s">    &lt;tr&gt;&lt;th&gt;Bundle name&lt;/th&gt;&lt;th&gt;Created&lt;/th&gt;</span>
+<span class="s">    &lt;th&gt;&lt;a href=&quot;</span><span class="si">%(reset)s</span><span class="s">&quot;&gt;&lt;input type=&quot;button&quot; value=&quot;Reset to default&quot;</span>
+<span class="s">        &gt;&lt;/a&gt;&lt;/th&gt;</span>
+<span class="s">    &lt;th&gt;&lt;input type=&quot;submit&quot; value=&quot;Set to default&quot;&gt;&lt;/th&gt;&lt;/tr&gt;</span>
+<span class="s">    </span><span class="si">%(rows)s</span><span class="s"></span>
+<span class="s">  &lt;/table&gt;</span>
+<span class="s">&lt;/form&gt;</span>
+<span class="s">&lt;div class=&quot;add&quot;&gt;</span>
+<span class="s">  &lt;form method=&quot;post&quot;&gt;</span>
+<span class="s">    &lt;input type=&quot;hidden&quot; name=&quot;operation&quot; value=&quot;add_bundle&quot;&gt;</span>
+<span class="s">    &lt;input name=&quot;resource_bundle&quot; size=&quot;18&quot; placeholder=&quot;bundle name&quot;&gt;</span>
+<span class="s">    &lt;input type=&quot;submit&quot; value=&quot;Add bundle&quot;&gt;</span>
+<span class="s">  &lt;/form&gt;</span>
+<span class="s">&lt;/div&gt;&#39;&#39;&#39;</span> <span class="o">%</span> <span class="p">{</span><span class="s">&#39;reset&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_admin_url</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="s">&#39;set_preview&#39;</span><span class="p">),</span>
+             <span class="s">&#39;rows&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rows</span><span class="p">)})</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
